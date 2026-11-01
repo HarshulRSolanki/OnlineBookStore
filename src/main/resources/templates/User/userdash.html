@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+        }
+
+        body {
+         
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Arial', sans-serif;
+           
+            background-color: #f5f5f5;
+        }
+            
+      
+
+        .search-box {
+            max-width: 600px;
+            margin: 2rem auto;
+        }
+
+        .search-input {
+            border-radius: 25px;
+            padding: 1rem 2rem;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 4px rgba(52,152,219,0.1);
+        }
+
+        .book-card {
+            border: medium;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            background: lime;
+            overflow: hidden;
+            width:250px;
+        }
+
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .book-cover {
+            height: 200px;    
+            object-fit: cover;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .action-btn {
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-download {
+            background: var(--secondary-color);
+            color: white !important;
+        }
+
+        .btn-download:hover {
+            background: #2980b9;
+        }
+
+        .btn-read {
+            background: var(--accent-color);
+            color: white !important;
+        }
+
+        .btn-read:hover {
+            background: #c0392b;
+        }
+
+       
+
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem auto;
+        }
+
+        @media (max-width: 768px) {
+            .book-card {
+                margin: 0 1rem;
+            }
+            
+            .search-input {
+                padding: 0.8rem 1.5rem;
+            }
+        }
+        
+        h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #c0392b;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #ecf0f1;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+        
+     .download-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+    </style>
+</head>
+<body>
+
+	<div th:replace="common/header :: navbar"></div>
+	
+<div class="container">
+   
+    <div class="search-box">
+        <form method="get" action="/searchBook">
+            <div class="input-group">
+                <input type="text" class="form-control search-input" 
+                       name="query" 
+                       placeholder="Search books by title, author, or genre..."
+                       required>
+				<button class="btn btn-primary rounded-pill ms-2" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="mt-3 text-center">
+            <span class="text-danger" th:text="${error}"></span>
+            <span class="text-success" th:text="${message}"></span>
+    </div>  
+
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <section class="books">
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <div class="col" th:each="book : ${books}">
+            <div class="book-card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title" th:text="${book.title}"></h5>
+                    <p class="card-text text-muted" th:text="${book.description}"></p>
+                    <div class="book-details mb-3">
+                        <p class="mb-1"><strong>Author:</strong> <span th:text="${book.author}"></span></p>
+                        <p class="mb-0"><strong>Price:</strong> <span th:text="${book.price}"></span></p>
+                    </div>
+                    <div class="d-grid">
+                        <a th:href="@{/viewpdf/{id}(id=${book.id})}" target="_blank" class="btn btn-read action-btn">
+                            <i class="fas fa-book-open me-2"></i>Read Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+    
+    <section>
+    <h2>Your Cart</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Book Title</th>
+                <th>Author</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="cartItem : ${cartItems}">
+                <td th:text="${cartItem.book.title}"></td>
+                <td th:text="${cartItem.book.author}"></td>
+                <td th:text="${cartItem.book.category.name}"></td>
+                <td>
+                	<span th:if="${cartItem.book.isDeleted}" style="color: red;">(Unavailable)</span>
+						<span th:unless="${cartItem.book.isDeleted}">
+					    	₹<span th:text="${#numbers.formatDecimal(cartItem.book.price, 1, 2)}"></span>
+					         <span th:if="${cartItem.book.price == 0}" class="badge bg-success ms-2">Free</span>
+						</span>
+					
+                </td>
+                <td>	
+                    <div class="d-flex gap-3 align-items-center">            		
+                        <form th:action="@{/delete/{cartId}(cartId=${cartItem.id})}" method="post">
+                            <button type="submit" class="btn btn-danger btn-sm" 
+                                    onclick="return confirm('Remove this item?')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                        <!-- Download Button (only shown for free books) -->
+                        <form th:if="${cartItem.book.price == 0}" th:action="@{/download/{cartId}(cartId=${cartItem.id})}" method="post">
+                        	<button type="submit" class="btn btn-success btn-sm">
+                            	<i class="fas fa-download"></i>                            </button>
+                        </form>
+						<!-- Checkout Button (disabled if any book is deleted) -->
+						<div class="text-end mt-3">
+        					<form th:action="@{/checkout/{bookId}(bookId=${cartItem.book.id})}" method="get">
+    							<button type="submit" class="btn btn-primary btn-sm"
+            						th:disabled="${cartItems.?[book.isDeleted].size() > 0}">
+        							Checkout
+    							</button>
+							</form>
+    					</div>
+                    </div>                
+                </td>
+            </tr>
+       		<tr class="total-row">
+    			<td colspan="3" class="text-end"><strong>Total:</strong></td>
+    			<td> ₹ <span th:text="${cartTotal != null ? #numbers.formatDecimal(cartTotal, 1, 2) : '0.00'}"></span>
+    			</td>
+    			<td>
+        			<!-- Checkout All Books Button -->
+        			<form th:action="@{/checkout-all}" method="post">
+            			<button type="submit" class="btn btn-primary btn-sm" th:disabled="${cartItems.?[book.isDeleted].size() > 0}">Checkout All</button>
+        			</form>
+    			</td>
+			</tr>              
+        </tbody>	
+    </table>
+</section>
+
+
+
+</div>
+
+<div class="footer mt-auto">
+        <div th:replace="common/footer :: footer"></div>
+    </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("tr").forEach(row => {
+            let bookPrice = parseFloat(row.querySelector("td:nth-child(4)").innerText.trim().replace("₹", ""));
+            let checkoutButton = row.querySelector(".checkout-btn");
+            let downloadButton = row.querySelector(".download-btn");
+
+            if (bookPrice === 0) {
+                // Enable download button and hide checkout button
+                if (downloadButton) {
+                    downloadButton.removeAttribute("disabled");
+                }
+                if (checkoutButton) {
+                    checkoutButton.style.display = "none";
+                }
+            } else {
+                // Disable download button (until purchased) and show checkout button
+                if (downloadButton) {
+                    downloadButton.setAttribute("disabled", "true");
+                }
+                if (checkoutButton) {
+                    checkoutButton.style.display = "inline-block";
+                }
+            }
+        });
+    });
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

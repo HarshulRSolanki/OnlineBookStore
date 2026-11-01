@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - E-Library</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+        }
+		body {
+		           
+				background-image:url('/img/free book.jpg'); 
+		           min-height: 100vh;
+		           display: flex;
+				background-size: cover;                 /* makes the image cover the container */
+				background-position: center center;     /* centers the image */
+		        background-repeat: no-repeat;
+				width: 100%; 
+		           flex-direction: column;
+		           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		       }
+
+			   .glass-blur {
+			       background: rgba(255, 255, 255, 0.15); /* slight white tint */
+			       backdrop-filter: blur(10px);           /* the blur effect */
+			       -webkit-backdrop-filter: blur(10px);   /* Safari support */
+			       border-radius: 16px;
+			       border: 1px solid rgba(255, 255, 255, 0.2);
+			   }
+
+
+       nav
+	   {
+		background: black;
+	   }
+        
+       h2
+       {
+       		margin-left: 250px;
+			align-self: center;
+       }
+
+        .sidebar 
+        {
+        	top:67px;
+			background: white;
+            height: calc(100vh - 56px);
+            position: fixed;
+            width: 240px;
+            padding: 1rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .sidebar h3 {
+            color: var(--primary-color);
+            font-weight: 600;
+            padding: 1rem 0;
+            border-bottom: 2px solid #eee;
+        }
+
+        .sidebar .nav-item {
+            margin: 0.5rem 0;
+        }
+
+        .sidebar .nav-item a {
+            color: #666;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+
+        .sidebar .nav-item a:hover,
+        .sidebar .nav-item a.active {
+            background: var(--secondary-color);
+            color: white !important;
+        }
+
+        main {
+           
+            padding: 2rem;
+            
+            min-height: calc(100vh - 56px);
+            
+            
+        }
+
+		
+        .card {
+        	margin-left:250px;
+            border: thick;
+			background: #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            width: 80%;
+            
+        }
+
+        .form-control {
+        	
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+        }
+        
+        
+
+        .table thead {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-action {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-delete {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(52,152,219,0.05);
+        }
+
+    </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+			<a class="navbar-brand d-flex align-items-center text-white" href="/">
+				<img src="/img/ebboklg.png" alt="Quickread Logo" class="logo-img me-2" style="height: 40px;">
+				<span class="d-none d-md-inline"> <legend>  Quickread </legend></span>
+			</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link " href="/admindash"><i class="fas fa-home me-1"></i> Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about"><i class="fas fa-info-circle me-1"></i> About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact"><i class="fas fa-envelope me-1"></i> Contact</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-danger text-white px-3" href="/logout">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+	  
+    <div class="container-fluid ">
+        <div class="row ">
+            <nav class="sidebar glass-blur">
+                <h3><i class="fas fa-cogs me-2"></i>Admin Panel</h3>
+                <div class="nav flex-column">
+                    <div class="nav-item">
+                        <a href="#addBook" class="active"><i class="fas fa-plus-circle me-2"></i>Add Book</a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="#updateBook"><i class="fas fa-edit me-2"></i>Update Book</a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="#addCategory"><i class="fas fa-tags me-2"></i>Categories</a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="#displayUsers"><i class="fas fa-users me-2"></i>Users</a>
+                    </div>
+                </div>
+            </nav>
+
+            <main >
+                <!-- Add Book Section -->
+                <section id="addBook" class="mb-5">
+                   <h2 class="mb-4 text-white"><i class="fas fa-plus-circle me-2"></i>Add New Book</h2>
+                    <div class="card glass-blur">
+                     
+                        <form th:action="@{/addBooks}" method="POST" enctype="multipart/form-data">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Book Title</label>
+                                    <input type="text" class="form-control"  pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed"name="title" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Author</label>
+                                    <input type="text" class="form-control" name="author" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Category</label>
+                                    <select class="form-select" name="categoryId" required>
+                                        <option value="" disabled selected>Select category</option>
+                                        <option th:each="category : ${categories}" 
+                                                th:value="${category.id}" 
+                                                th:text="${category.name}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Language</label>
+                                    <select class="form-select" name="language" required>
+                                        <option value="" disabled selected>Select language</option>
+                                        <option value="English">English</option>
+                                        <option value="Hindi">Hindi</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ISBN</label>
+                                    <input type="text" class="form-control" name="isbn" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Price</label>
+                                    <input type="number" class="form-control" name="price" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Publishing Date</label>
+                                    <input type="date" class="form-control" name="publishDate" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">PDF File</label>
+                                    <input type="file" class="form-control" name="file" accept="application/pdf" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Cover Image</label>
+                                    <input type="file" class="form-control" name="coverImage" accept="image/*" required>
+                                </div>
+                                <div class="col-md-6">
+    								<label class="form-label">Publisher Name</label>
+    								<input type="text" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" class="form-control"  name="publishername" required>
+								</div>
+								<div class="col-md-6">
+    								<label class="form-label">File Type</label>
+    								<select class="form-select" name="fileType" required>
+        								<option value="" disabled selected>Select file type</option>
+        								<option value="application/pdf">PDF Document</option>
+        								<option value="application/epub+zip">EPUB File</option>
+        								<option value="text/plain">Text File</option>
+    								</select>
+								</div>
+                                <div class="col-12">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-control" name="description" rows="3"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary w-100 py-2">
+                                        <i class="fas fa-save me-2"></i>Add Book
+                                    </button>
+                                </div>
+                                
+                                
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Book Management Section -->
+                <section id="displayBooks" class="mb-5">
+                    <h2 class="mb-4 text-white"><i class="fas fa-book-open me-2"></i>Manage Books</h2>
+                    <div class="card glass-blur">
+						<div class="card-header d-flex justify-content-end align-items-center">
+						            <div class="export-buttons ">
+						                <a th:href="@{/books/report/pdf}" class="btn btn-success btn-sm">
+						                    <i class="fas fa-file-pdf"></i> Export PDF
+						                </a>
+						               
+						            </div>
+						</div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        
+                                        <th>Title</th>
+                                        <th>Author</th>
+                                        <th>Category</th>
+                                        <th>ISBN</th>
+                                        <th>Price</th>
+										<th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="book : ${books}">
+                                    	 
+                                        <td th:text="${book.title}"></td>
+                                        <td th:text="${book.author}"></td>
+                                        <td th:text="${book.category.name}"></td>
+                                        <td th:text="${book.isbn}"></td>
+                                        <td th:text="'₹' + ${book.price}"></td>
+										<td>
+                                            <div class="d-flex gap-2">
+                                                <form th:action="@{/deleteBooks}" method="POST" class="d-inline">
+                                                    <input type="hidden" name="bookId" th:value="${book.id}">
+                                                    <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure?')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                               <form th:action="@{/updateBooks/{bookId}(bookId=${book.id})}" method="post" class="d-inline">
+    												<button type="submit" class="btn btn-edit">
+        												<i class="fas fa-edit"></i>
+    												</button>
+												</form>
+
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Category Management Section -->
+                <section id="addCategory" class="mb-5">
+                    <h2 class="mb-4 text-white"><i class="fas fa-tags me-2"></i>Manage Categories</h2>
+                    <div class="card glass-blur">
+                        <form th:action="@{/add-category}" method="POST" class="mb-4">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Category Name</label>
+                                    <input type="text" class="form-control" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" name="categoryName" required>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-success w-100 py-2">
+                                        <i class="fas fa-plus-circle me-2"></i>Add Category
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        
+						<div class="card-header d-flex justify-content-end align-items-center">
+						            
+						            <div>
+						                <button class="btn btn-primary btn-sm" onclick="printChart()">
+						                    <i class="fas fa-print me-2"></i>Print
+						                </button>
+						                <button class="btn btn-success btn-sm ms-2" onclick="saveChartAsImage()">
+						                    <i class="fas fa-download me-2"></i>Save
+						                </button>
+						            </div>
+						        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        
+                                        <th>Category Name</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="category : ${categories}">
+                                       
+                                        <td th:text="${category.name}"></td>
+                                        <td>
+                                            <form th:action="@{/delete-category}" method="POST" class="d-inline">
+                                                <input type="hidden" name="categoryId" th:value="${category.id}">
+                                                <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- User Management Section -->
+                <section id="displayUsers" class="mb-5">
+                    <h2 class="mb-4 "><i class="fas fa-users me-2"></i>User Management</h2>
+					
+                    <div class="card glass-blur">
+						<!--<div class="card-header d-flex justify-content-end align-items-center">					
+							<form th:action="@{/admin/report/pdf}" method="get" class="d-flex gap-2">
+								<button type="submit" class="btn btn-outline-danger">
+								<i class="fas fa-file-pdf"></i> Export PDF
+							</button>
+							</form>
+						</div>-->
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Mobile Number</th>
+                                    	<th>Book Ordered</th>
+										<th>Book Titles</th>
+										<th>Books in Cart</th>
+										<th>Downloaded Books</th>
+                        				<th>Total Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="user : ${users}">
+                                        
+                                        <td th:text="${user.username}"></td>
+                                        <td th:text="${user.email}"></td>
+                                        <td th:text="${user.mobileno}"></td>
+                                    	<td>                  
+											<span class="text-muted small" th:text="${#lists.size(user.orders)}" ></span>
+                        				</td>
+										<td>
+											<ul>
+										    	<li th:each="order : ${user.orders}" th:text="${order.book.title}"></li>
+										    </ul>
+										</td>
+										<td th:text="${user.cartItems.size()}"></td>
+										<td th:text="${user.downloadedBooks.size()}"></td>
+                        				<td>
+                            					<span th:text="${#aggregates.sum(user.orders.![amount])}"></span>
+                        				</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Status Messages -->
+                <div class="mt-4">
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span th:text="${error}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <div th:if="${message}" class="alert alert-success alert-dismissible fade show">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span th:text="${message}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            </main>
+        </div>
+		
+    </div>
+	<div th:replace="common/footer :: footer"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+	
+</body>
+</html>

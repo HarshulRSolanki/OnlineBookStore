@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>E-Book Store</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2A2F4F;
+            --secondary-color: #917FB3;
+            --accent-color: #E5BEEC;
+            --light-bg: #FDE2F3;
+        }
+
+		body {
+					        background-color: var(--light-bg);
+							background-image:url('/img/free book.jpg'); 
+					        min-height: 100vh;
+					        display: flex;
+							background-size: cover;                 /* makes the image cover the container */
+							background-position: center center;     /* centers the image */
+					        background-repeat: no-repeat;
+							width: 100%; 
+					        flex-direction: column;
+					        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+					}
+					.glass-blur {
+					    background: rgba(255, 255, 255, 0.15); /* slight white tint */
+					    backdrop-filter: blur(10px);           /* the blur effect */
+					    -webkit-backdrop-filter: blur(10px);   /* Safari support */
+					    border-radius: 16px;
+					    border: 1px solid rgba(255, 255, 255, 0.2);
+					}
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 1px;
+            font-size: 1.8rem;
+            color: white !important;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.85) !important;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-color) !important;
+            transform: translateY(-2px);
+        }
+
+        .search-card {
+           
+            border-radius: 20px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.08);
+            padding: 2.5rem;
+            margin-top: -50px;
+        }
+
+        .search-input {
+            border-radius: 12px;
+            padding: 15px 25px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .search-input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(145,127,179,0.2);
+        }
+
+        .btn-search {
+            background: var(--secondary-color);
+            color: white;
+            padding: 15px 35px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-search:hover {
+            transform: translateY(-2px);
+            background: #8067A8;
+            box-shadow: 0 5px 20px rgba(145,127,179,0.3);
+        }
+
+        .book-card {
+            border: none;
+            border-radius: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+           
+            height: 100%;
+        }
+
+        .book-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+        }
+
+        .card-img-top {
+            height: 280px;
+            object-fit: cover;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .card-body {
+            padding: 1.75rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+            height: 60px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .book-meta {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .book-price {
+            font-size: 1.4rem;
+            color: var(--secondary-color);
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+        }
+
+        .btn-cart {
+            background: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cart:hover {
+            background: #8067A8;
+            transform: translateY(-2px);
+        }
+
+        .btn-view {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-view:hover {
+            background: #3A406F;
+            transform: translateY(-2px);
+        }
+
+        .sort-control {
+            max-width: 300px;
+            margin-left: auto;
+        }
+
+        .spinner-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .footer {
+            
+            margin-top: auto;
+            padding: 2rem 0;
+        }
+
+        .empty-state {
+            padding: 4rem;
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: var(--secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .search-card {
+                margin-top: -40px;
+                padding: 1.75rem;
+            }
+            
+            .card-img-top {
+                height: 200px;
+            }
+            
+            .sort-control {
+                max-width: 100%;
+                margin-top: 1rem;
+            }
+        }
+		.btn-download {
+		            background: #28a745;
+		            color: white;
+		            padding: 10px 20px;
+		            border-radius: 8px;
+		            transition: all 0.3s ease;
+		        }
+
+		        .btn-download:hover {
+		            background: #218838;
+		            transform: translateY(-2px);
+		            box-shadow: 0 5px 20px rgba(40,167,69,0.3);
+		        }
+    </style>
+</head>
+<body>
+
+    <div th:replace="common/header :: navbar"></div>
+
+    <main class="container my-5 flex-grow-1 ">
+        <div class="search-card glass-blur">
+            <h1 class="text-center mb-4 display-5 fw-bold text-primary">Discover Digital Treasures</h1>
+            <form method="get" action="/search" onsubmit="showSpinner()">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control search-input" name="title" placeholder="📖 Book Title">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control search-input" name="author" placeholder="✍️ Author Name">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select search-input" name="categoryId">
+                            <option value="" disabled  selected>📚 All Categories</option>
+                            <option th:each="category : ${categories}" th:value="${category.id}" th:text="${category.name}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-search w-100">
+                            <i class="fas fa-search me-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="spinner-container" class="spinner-container">
+            <div class="spinner"></div>
+            <p class="loading-text">Searching for books...</p>
+        </div>
+
+        <div class="mt-3 text-center">
+            <span class="error-message" th:text="${error}"></span>
+            <span class="success-message" th:text="${message}"></span>
+        </div>
+
+        <div class="my-3 glass-blur">
+            <div th:if="${books != null && not #lists.isEmpty(books)}" class="books-grid">
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    <div class="col" th:each="book : ${books}" 
+                         data-title="${book.title}" 
+                         data-price="${book.price}" 
+                         data-date="${#dates.format(book.publishDate, 'yyyy-MM-dd')}">
+                        <div class="card book-card">
+                            <img th:if="${bookImages.containsKey(book.id)}" 
+                                 th:src="${bookImages.get(book.id)}" 
+                                 class="card-img-top" 
+                                 alt="Book cover" 
+                                 onerror="this.onerror=null; this.src='placeholder.jpg';">
+                            <div class="card-body">
+                                <h5 class="card-title" th:text="${book.title}"></h5>
+                                <p class="book-meta">
+                                    <i class="fas fa-user-pen text-secondary"></i>
+                                    <span th:text="${book.author}"></span>
+                                </p>
+                                <p class="book-meta">
+                                    <i class="fas fa-tag text-secondary"></i>
+                                    <span th:text="${book.category.name}"></span>
+                                </p>
+                                <p class="book-price">
+                                    <i class="fa-solid fa-indian-rupee-sign"></i>
+									<span th:if="${book.price == 0}" >Free </span>
+									<span th:unless="${book.price == 0}" th:text="${book.price}"></span>
+                                </p>
+                                <div class="action-btns">
+                                    <form th:action="@{/add/{bookId}(bookId=${book.id})}" method="post" class="d-inline">
+                                        <button type="submit" class="btn-cart">
+                                            <i class="fas fa-cart-plus"></i> 
+                                        </button>
+                                    </form>
+                                    <a th:href="@{/books/view/{id}(id=${book.id})}" class="btn-view">
+                                        <i class="fas fa-eye"></i> 
+                                    </a>
+									<form th:if="${loggedInUser and book.price == 0}"
+									      th:action="@{/download/{id}(id=${book.id})}" method="get">
+									   
+									    <button type="submit" class="btn-download">
+									        <i class="fas fa-download"></i>
+									    </button>
+									</form>
+
+									
+								</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${books != null && #lists.isEmpty(books)}" class="empty-state">
+                <i class="fas fa-exclamation-circle"></i>
+                <h3>No books found matching your criteria</h3>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="common/footer :: footer"></div>
+
+    <script>
+		
+        function showSpinner() {
+            document.getElementById("spinner-container").style.display = "flex";
+        }
+
+        window.addEventListener('load', function() {
+            document.getElementById("spinner-container").style.display = "none";
+        });
+
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                document.getElementById("spinner-container").style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>

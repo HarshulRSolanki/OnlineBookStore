@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>E-Book Store</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   
+</head>
+<body>	
+	<th:block th:fragment="navbar">
+	    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: rgb(0, 0, 0);">
+	        <div class="container">
+	            <!-- Brand Logo -->
+	            <a class="navbar-brand d-flex align-items-center" href="/">
+	                <img src="/img/ebboklg.png" alt="Quickread Logo" 
+	                     class="logo-img me-2" style="height: 45px; ">
+	                <span class="brand-text d-none d-md-inline fs-4 fw-bold" >Quickread</span>
+	            </a>
+
+	            <!-- Mobile Toggle -->
+	            <button class="navbar-toggler border-0" type="button" 
+	                    data-bs-toggle="collapse" data-bs-target="#navbarNav">
+	                <i class="fas fa-bars fa-lg text-white"></i>
+	            </button>
+
+	            <!-- Navigation Items -->
+	            <div class="collapse navbar-collapse" id="navbarNav">
+	                <ul class="navbar-nav ms-auto align-items-center">
+	                    <!-- Main Navigation -->
+	                    <li class="nav-item mx-2">
+	                        <a class="nav-link text-white hover-underline" href="/">
+	                            <i class="fas fa-home me-1"></i> Home
+	                        </a>
+	                    </li>
+	                    <li class="nav-item mx-2">
+	                        <a class="nav-link text-white hover-underline" href="/about">
+	                            <i class="fas fa-info-circle me-1"></i> About
+	                        </a>
+	                    </li>
+	                    <li class="nav-item mx-2">
+	                        <a class="nav-link text-white hover-underline" href="/contact">
+	                            <i class="fas fa-envelope me-1"></i> Contact
+	                        </a>
+	                    </li>
+
+	                    <!-- User Section -->
+	                    <li class="nav-item" th:if="${logoutUser}">
+	                        <a class="btn btn-outline-light ms-3 px-4" href="/login">
+	                            <i class="fas fa-sign-in-alt me-2"></i> Login
+	                        </a>
+	                    </li>
+	                    
+	                    <!-- Logged In User Dropdown -->
+	                    <li class="nav-item dropdown ms-3" th:if="${loggedInUser}">
+	                        <a class="nav-link dropdown-toggle d-flex align-items-center" 
+	                           href="#" role="button" data-bs-toggle="dropdown"
+	                           style="min-width: 120px;">
+	                            <i class="fas fa-user-circle fa-lg me-2"></i>
+	                            <span th:text="${session.loggedInUser.username}"></span>
+	                        </a>
+	                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg py-2" 
+	                            style="min-width: 200px; background-color: #f8f9fa;">
+	                            <li>
+	                                <a class="dropdown-item py-2" 
+	                                   th:href="@{/editProfile(userId=${session.loggedInUser.userid})}">
+	                                    <i class="fas fa-user me-3"></i> Profile
+	                                </a>
+	                            </li>
+	                            <li>
+	                                <a class="dropdown-item py-2" href="/order">
+	                                    <i class="fas fa-download me-3"></i> My Orders
+	                                </a>
+	                            </li>
+								<li>
+								    <a class="dropdown-item py-2" href="/cart">
+								         <i class="fas fa-cart-plus me-3"></i>  Cart
+								    </a>
+								</li>
+								<li><hr class="dropdown-divider my-1"></li>
+	                            <li>
+	                                <form th:action="@{/logout}" method="post" >
+	                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure for logout?')">
+	                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+	                                    </button>
+	                                </form>
+	                            </li>
+	                        </ul>
+	                    </li>
+	                </ul>
+	            </div>
+	        </div>
+	    </nav>
+
+</nav>
+</body>
+</html>

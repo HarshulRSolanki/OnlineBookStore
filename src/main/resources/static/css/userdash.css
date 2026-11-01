@@ -1,0 +1,48 @@
+body {
+    background-color: #f4f4f4;
+}
+
+.navbar {
+    background-color: #343a40;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.card {
+    border-radius: 12px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.card i {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.btn {
+    font-weight: bold;
+    width: 100%;
+    border-radius: 8px;
+}
+
+.footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: #212529;
+    color: white;
+    text-align: center;
+    padding: 10px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        text-align: center;
+    }
+}

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Preview</title>
+</head>
+<body>
+    <h2>Preview: <span th:text="${bookTitle}"></span></h2>
+    <iframe th:src="@{/getpdf/{id}(id=${bookId})}" width="100%" height="600px"></iframe>
+    <br><br>
+    <a th:href="@{/books/purchase/{id}(id=${bookId})}">Buy Full Book</a>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>User Dashboard</title>
+
+    <script>
+        function disableSave() {
+            document.addEventListener('contextmenu', event => event.preventDefault()); // Disable Right-Click
+            document.addEventListener('keydown', function(event) {
+                if (event.ctrlKey && (event.key === 's' || event.key === 'p')) { // Disable Save (Ctrl+S)
+                    event.preventDefault();
+                }
+            });
+        }
+    </script>
+</head>
+<body onload="disableSave()">
+
+    <h1>Your Downloaded Books</h1>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Read</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="book : ${Books}">
+                <td th:text="${book.title}"></td>
+                <td>
+                    <a th:href="@{'/books/read/' + ${book.id}}" target="_blank">
+                        <button>Read</button>
+                    </a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button onclick="window.print()">Print</button> <!-- Allow Printing -->
+</body>
+</html>

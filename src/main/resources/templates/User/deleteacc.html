@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete User Account</title>
+    <script>
+        function deleteUser (userId) {
+            if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                fetch(`/api/users/${userId}`, {
+                    method: 'DELETE',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert("User  account deleted successfully.");
+                        // Optionally redirect or refresh the page
+                    } else {
+                        return response.text().then(text => {
+                            alert("Error: " + text);
+                        });
+                    }
+                })
+                .catch(error => {
+                    alert("Error: " + error.message);
+                });
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Delete Your Account</h1>
+    <button onclick="deleteUser (1)">Delete Account</button> <!-- Replace 1 with the actual user ID -->
+</body>
+</html>

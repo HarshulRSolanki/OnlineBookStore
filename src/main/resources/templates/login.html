@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | E-Book Store</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+        }
+
+		body {
+		           background-color: var(--light-bg);
+				background-image:url('/img/free book.jpg'); 
+		           min-height: 100vh;
+		           display: flex;
+				background-size: cover;                 /* makes the image cover the container */
+				background-position: center center;     /* centers the image */
+		        background-repeat: no-repeat;
+				width: 100%; 
+		           flex-direction: column;
+		           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		       }
+     
+
+        .login-card {
+            width: 100%;
+			background: white;
+            max-width: 400px;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background: var(--secondary-color);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            border-bottom: none;
+        }
+
+        .card-header h2 {
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+            z-index: 4;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52,152,219,0.3);
+        }
+
+        .links-section {
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .links-section a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: block;
+            margin: 0.5rem 0;
+}
+        .links-section a:hover {
+            color: var(--secondary-color);
+        }
+
+        .alert-messages {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        @media (max-width: 576px) {
+            .login-card {
+                margin: 0 1rem;
+            }
+            
+            .alert-messages {
+                top: 60px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+		.glass-blur {
+		    background: rgba(255, 255, 255, 0.15); /* slight white tint */
+		    backdrop-filter: blur(10px);           /* the blur effect */
+		    -webkit-backdrop-filter: blur(10px);   /* Safari support */
+		    border-radius: 16px;
+		    border: 1px solid rgba(255, 255, 255, 0.2);
+		}
+
+    </style>
+</head>
+<body>
+
+	 
+  <div th:replace="common/header :: navbar"></div>
+  
+<!-- Alert Messages -->
+<div class="alert-messages">
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${error}">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${message}">
+        <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="d-flex justify-content-center align-items-center min-vh-100">
+        <div class="login-card ">
+            <div class="card-header ">
+                <h2>Welcome Back</h2>
+            </div>
+            <div class="card-body p-4">
+                <form th:action="@{/login}"  method="post">
+                    <div class="mb-4">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <input type="text" name="username" id="username" 
+                                   class="form-control" 
+                                   placeholder="Enter your username"
+                                   required>
+                            <i class="fas fa-user input-icon"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" name="password" id="password" 
+                                   class="form-control" 
+                                   placeholder="Enter your password"
+                                   required>
+                            <i class="fas fa-lock input-icon"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4"> 
+                    		<input type="hidden" name="targetBookId" th:value="${targetBookId}">
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-login">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </button>
+                    </div>
+
+                    <div class="links-section">
+                        <a href="/userreg" class="text-decoration-none">
+                            <i class="fas fa-user-plus me-2"></i>Create New Account
+                        </a>
+                        <a href="/forgetpwd" class="text-decoration-none">
+                            <i class="fas fa-key me-2"></i>Forgot Password?
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+ <div th:replace="common/footer :: footer"></div>
+
+</body>
+</html>

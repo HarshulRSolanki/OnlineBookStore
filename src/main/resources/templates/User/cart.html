@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+        }
+
+		body {
+		        background-color: var(--light-bg);
+				background-image:url('/img/free book.jpg'); 
+		        min-height: 100vh;
+		        display: flex;
+				background-size: cover;                 /* makes the image cover the container */
+				background-position: center center;     /* centers the image */
+		        background-repeat: no-repeat;
+				width: 100%; 
+		        flex-direction: column;
+		        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		}
+		.glass-blur {
+		    background: rgba(255, 255, 255, 0.15); /* slight white tint */
+		    backdrop-filter: blur(10px);           /* the blur effect */
+		    -webkit-backdrop-filter: blur(10px);   /* Safari support */
+		    border-radius: 16px;
+		    border: 1px solid rgba(255, 255, 255, 0.2);
+		}
+
+
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .cart-item {
+           
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .cart-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .book-cover {
+            width: 100px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 25px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .book-details {
+            flex-grow: 1;
+            margin-right: 20px;
+        }
+
+        .book-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .book-author {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+        }
+
+        .book-category {
+            color: #3498db;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .book-price {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #2ecc71;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 140px;
+        }
+
+        .btn-custom {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-custom i {
+            font-size: 0.9rem;
+        }
+
+        .total-row {
+         
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+			margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .empty-cart i {
+            font-size: 3rem;
+            color: #bdc3c7;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .cart-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .book-cover {
+                margin-bottom: 15px;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div th:replace="common/header :: navbar"></div>
+    
+    <div class="container mt-4 glass-blur ">
+        <section>
+            <h2 class="fw-bold text-dark"><i class="fas fa-cart-plus me-3"></i> Your Shopping Cart</h2>
+            
+            <div class="cart-items glass-blur" th:if="${not cartItems.empty}">
+                <div class="cart-item" th:each="cartItem : ${cartItems}">
+                    <img th:if="${bookImages.containsKey(cartItem.book.id)}" 
+                         th:src="${bookImages.get(cartItem.book.id)}" 
+                         class="book-cover"
+                         alt="Book Cover">
+                    
+                    <div class="book-details">
+                        <div class="book-title" th:text="${cartItem.book.title}"></div>
+                        <div class="book-author" th:text="${cartItem.book.author}"></div>
+                        <div class="book-category" th:text="${cartItem.book.category.name}"></div>
+                        
+                        <div class="mt-2">
+                            <span th:if="${cartItem.book.isDeleted}" class="text-danger">(Currently Unavailable)</span>
+                            <div th:unless="${cartItem.book.isDeleted}">
+                                <span class="book-price">
+                                    ₹<span th:text="${#numbers.formatDecimal(cartItem.book.price, 1, 2)}"></span>
+                                </span>
+                                <span th:if="${cartItem.book.price == 0}" class="badge bg-success ms-2">Free</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <form th:action="@{/delete/{cartId}(cartId=${cartItem.id})}" method="post">
+                            <button type="submit" class="btn btn-danger btn-custom" 
+                                    onclick="return confirm('Remove this item from your cart?')">
+                                <i class="fas fa-trash"></i>
+                                Remove
+                            </button>
+                        </form>
+                        
+                        <div th:if="${cartItem.book.price == 0}">
+                            <form th:action="@{/download/{cartId}(cartId=${cartItem.id})}" method="post">
+                                <button type="submit" class="btn btn-success btn-custom" th:disabled="${cartItems.?[book.isDeleted].size() > 0}">
+                                    <i class="fas fa-download"></i>
+                                    Download
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div th:if="${cartItem.book.price > 0}">
+                            <form th:action="@{/checkout/{bookId}(bookId=${cartItem.book.id})}" method="get">
+                                <button type="submit" class="btn btn-primary btn-custom"
+                                        th:disabled="${cartItems.?[book.isDeleted].size() > 0 }">
+                                    <i class="fas fa-credit-card"></i>
+                                    Checkout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="empty-cart" th:if="${cartItems.empty}">
+                <i class="fas fa-shopping-cart"></i>
+                <h4>Your cart is empty</h4>
+                <p class="text-muted">Browse our collection to add items to your cart</p>
+                <a href="/" class="btn btn-primary mt-3">Continue Shopping</a>
+            </div>
+
+            <div class="total-row glass-blur" th:if="${not cartItems.empty}">
+                <div>
+                    <h4 class="mb-0">Total Amount:</h4>
+                    <small class="text-muted">Inclusive of all charges</small>
+                </div>
+              <div class="text-end">
+                    <h3 class="mb-0 text-success">
+                        ₹<span th:text="${cartTotal != null ? #numbers.formatDecimal(cartTotal, 1, 2) : '0.00'}"></span>
+                    </h3>
+                <!--      <form th:action="@{/checkout-all}" method="post" class="mt-2">
+                        <button type="submit" class="btn btn-primary btn-lg"
+                                th:disabled="${cartItems.?[book.isDeleted].size() > 0}">
+                            <i class="fas fa-shopping-bag me-2"></i>
+                            Checkout All Items
+                        </button>
+                    </form>-->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="footer mt-auto">
+        <div th:replace="common/footer :: footer"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
