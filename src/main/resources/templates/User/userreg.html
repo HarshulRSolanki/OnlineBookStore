@@ -1,265 +1,145 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>User Registration | E-Book Store</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-        }
-		body {
-					        background-color: var(--light-bg);
-							background-image:url('/img/free book.jpg'); 
-					        min-height: 100vh;
-					        display: flex;
-							background-size: cover;                 /* makes the image cover the container */
-							background-position: center center;     /* centers the image */
-					        background-repeat: no-repeat;
-							width: 100%; 
-					        flex-direction: column;
-					        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-					}
-					.glass-blur {
-					    background: rgba(255, 255, 255, 0.15); /* slight white tint */
-					    backdrop-filter: blur(10px);           /* the blur effect */
-					    -webkit-backdrop-filter: blur(10px);   /* Safari support */
-					    border-radius: 16px;
-					    border: 1px solid rgba(255, 255, 255, 0.2);
-					}
-        .registration-card {
-            width: 100%;
-            max-width: 500px;
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account – Quickread Luxury Bookstore</title>
 
-        .registration-card:hover {
-            transform: translateY(-5px);
-        }
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-        .card-header {
-            background: var(--secondary-color);
-            color: white;
-            text-align: center;
-            padding: 2rem;
-            border-bottom: none;
-        }
-
-        .form-control {
-            border-radius: 10px;
-            padding: 12px 20px;
-            border: 2px solid #e0e0e0;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
-        }
-
-        .input-group-icon {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #95a5a6;
-            z-index: 4;
-        }
-
-        .btn-register {
-            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
-            color: white;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52,152,219,0.3);
-        }
-
-        .password-strength {
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 2px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-
-        .strength-bar {
-            height: 100%;
-            width: 0;
-            transition: all 0.3s ease;
-        }
-
-        .social-login {
-            border-top: 1px solid #eee;
-            padding-top: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        @media (max-width: 576px) {
-            .registration-card {
-                margin: 0 1rem;
-                border-radius: 15px;
-            }
-            
-            .card-header {
-                padding: 1.5rem;
-            }
-        }
-    </style>
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
 </head>
 <body>
-	
-	<div th:replace="common/header :: navbar"></div>
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="registration-card glass-blur">
-        <div class="card-header">
-            <h2 class="mb-0">Create Your Account</h2>
-        </div>
-        <div class="card-body p-4">
-            <form action="/userreg" method="post" onsubmit="return validateForm()">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="name" class="form-label">Full Name</label>
-                            <div class="position-relative">
-                                <input type="text" name="name" id="name" 
-                                       class="form-control" 
-                                       placeholder="Enter Your Name"
-                                       required>
-                                <i class="fas fa-user input-group-icon"></i>
-                            </div>
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="auth-split-wrapper">
+        <div class="auth-card-editorial">
+            <!-- Left Hero Panel -->
+            <div class="auth-hero-side">
+                <div class="auth-hero-ornament">Q</div>
+                <div>
+                    <a href="/" class="brand-wrapper text-decoration-none mb-4 d-inline-flex">
+                        <div class="brand-monogram">Q</div>
+                        <div class="brand-text-block">
+                            <span class="brand-name text-white">Quickread</span>
+                            <span class="brand-tagline" style="color: var(--gold-accent);">The Reader's Atelier</span>
                         </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="mobilenumber" class="form-label">Phone Number</label>
-                            <div class="position-relative">
-                                <input type="tel" name="mobilenumber" id="mobilenumber" 
-                                       class="form-control" 
-                                       placeholder="Enter a mobile number"
-                                       pattern="[0-9]{10}"
-                                       required>
-                                <i class="fas fa-phone input-group-icon"></i>
-                            </div>
-                        </div>
-                    </div>
+                    </a>
                 </div>
 
-                <div class="form-group">
-                    <label for="email" class="form-label">Email Address</label>
-                    <div class="position-relative">
-                        <input type="email" name="email" id="email" 
-                               class="form-control" 
-                               placeholder="Enter An Email"
-                               required>
-                        <i class="fas fa-envelope input-group-icon"></i>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <div class="position-relative">
-                        <input type="password" name="password" id="password" 
-                               class="form-control" 
-                               placeholder="Enter a Password"
-                               required
-                               onkeyup="checkPasswordStrength(this.value)">
-                        <i class="fas fa-lock input-group-icon"></i>
-                    </div>
-                    <div class="password-strength">
-                        <div class="strength-bar" id="password-strength-bar"></div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="confirm_password" class="form-label">Confirm Password</label>
-                    <div class="position-relative">
-                        <input type="password" name="confirm_password" id="confirm_password" 
-                               class="form-control" 
-                               placeholder="ReEnter Password"
-                               required>
-                        <i class="fas fa-lock input-group-icon"></i>
-                    </div>
-                
-                </div>
-
-                <div class="d-grid mb-3">
-                    <button type="submit" class="btn btn-register">
-                        <i class="fas fa-user-plus me-2"></i>Create Account
-                    </button>
-                </div>
-
-               
-
-                <div class="text-center mt-4">
-                    <p class="mb-0">Already have an account? 
-                        <a href="/login" class="text-decoration-none fw-bold">Login here</a>
+                <div class="auth-quote-box">
+                    <p class="auth-quote-text">
+                        "Books are a uniquely portable magic."
                     </p>
+                    <span class="auth-quote-author">— Stephen King</span>
                 </div>
 
-                <div class="mt-3 text-center">
-                    <span class="text-danger" th:text="${error}"></span>
-                    <span class="text-success" th:text="${message}"></span>
+                <div class="d-flex align-items-center gap-2 small" style="color: #DFC293;">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>Privacy First &bull; Zero Spam Guarantee</span>
                 </div>
-            </form>
+            </div>
+
+            <!-- Right Form Panel -->
+            <div class="auth-form-side">
+                <div class="auth-form-header">
+                    <span class="section-subtitle-tag mb-1">Begin Your Journey</span>
+                    <h2 class="auth-form-title">Join Quickread</h2>
+                    <p class="auth-form-subtitle">Create your personal reader dossier and library archive.</p>
+                </div>
+
+                <!-- Alert Messages -->
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Registration error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Message</span>
+                </div>
+
+                <!-- Registration Form -->
+                <form th:action="@{/userreg}" method="post" id="registrationForm">
+                    <div class="row g-3">
+                        <!-- Full Name / Username -->
+                        <div class="col-md-6 auth-form-group">
+                            <label for="name" class="auth-form-label">Username</label>
+                            <div class="auth-input-wrapper">
+                                <i class="fas fa-user auth-input-icon"></i>
+                                <input type="text" name="name" id="name" class="auth-input-field" placeholder="Username (3-20 chars)" minlength="3" maxlength="20" required autofocus />
+                            </div>
+                        </div>
+
+                        <!-- Mobile Number -->
+                        <div class="col-md-6 auth-form-group">
+                            <label for="mobilenumber" class="auth-form-label">Mobile Number</label>
+                            <div class="auth-input-wrapper">
+                                <i class="fas fa-phone auth-input-icon"></i>
+                                <input type="tel" name="mobilenumber" id="mobilenumber" class="auth-input-field" placeholder="e.g. 9876543210" minlength="7" maxlength="15" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="auth-form-group">
+                        <label for="email" class="auth-form-label">Email Address</label>
+                        <div class="auth-input-wrapper">
+                            <i class="fas fa-envelope auth-input-icon"></i>
+                            <input type="email" name="email" id="email" class="auth-input-field" placeholder="reader@example.com" required />
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="auth-form-group">
+                        <label for="password" class="auth-form-label">Password</label>
+                        <div class="auth-input-wrapper">
+                            <i class="fas fa-lock auth-input-icon"></i>
+                            <input type="password" name="password" id="password" class="auth-input-field" placeholder="Create a strong password" required />
+                            <button type="button" class="password-toggle-btn" title="Toggle visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="auth-form-group">
+                        <label for="confirm_password" class="auth-form-label">Confirm Password</label>
+                        <div class="auth-input-wrapper">
+                            <i class="fas fa-shield-alt auth-input-icon"></i>
+                            <input type="password" name="confirm_password" id="confirm_password" class="auth-input-field" placeholder="Re-enter password" required />
+                            <button type="button" class="password-toggle-btn" title="Toggle visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-luxury-primary w-100 py-3 mt-3">
+                        <i class="fas fa-user-plus me-2"></i> Register &amp; Verify Email
+                    </button>
+
+                    <!-- Sign In Link -->
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <span class="text-secondary small">Already have an account?</span>
+                        <a href="/login" class="ms-1 fw-bold text-decoration-none" style="color: var(--primary-accent);">
+                            Sign In Here &rarr;
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
-</div>
+    </main>
 
-<div class="footer mt-auto">
-        <div th:replace="common/footer :: footer"></div>
-    </div>
-<script>
-    function checkPasswordStrength(password) {
-        const strengthBar = document.getElementById('password-strength-bar');
-        const strength = {
-            0: {color: '#e74c3c', width: '20%'},
-            1: {color: '#e74c3c', width: '40%'},
-            2: {color: '#f1c40f', width: '60%'},
-            3: {color: '#2ecc71', width: '80%'},
-            4: {color: '#2ecc71', width: '100%'}
-        };
-        
-        let score = 0;
-        if (password.length >= 8) score++;
-        if (password.match(/[A-Z]/)) score++;
-        if (password.match(/[0-9]/)) score++;
-        if (password.match(/[^A-Za-z0-9]/)) score++;
-        
-        strengthBar.style.backgroundColor = strength[score].color;
-        strengthBar.style.width = strength[score].width;
-    }
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
 
-    function validateForm() {
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirm_password').value;
-        const matchText = document.getElementById('password-match');
-        
-        if (password !== confirmPassword) {
-            matchText.textContent = "Passwords do not match!";
-            matchText.style.color = "#e74c3c";
-            return false;
-        }
-        matchText.textContent = "Passwords match!";
-        matchText.style.color = "#2ecc71";
-        return true;
-    }
-</script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
 </body>
 </html>

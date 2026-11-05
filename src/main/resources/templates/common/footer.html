@@ -3,13 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <title>Footer</title>
-    
 </head>
 <body>
-    <!-- Footer Fragment -->
-   <footer th:fragment="footer" style="background-color: rgb(0, 0, 0); color: white; text-align: center; padding: 10px 0; position: relative; bottom: 0%; width: 100%;">
-    	<p>Copywrite © 2025 <strong>Quickread</strong>, All rights reserved.</p>
-   </footer>
+    <!-- Luxury Multi-Column Footer Fragment -->
+    <footer th:fragment="footer" class="luxury-footer">
+        <div class="container">
+            <div class="row g-5">
+                <!-- Col 1: Brand & Philosophy -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="brand-monogram">Q</div>
+                        <div>
+                            <h4 class="footer-brand-title mb-0">Quickread</h4>
+                            <span class="footer-brand-tagline">Fine Literature &amp; Digital Editions</span>
+                        </div>
+                    </div>
+                    <p class="footer-about-text">
+                        A sanctuary for discerning readers and curious minds. Curating extraordinary literature, thought-provoking essays, and essential reference books bound for digital timelessness.
+                    </p>
+                    <div class="footer-social-links">
+                        <a href="https://instagram.com" class="footer-social-btn" title="Instagram" target="_blank" rel="noopener">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="https://twitter.com" class="footer-social-btn" title="Twitter / X" target="_blank" rel="noopener">
+                            <i class="fab fa-x-twitter"></i>
+                        </a>
+                        <a href="https://goodreads.com" class="footer-social-btn" title="Goodreads" target="_blank" rel="noopener">
+                            <i class="fab fa-goodreads-g"></i>
+                        </a>
+                        <a href="https://linkedin.com" class="footer-social-btn" title="LinkedIn" target="_blank" rel="noopener">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
 
+                <!-- Col 2: Navigation Links -->
+                <div class="col-lg-2 col-md-6 col-6">
+                    <h5 class="footer-col-title">Navigation</h5>
+                    <ul class="footer-link-list">
+                        <li><a href="/"><i class="fas fa-angle-right"></i> Home</a></li>
+                        <li><a href="/#curated-books"><i class="fas fa-angle-right"></i> Explore Books</a></li>
+                        <li><a href="/#categories"><i class="fas fa-angle-right"></i> Categories</a></li>
+                        <li><a href="/about"><i class="fas fa-angle-right"></i> Our Story</a></li>
+                        <li><a href="/contact"><i class="fas fa-angle-right"></i> Concierge</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Reading Categories -->
+                <div class="col-lg-2 col-md-6 col-6">
+                    <h5 class="footer-col-title">Curations</h5>
+                    <ul class="footer-link-list">
+                        <li><a href="/search?categoryId=1"><i class="fas fa-angle-right"></i> Fiction</a></li>
+                        <li><a href="/search?categoryId=2"><i class="fas fa-angle-right"></i> Technology</a></li>
+                        <li><a href="/search?categoryId=3"><i class="fas fa-angle-right"></i> Programming</a></li>
+                        <li><a href="/search?categoryId=4"><i class="fas fa-angle-right"></i> Business</a></li>
+                        <li><a href="/search?categoryId=5"><i class="fas fa-angle-right"></i> Science</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 4: Concierge & Customer Care -->
+                <div class="col-lg-4 col-md-6">
+                    <h5 class="footer-col-title">Reader Concierge</h5>
+                    <div class="footer-contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>The Literary Quarter, 42 Bibliophile Avenue, New Delhi, India</span>
+                    </div>
+                    <div class="footer-contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>concierge@quickread-books.com</span>
+                    </div>
+                    <div class="footer-contact-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Encrypted SSL Checkout &amp; Instant Digital Delivery</span>
+                    </div>
+                    <div class="mt-4 pt-2">
+                        <small class="text-uppercase tracking-wider" style="color: var(--gold-accent); font-size: 0.75rem; letter-spacing: 0.14em;">Verified Payment Partners</small>
+                        <div class="d-flex align-items-center gap-3 mt-2" style="color: #DFC293; font-size: 1.5rem;">
+                            <i class="fab fa-cc-stripe" title="Stripe"></i>
+                            <i class="fab fa-cc-visa" title="Visa"></i>
+                            <i class="fab fa-cc-mastercard" title="Mastercard"></i>
+                            <i class="fab fa-cc-apple-pay" title="Apple Pay"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Copyright Bar -->
+            <div class="footer-bottom-bar">
+                <div>
+                    &copy; <span id="current-year">2026</span> <strong>Quickread Books</strong>. All rights reserved. Crafted for lovers of fine literature.
+                </div>
+                <div class="d-flex gap-4">
+                    <a href="/about" class="text-decoration-none" style="color: #A09486;">Privacy Policy</a>
+                    <a href="/about" class="text-decoration-none" style="color: #A09486;">Terms of Service</a>
+                    <a href="/contact" class="text-decoration-none" style="color: #A09486;">Help &amp; FAQ</a>
+                </div>
+            </div>
+        </div>
+        <script>
+            try { document.getElementById('current-year').textContent = new Date().getFullYear(); } catch(e){}
+        </script>
+    </footer>
 </body>
 </html>

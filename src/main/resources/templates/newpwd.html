@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set New Password – Quickread</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5">
+        <div class="auth-single-card">
+            <div class="text-center mb-4">
+                <div class="brand-monogram mx-auto mb-3">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <span class="section-subtitle-tag mb-1">Security Update</span>
+                <h2 class="font-heading fs-2 mb-2">Create New Password</h2>
+                <p class="text-secondary small mb-0">
+                    Establish a secure passphrase for your reader profile.
+                </p>
+            </div>
+
+            <!-- Alerts -->
+            <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                <i class="fas fa-exclamation-circle"></i>
+                <span th:text="${error}">Passwords do not match</span>
+            </div>
+
+            <!-- Form -->
+            <form th:action="@{/newpass}" method="post">
+                <input type="hidden" name="email" th:value="${email}">
+
+                <!-- New Password -->
+                <div class="auth-form-group mb-3">
+                    <label for="new-password" class="auth-form-label">New Password</label>
+                    <div class="auth-input-wrapper">
+                        <i class="fas fa-key auth-input-icon"></i>
+                        <input type="password" name="newPassword" id="new-password" class="auth-input-field" placeholder="Enter new password" required autofocus />
+                        <button type="button" class="password-toggle-btn" title="Toggle visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="auth-form-group mb-4">
+                    <label for="confirm-password" class="auth-form-label">Confirm New Password</label>
+                    <div class="auth-input-wrapper">
+                        <i class="fas fa-shield-alt auth-input-icon"></i>
+                        <input type="password" name="confirmPassword" id="confirm-password" class="auth-input-field" placeholder="Confirm new password" required />
+                        <button type="button" class="password-toggle-btn" title="Toggle visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Requirements Checklist -->
+                <div class="p-3 mb-4 rounded-3 small" style="background: #FAF7F2; border: 1px solid var(--border-color); color: var(--text-secondary);">
+                    <div class="fw-bold text-dark mb-1">Recommended Passphrase Criteria:</div>
+                    <ul class="mb-0 ps-3">
+                        <li>Minimum of 8 characters in length</li>
+                        <li>Mix of upper and lower case letters</li>
+                        <li>Include numbers and special symbols</li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="btn-luxury-primary w-100 py-3">
+                    <i class="fas fa-check me-2"></i> Update Password &amp; Login
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>

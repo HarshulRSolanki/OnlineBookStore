@@ -147,6 +147,9 @@ public class Logincontroller
 
         // 🔹 User Login
         User user = userRepo.findByUsername(username);
+        if (user == null) {
+            user = userRepo.findByEmail(username);
+        }
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
             model.addAttribute("error", "Invalid username or password. Please try again.");
             return "login";

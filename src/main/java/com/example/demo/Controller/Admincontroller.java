@@ -54,6 +54,28 @@ public class Admincontroller
     
     @Autowired
     private OrderRepo orderRepo;
+
+    @org.springframework.web.bind.annotation.InitBinder
+    public void initBinder(org.springframework.web.bind.WebDataBinder binder) {
+        binder.registerCustomEditor(LocalDate.class, new java.beans.PropertyEditorSupport() {
+            @Override
+            public void setAsText(String text) throws IllegalArgumentException {
+                if (text == null || text.trim().isEmpty()) {
+                    setValue(null);
+                    return;
+                }
+                try {
+                    setValue(LocalDate.parse(text.trim(), java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy")));
+                } catch (Exception e1) {
+                    try {
+                        setValue(LocalDate.parse(text.trim(), java.time.format.DateTimeFormatter.ISO_LOCAL_DATE));
+                    } catch (Exception e2) {
+                        throw new IllegalArgumentException("Invalid date format: " + text);
+                    }
+                }
+            }
+        });
+    }
     
     /*
      @GetMapping("/admin/report/pdf")
@@ -217,16 +239,10 @@ public class Admincontroller
         
         
         model.addAttribute("books", books);
-        return "admin/books";
+        return "Admin/books";
     }
     
-    
-    
-    
-    
-    
-    
-    
+  
     @GetMapping("/books/report/pdf")
     public void generateBooksPdfReport(HttpServletResponse response) throws IOException {
         // Set response headers
@@ -304,8 +320,7 @@ public class Admincontroller
     
     @GetMapping("/admindash")
     public String adminDashboard(Model model) 
-    { 
-    	
+    {   	
     	model.addAttribute("categories", categoryRepo.findAll());
         model.addAttribute("books", bookRepo.findAll());
         model.addAttribute("users",userRepo.findAll());

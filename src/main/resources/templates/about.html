@@ -1,195 +1,107 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-	
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Digital Books | Quickread</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --digital-primary: #2c3e50;
-            --digital-accent: #4a90e2;
-        }
-		body {
-					        background-color: var(--light-bg);
-							background-image:url('/img/free book.jpg'); 
-					        min-height: 100vh;
-					        display: flex;
-							background-size: cover;                 /* makes the image cover the container */
-							background-position: center center;     /* centers the image */
-					        background-repeat: no-repeat;
-							width: 100%; 
-					        flex-direction: column;
-					        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-					}
-					.glass-blur {
-					    background: rgba(255, 255, 255, 0.15); /* slight white tint */
-					    backdrop-filter: blur(10px);           /* the blur effect */
-					    -webkit-backdrop-filter: blur(10px);   /* Safari support */
-					    border-radius: 16px;
-					    border: 1px solid rgba(255, 255, 255, 0.2);
-					}
-        .digital-hero {
-           
-            padding: 4rem 0;
-            
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle != null ? pageTitle : 'About Us – Quickread Luxury Bookstore'}">About Us – Quickread</title>
 
-        .feature-card {
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: none;
-            border-radius: 15px;
-        }
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-
-        .device-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1.5rem;
-            padding: 2rem 0;
-        }
-
-        .device-item {
-            text-align: center;
-            padding: 1rem;
-            background: rgba(255,255,255,0.9);
-            border-radius: 10px;
-        }
-
-        .format-badge {
-            background: var(--digital-accent);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            display: inline-block;
-            margin: 0.5rem;
-        }
-
-        .download-progress {
-            height: 8px;
-            border-radius: 4px;
-            background: #eee;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            background: var(--digital-accent);
-            transition: width 0.5s ease;
-        }
-    </style>
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body>
 
-    <div th:replace="common/header :: navbar"></div>
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
 
-    <!-- Digital Books Hero Section -->
-    <section class="digital-hero glass-blur">
-        <div class="container text-center">
-            <h1 class="display-4 mb-3">📚 Digital Book Experience</h1>
-            <p class="lead">Instant access to eBooks</p>
-            <div class="mt-4">
-                <span class="format-badge">EPUB</span>
-                <span class="format-badge">PDF</span>
+    <main class="flex-grow-1">
+
+        <!-- Hero Banner -->
+        <section class="editorial-hero text-center py-5">
+            <div class="container">
+                <span class="section-subtitle-tag">Our Heritage &amp; Ethos</span>
+                <h1 class="hero-title mb-3">The Art of Fine Literature</h1>
+                <p class="hero-description mx-auto mb-0" style="max-width: 650px;">
+                    Quickread was founded on a singular conviction: that extraordinary writing deserves an equally refined digital experience.
+                </p>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Main Content -->
-    <main class="container my-5 flex-grow-1">
-        <div class="row g-4 ">
-            <!-- Digital Features -->
-            <div class="col-md-6 ">
-                <div class="feature-card card h-100 p-4 glass-blur">
-                    <h2><i class="fas fa-bolt text-warning me-2"></i>Instant Access</h2>
-                    <p class="text-muted">Get immediate access to your purchases:
-                        <span class="d-block mt-2">
-                            <span class="download-progress w-100">
-                                <span class="progress-bar" style="width: 100%"></span>
-                            </span>
-                            <small class="text-success">Ready to read!</small>
-                        </span>
-                    </p>
-                    
-                    <h3 class="mt-4"><i class="fas fa-mobile-alt me-2"></i>Read Anywhere</h3>
-                    <div class="device-grid ">
-                        <div class="device-item">
-                            <i class="fas fa-laptop fa-2x mb-2"></i>
-                            <div>Desktop</div>
-                        </div>
-                        <div class="device-item">
-                            <i class="fas fa-tablet-alt fa-2x mb-2"></i>
-                            <div>Tablet</div>
-                        </div>
-                        <div class="device-item">
-                            <i class="fas fa-mobile-alt fa-2x mb-2"></i>
-                            <div>Phone</div>
-                        </div>
-                        <div class="device-item">
-                            <i class="fas fa-book-reader fa-2x mb-2"></i>
-                            <div>eReader</div>
+        <!-- Main Narrative Section -->
+        <section class="editorial-story-section">
+            <div class="container">
+                <div class="row align-items-center g-5 mb-5">
+                    <div class="col-lg-6">
+                        <span class="section-subtitle-tag mb-1">Our Genesis</span>
+                        <h2 class="font-heading fs-1 mb-4">Born from a Passion for Enduring Words</h2>
+                        <p class="text-secondary" style="font-size: 1.05rem; line-height: 1.8;">
+                            In an age of ephemeral content and fractured attention, Quickread stands as a digital sanctuary for slow reading, deep contemplation, and intellectual curiosity. We curate works that stand the test of time—from timeless philosophical dialogues to landmark computer science treatises.
+                        </p>
+                        <p class="text-secondary" style="font-size: 1.05rem; line-height: 1.8;">
+                            Every volume in our catalogue undergoes rigorous curation. We ensure pristine typographical formatting, high-fidelity PDF renderings, and uncompromised reading experiences across every modern device.
+                        </p>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="editorial-story-image-frame">
+                            <img src="/img/Bookbg.jpeg" onerror="this.src='/img/free book.jpg'" alt="Quickread Library Atelier" />
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Service Details -->
-            <div class="col-md-6">
-                <div class="feature-card card h-100 p-4 glass-blur">
-                    <h3>🌟 Digital Benefits</h3>
-                    <ul class="list-unstyled">
-                        <li class="mb-3">
-                            <i class="fas fa-sync-alt text-primary me-2"></i>
-                            Sync across all devices
-                        </li>
-                        <li class="mb-3">
-                            <i class="fas fa-search text-info me-2"></i>
-                            Full-text search
-                        </li>
-                        <li class="mb-3">
-                            <i class="fas fa-cloud-download-alt text-danger me-2"></i>
-                            Offline access
-                        </li>
-                    </ul>
-
-                    <h3 class="mt-4">📖 Reading Features</h3>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="p-3 border rounded text-center">
-                                <i class="fas fa-adjust fa-2x mb-2"></i>
-                                <div>Dark Mode</div>
+                <!-- 3 Pillars Grid -->
+                <div class="row g-4 my-5">
+                    <div class="col-md-4">
+                        <div class="feature-card-editorial p-4">
+                            <div class="feature-icon-circle">
+                                <i class="fas fa-gem"></i>
                             </div>
+                            <h3 class="feature-card-title">Meticulous Curation</h3>
+                            <p class="feature-card-desc">We reject algorithmic clutter in favor of human discernment. Every book is chosen because it informs, challenges, or delights.</p>
                         </div>
-                        <div class="col-6">
-                            <div class="p-3 border rounded text-center">
-                                <i class="fas fa-book-open fa-2x mb-2"></i>
-                                <div>Multi-book</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card-editorial p-4">
+                            <div class="feature-icon-circle">
+                                <i class="fas fa-feather"></i>
                             </div>
+                            <h3 class="feature-card-title">Typographic Reverence</h3>
+                            <p class="feature-card-desc">Digital editions designed with editorial margins, balanced typefaces, and crystal-clear vector rendering for strain-free reading.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card-editorial p-4">
+                            <div class="feature-icon-circle">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <h3 class="feature-card-title">Permanent Ownership</h3>
+                            <p class="feature-card-desc">DRM-friendly, device-agnostic PDF files that belong to you forever. Download anytime, read anywhere, without walled gardens.</p>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- CTA Section -->
-        <div class="text-center mt-5">
-            <a href="/" class="btn btn-primary btn-lg px-5">
-                <i class="fas fa-book-open me-2"></i>Explore Digital Library
-            </a>
-            <div class="mt-3">
-                <small class="text-muted">Supported formats: EPUB, PDF</small>
+                <!-- Quote Breakout -->
+                <div class="p-5 my-5 rounded-4 text-center position-relative" style="background: var(--dark-section); color: #FAF6EF; border: 1px solid var(--gold-accent);">
+                    <div class="brand-monogram mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.4rem;">
+                        <i class="fas fa-quote-left"></i>
+                    </div>
+                    <blockquote class="font-heading fs-3 fst-italic mb-3" style="max-width: 800px; margin: 0 auto; color: #FFFFFF;">
+                        "The reading of all good books is like conversation with the finest men of past centuries."
+                    </blockquote>
+                    <cite class="text-uppercase small" style="color: var(--gold-accent); letter-spacing: 0.16em;">— René Descartes</cite>
+                </div>
             </div>
-        </div>
+        </section>
+
     </main>
 
-    <div class="footer mt-auto">
-        <div th:replace="common/footer :: footer"></div>
-    </div>
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
 </body>
 </html>

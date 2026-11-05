@@ -30,11 +30,20 @@ public class OTPservice
 
     // Send OTP via email
     public void sendOTP(String email, String otp) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Your OTP Code");
-        message.setText("Your OTP for verification is: " + otp + "\nThis OTP is valid for 5 minutes.");
-        mailSender.send(message);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("Your OTP Code");
+            message.setText("Your OTP for verification is: " + otp + "\nThis OTP is valid for 5 minutes.");
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Notice: Could not send OTP email via SMTP (" + e.getMessage() + ")");
+            System.out.println("=================================================");
+            System.out.println("🔑 [QUICKREAD VERIFICATION OTP]");
+            System.out.println("Email: " + email);
+            System.out.println("OTP Code: " + otp);
+            System.out.println("=================================================");
+        }
     }
 
     // Verify OTP for a user

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register New Edition – Quickread Admin</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card p-4 p-md-5 border-0 shadow-md" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-lg);">
+                        
+                        <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                            <div>
+                                <span class="section-subtitle-tag mb-1">Catalog Expansion</span>
+                                <h1 class="font-heading fs-2 mb-0">Register New Book Edition</h1>
+                            </div>
+                            <a href="/admindash" class="btn-luxury-outline py-2 px-3">
+                                <i class="fas fa-arrow-left me-1"></i> Admin Dashboard
+                            </a>
+                        </div>
+
+                        <!-- Alerts -->
+                        <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span th:text="${error}">Error</span>
+                        </div>
+
+                        <!-- Add Book Form -->
+                        <form th:action="@{/addBooks}" method="post" enctype="multipart/form-data">
+                            <div class="row g-4">
+                                <!-- Title -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Book Title</label>
+                                    <input type="text" class="auth-input-field" name="title" required placeholder="e.g. The Great Gatsby" />
+                                </div>
+
+                                <!-- Author -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Author Name</label>
+                                    <input type="text" class="auth-input-field" name="author" required placeholder="e.g. F. Scott Fitzgerald" />
+                                </div>
+
+                                <!-- Category -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Category</label>
+                                    <select class="editorial-select" name="categoryId" required style="padding-left: 1rem;">
+                                        <option value="" disabled selected>Select Category</option>
+                                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                                    </select>
+                                </div>
+
+                                <!-- Language -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Language</label>
+                                    <select class="editorial-select" name="language" required style="padding-left: 1rem;">
+                                        <option value="English" selected>English</option>
+                                        <option value="Hindi">Hindi</option>
+                                        <option value="French">French</option>
+                                        <option value="German">German</option>
+                                        <option value="Sanskrit">Sanskrit</option>
+                                    </select>
+                                </div>
+
+                                <!-- ISBN -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">ISBN Reference</label>
+                                    <input type="text" class="auth-input-field" name="isbn" required placeholder="978-0-123456-47-2" />
+                                </div>
+
+                                <!-- Price -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Price (INR - 0 for Free)</label>
+                                    <input type="number" class="auth-input-field" name="price" required placeholder="499" min="0" />
+                                </div>
+
+                                <!-- Publish Date -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Publication Date</label>
+                                    <input type="date" class="auth-input-field" name="publishDate" required />
+                                </div>
+
+                                <!-- Publisher Name -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Publisher Name</label>
+                                    <input type="text" class="auth-input-field" name="publishername" required placeholder="Quickread Literary Press" />
+                                </div>
+
+                                <!-- PDF Document File -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Book PDF File</label>
+                                    <input type="file" class="form-control" name="file" accept="application/pdf" required />
+                                </div>
+
+                                <!-- Cover Image File -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Cover Artwork Image</label>
+                                    <input type="file" class="form-control" name="coverImage" accept="image/*" required />
+                                </div>
+
+                                <!-- Description -->
+                                <div class="col-12 auth-form-group">
+                                    <label class="auth-form-label">Editorial Synopsis &amp; Description</label>
+                                    <textarea class="auth-input-field" name="description" rows="5" placeholder="Enter detailed synopsis, literary themes, and edition notes..." required style="padding-left: 1rem;"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mt-5 pt-3 border-top">
+                                <a href="/admindash" class="btn-luxury-outline py-2 px-3">
+                                    <i class="fas fa-arrow-left me-1"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn-luxury-primary py-2 px-4">
+                                    <i class="fas fa-plus-circle me-2"></i> Publish Edition
+                                </button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>

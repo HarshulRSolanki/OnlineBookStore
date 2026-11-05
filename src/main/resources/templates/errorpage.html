@@ -1,21 +1,48 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Error Encountered – Quickread</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
 </head>
 <body>
-	<form action="/error" method="get">
-    <div class="container mt-5">
-        <h2 class="text-danger">An Error Occurred</h2>
-        <div class="alert alert-danger" role="alert">
-            <p th:text="${errorMessage}"/>
+
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5">
+        <div class="empty-state-card">
+            <div class="empty-state-icon" style="color: var(--danger-accent); background: #FDF2F2; border-color: #E8B5B5;">
+                <i class="fas fa-compass-drafting"></i>
+            </div>
+            <span class="section-subtitle-tag text-danger mb-1">Unforeseen Anomaly</span>
+            <h1 class="font-heading fs-1 mb-3">Literary Detour</h1>
+            <p class="text-secondary mb-4" style="max-width: 480px; margin: 0 auto;" th:text="${errorMessage != null ? errorMessage : 'The requested page or volume could not be accessed at this moment.'}">
+                Something went wrong. Please return to the reading foyer or contact our concierge.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="/" class="btn-luxury-primary py-3 px-4">
+                    <i class="fas fa-home me-2"></i> Return to Collection
+                </a>
+                <a href="/contact" class="btn-luxury-outline py-3 px-4">
+                    <i class="fas fa-headset me-2"></i> Reader Concierge
+                </a>
+            </div>
         </div>
-        <a href="/" class="btn btn-primary">Go Back</a>
-    </div>
-    </form>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
 </body>
 </html>

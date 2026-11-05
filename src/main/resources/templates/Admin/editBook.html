@@ -1,149 +1,136 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <title>Edit Book</title>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-	    
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-		body {
-		        background-color: var(--light-bg);
-				background-image:url('/img/free book.jpg'); 
-		        min-height: 100vh;
-		        display: flex;
-				background-size: cover;                 /* makes the image cover the container */
-				background-position: center center;     /* centers the image */
-		        background-repeat: no-repeat;
-				width: 100%; 
-		           flex-direction: column;
-		           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-		       }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Edit ' + ${book.title} + ' – Quickread Admin'">Edit Book – Quickread</title>
 
-		
-        .card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .btn-warning {
-            background-color: rgb(255, 255, 0);
-            border: none;
-        }
-        .btn-warning:hover {
-            background-color: rgb(255, 255, 128);
-        }
-        .cover-image {
-            max-width: 200px; /* Set a max width for the cover image */
-            margin-bottom: 20px; /* Space below the image */
-        }
-        .error-message {
-            margin-top: 10px;
-            color: #dc3545; /* Bootstrap danger color */
-        }
-        .form-group label {
-            font-weight: bold; /* Make labels bold */
-        }
-		.glass-blur {
-		    background: rgba(255, 255, 255, 0.15); /* slight white tint */
-		    backdrop-filter: blur(10px);           /* the blur effect */
-		    -webkit-backdrop-filter: blur(10px);   /* Safari support */
-		    border-radius: 16px;
-		    border: 1px solid rgba(255, 255, 255, 0.2);
-		}
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    </style>
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
 </head>
-<body >
-	<header>
-	<div th:replace="common/header :: navbar"></div>
-	</header>
-    <div class="container">
-        <h1 class="mb-4 text-center fw-bold text-light">Edit Book</h1>
+<body>
 
-        <div class="card p-4 glass-blur fw-bold text-dark">
-            <form th:action="@{/update/{bookId}(bookId=${book.id})}" method="post" enctype="multipart/form-data">
-                <input type="hidden" th:value="${book.id}" name="bookId" />
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
 
-                <div class="form-group">
-                    <label for="title">Title:</label>
-                    <input type="text" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" id="title" name="title" class="form-control" th:value="${book.title}" required />
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card p-4 p-md-5 border-0 shadow-md" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-lg);">
+                        <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                            <div>
+                                <span class="section-subtitle-tag mb-1">Catalog Curation</span>
+                                <h1 class="font-heading fs-2 mb-0">Modify Book Edition</h1>
+                            </div>
+                            <a href="/admindash" class="btn-luxury-outline py-2 px-3">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                            </a>
+                        </div>
+
+                        <!-- Update Form -->
+                        <form th:action="@{/update/{bookId}(bookId=${book.id})}" method="post" enctype="multipart/form-data">
+                            <input type="hidden" th:value="${book.id}" name="bookId" />
+
+                            <div class="row g-4">
+                                <!-- Title -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="title" class="auth-form-label">Title</label>
+                                    <input type="text" id="title" name="title" class="auth-input-field" th:value="${book.title}" required />
+                                </div>
+
+                                <!-- Author -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="author" class="auth-form-label">Author</label>
+                                    <input type="text" id="author" name="author" class="auth-input-field" th:value="${book.author}" required />
+                                </div>
+
+                                <!-- Category -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="category" class="auth-form-label">Category</label>
+                                    <select id="category" name="category" class="editorial-select" required style="padding-left: 1rem;">
+                                        <option th:each="cat : ${categories}" 
+                                                th:value="${cat.id}" 
+                                                th:text="${cat.name}" 
+                                                th:selected="${cat.id == book.category.id}"></option>
+                                    </select>
+                                </div>
+
+                                <!-- ISBN -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="isbn" class="auth-form-label">ISBN Reference</label>
+                                    <input type="text" id="isbn" name="isbn" class="auth-input-field" th:value="${book.isbn}" required />
+                                </div>
+
+                                <!-- Price -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="price" class="auth-form-label">Price (INR)</label>
+                                    <input type="number" id="price" name="price" class="auth-input-field" th:value="${book.price}" required min="0" />
+                                </div>
+
+                                <!-- Language -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="language" class="auth-form-label">Language</label>
+                                    <input type="text" id="language" name="language" class="auth-input-field" th:value="${book.language}" />
+                                </div>
+
+                                <!-- Publisher Name -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="publishername" class="auth-form-label">Publisher Name</label>
+                                    <input type="text" id="publishername" name="publishername" class="auth-input-field" th:value="${book.publishername}" />
+                                </div>
+
+                                <!-- Publish Date -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="publishDate" class="auth-form-label">Publish Date (dd-MM-yyyy)</label>
+                                    <input type="date" id="publishDate" name="publishDate" class="auth-input-field" th:value="${book.publishDate}" />
+                                </div>
+
+                                <!-- Optional New Cover Image -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Replace Cover Artwork (Optional)</label>
+                                    <input type="file" name="coverImage" accept="image/*" class="form-control" />
+                                    <small class="text-muted">Leave blank to retain current cover.</small>
+                                </div>
+
+                                <!-- Optional New PDF -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Replace PDF File (Optional)</label>
+                                    <input type="file" name="file" accept="application/pdf" class="form-control" />
+                                    <small class="text-muted">Leave blank to retain current digital file.</small>
+                                </div>
+
+                                <!-- Description -->
+                                <div class="col-12 auth-form-group">
+                                    <label for="description" class="auth-form-label">Synopsis &amp; Description</label>
+                                    <textarea id="description" name="description" rows="5" class="auth-input-field" th:text="${book.description}" style="padding-left: 1rem;"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mt-5 pt-3 border-top">
+                                <a href="/admindash" class="btn-luxury-outline py-2 px-3">
+                                    <i class="fas fa-times me-1"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn-luxury-primary py-2 px-4">
+                                    <i class="fas fa-check me-2"></i> Save Changes to Edition
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="author">Author:</label>
-                    <input type="text" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" id="author" name="author" class="form-control" th:value="${book.author}" required />
-                </div>
-
-                <div class="form-group">
-                    <label for="category">Category:</label>
-                    <select id="category" name="category" class="form-control" required>
-                        <option th:each="category : ${categories}" 
-                                th:value="${category.id}" 
-                                th:text="${category.name}" 
-                                th:selected="${category.id == book.category.id}"></option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Upload New Cover Image (Optional)</label>
-                    <input type="file" name="coverImage" accept="image/*" class="form-control-file">
-                </div>
-
-                <div class="form-group">
-                    <label>Upload New PDF File (Optional)</label>
-                    <input type="file" name="file" accept="application/pdf" class="form-control-file">
-                </div>
-
-                <div class="form-group">
-                    <label for="isbn">ISBN:</label>
-                    <input type="text" id="isbn" name="isbn" class="form-control" th:value="${book.isbn}" required />
-                </div>
-
-                <div class="form-group">
-                    <label for="description">Description:</label>
-                    <textarea id="description" name="description" class="form-control" required th:text="${book.description}"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="price">Price:</label>
-                    <input type="number" id="price" name="price" class="form-control" th:value="${book.price}" required />
-                </div>
-				
-				<div class="form-group">
-				    <label class="form-label">Language</label>
-				    <select class="form-select" name="language" th:value="${book.language}">
-				    	<option value="" disabled selected>Select language</option>
-				        <option value="English">English</option>
-				        <option value="Hindi">Hindi</option>
-				    </select>
-				</div>
-				
-				<div class="form-group">
-					<label class="form-label">Publishing Date</label>
-					<input type="date" class="form-control" name="publishDate" th:value="${book.publishDate}">
-				</div>
-				
-				<div class="form-group">
-					<label class="form-label">Publisher Name</label>
-					<input type="text" class="form-control" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" name="publishername" th:value="${book.publishername}" >
-				</div>
-				
-                <button type="submit" class="btn btn-primary w-100">Update Book</button>
-            </form>
-
-            <div th:if="${error}" class="error-message">
-                <p th:text="${error}"></p>
             </div>
         </div>
-    </div>
-	<div class="footer mt-auto">
-	<div th:replace="common/footer :: footer"></div>
-	</div>
-    <!-- Bootstrap JS and dependencies (optional) -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
 </body>
 </html>

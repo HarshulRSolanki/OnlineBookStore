@@ -137,6 +137,11 @@ public class Usercontroller
 	    if (userRepo.existsByEmail(email)) {
 	        model.addAttribute("error", "Email already registered.");
 	        return "User/userreg";
+	    }
+
+	    if (userRepo.findByUsername(name) != null) {
+	        model.addAttribute("error", "Username is already taken. Please choose another.");
+	        return "User/userreg";
 	    }	    
 	    
 	    user = new User();

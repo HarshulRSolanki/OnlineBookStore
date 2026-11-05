@@ -3,260 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Cart</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-        }
+    <title>Shopping Cart – Quickread Luxury Bookstore</title>
 
-		body {
-		        background-color: var(--light-bg);
-				background-image:url('/img/free book.jpg'); 
-		        min-height: 100vh;
-		        display: flex;
-				background-size: cover;                 /* makes the image cover the container */
-				background-position: center center;     /* centers the image */
-		        background-repeat: no-repeat;
-				width: 100%; 
-		        flex-direction: column;
-		        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-		}
-		.glass-blur {
-		    background: rgba(255, 255, 255, 0.15); /* slight white tint */
-		    backdrop-filter: blur(10px);           /* the blur effect */
-		    -webkit-backdrop-filter: blur(10px);   /* Safari support */
-		    border-radius: 16px;
-		    border: 1px solid rgba(255, 255, 255, 0.2);
-		}
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-
-
-        h2 {
-            color: #2c3e50;
-            border-bottom: 3px solid #3498db;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        .cart-item {
-           
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .cart-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .book-cover {
-            width: 100px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-right: 25px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
-        .book-details {
-            flex-grow: 1;
-            margin-right: 20px;
-        }
-
-        .book-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: 5px;
-        }
-
-        .book-author {
-            color: #6c757d;
-            font-size: 0.95rem;
-            margin-bottom: 3px;
-        }
-
-        .book-category {
-            color: #3498db;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-
-        .book-price {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #2ecc71;
-        }
-
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            min-width: 140px;
-        }
-
-        .btn-custom {
-            padding: 8px 15px;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-custom i {
-            font-size: 0.9rem;
-        }
-
-        .total-row {
-         
-            padding: 20px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-			margin-bottom: 30px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .empty-cart {
-            text-align: center;
-            padding: 40px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .empty-cart i {
-            font-size: 3rem;
-            color: #bdc3c7;
-            margin-bottom: 15px;
-        }
-
-        @media (max-width: 768px) {
-            .cart-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .book-cover {
-                margin-bottom: 15px;
-            }
-            
-            .action-buttons {
-                width: 100%;
-                flex-direction: row;
-                justify-content: flex-end;
-            }
-        }
-    </style>
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
 </head>
 <body>
 
-    <div th:replace="common/header :: navbar"></div>
-    
-    <div class="container mt-4 glass-blur ">
-        <section>
-            <h2 class="fw-bold text-dark"><i class="fas fa-cart-plus me-3"></i> Your Shopping Cart</h2>
-            
-            <div class="cart-items glass-blur" th:if="${not cartItems.empty}">
-                <div class="cart-item" th:each="cartItem : ${cartItems}">
-                    <img th:if="${bookImages.containsKey(cartItem.book.id)}" 
-                         th:src="${bookImages.get(cartItem.book.id)}" 
-                         class="book-cover"
-                         alt="Book Cover">
-                    
-                    <div class="book-details">
-                        <div class="book-title" th:text="${cartItem.book.title}"></div>
-                        <div class="book-author" th:text="${cartItem.book.author}"></div>
-                        <div class="book-category" th:text="${cartItem.book.category.name}"></div>
-                        
-                        <div class="mt-2">
-                            <span th:if="${cartItem.book.isDeleted}" class="text-danger">(Currently Unavailable)</span>
-                            <div th:unless="${cartItem.book.isDeleted}">
-                                <span class="book-price">
-                                    ₹<span th:text="${#numbers.formatDecimal(cartItem.book.price, 1, 2)}"></span>
-                                </span>
-                                <span th:if="${cartItem.book.price == 0}" class="badge bg-success ms-2">Free</span>
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+
+            <!-- Page Title -->
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div>
+                    <span class="section-subtitle-tag mb-1">Personal Selection</span>
+                    <h1 class="font-heading fs-2 mb-0">Your Reading Cart</h1>
+                </div>
+                <a href="/" class="btn-luxury-outline py-2 px-3">
+                    <i class="fas fa-arrow-left me-2"></i> Continue Exploring
+                </a>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${error != null or message != null}" class="mb-4">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Message</span>
+                </div>
+            </div>
+
+            <!-- Cart Content (When items exist) -->
+            <div th:if="${cartItems != null and not cartItems.empty}" class="row g-5">
+                <!-- Cart Items List (Left Column) -->
+                <div class="col-lg-8">
+                    <div class="cart-table-card">
+                        <div class="cart-item-row" th:each="cartItem : ${cartItems}">
+                            <!-- Thumbnail -->
+                            <img th:if="${bookImages != null and bookImages.containsKey(cartItem.book.id)}" 
+                                 th:src="${bookImages.get(cartItem.book.id)}" 
+                                 class="cart-item-thumb" 
+                                 alt="Book cover"
+                                 onerror="this.onerror=null; this.src='/img/free book.jpg';" />
+                            <img th:unless="${bookImages != null and bookImages.containsKey(cartItem.book.id)}"
+                                 src="/img/free book.jpg" 
+                                 class="cart-item-thumb" 
+                                 alt="Default cover" />
+
+                            <!-- Info -->
+                            <div class="cart-item-info">
+                                <span class="badge mb-2" style="background-color: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);"
+                                      th:text="${cartItem.book.category != null ? cartItem.book.category.name : 'Edition'}">Category</span>
+                                <h3 class="cart-item-title">
+                                    <a th:href="@{/books/view/{id}(id=${cartItem.book.id})}" th:text="${cartItem.book.title}">Book Title</a>
+                                </h3>
+                                <div class="cart-item-author" th:text="${cartItem.book.author}">Author Name</div>
+
+                                <!-- Status & Price -->
+                                <div class="mt-2">
+                                    <span th:if="${cartItem.book.isDeleted}" class="badge bg-danger">Currently Unavailable</span>
+                                    <div th:unless="${cartItem.book.isDeleted}">
+                                        <span class="cart-item-price" th:if="${cartItem.book.price > 0}">
+                                            ₹<span th:text="${#numbers.formatDecimal(cartItem.book.price, 1, 2)}">299.00</span>
+                                        </span>
+                                        <span class="badge bg-success" th:if="${cartItem.book.price == 0}">Free Edition</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="cart-item-actions">
+                                <!-- Remove from Cart -->
+                                <form th:action="@{/delete/{cartId}(cartId=${cartItem.id})}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove Volume" onclick="return confirm('Remove this volume from your cart?')">
+                                        <i class="fas fa-trash-can"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Free: Download Now -->
+                                <div th:if="${cartItem.book.price == 0}">
+                                    <form th:action="@{/download/{cartId}(cartId=${cartItem.id})}" method="post">
+                                        <button type="submit" class="btn btn-success btn-sm px-3" style="background-color: var(--success-accent); border: none;">
+                                            <i class="fas fa-download me-1"></i> Download
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- Paid: Individual Stripe Checkout -->
+                                <div th:if="${cartItem.book.price > 0}">
+                                    <form th:action="@{/checkout/{bookId}(bookId=${cartItem.book.id})}" method="get">
+                                        <button type="submit" class="btn-luxury-primary py-2 px-3" style="font-size: 0.85rem;" th:disabled="${cartItem.book.isDeleted}">
+                                            <i class="fas fa-credit-card me-1"></i> Pay
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="action-buttons">
-                        <form th:action="@{/delete/{cartId}(cartId=${cartItem.id})}" method="post">
-                            <button type="submit" class="btn btn-danger btn-custom" 
-                                    onclick="return confirm('Remove this item from your cart?')">
-                                <i class="fas fa-trash"></i>
-                                Remove
-                            </button>
-                        </form>
-                        
-                        <div th:if="${cartItem.book.price == 0}">
-                            <form th:action="@{/download/{cartId}(cartId=${cartItem.id})}" method="post">
-                                <button type="submit" class="btn btn-success btn-custom" th:disabled="${cartItems.?[book.isDeleted].size() > 0}">
-                                    <i class="fas fa-download"></i>
-                                    Download
-                                </button>
-                            </form>
+
+                    <!-- Security & Format Note -->
+                    <div class="p-4 rounded-3 d-flex align-items-center gap-3" style="background: #FAF7F2; border: 1px solid var(--border-color);">
+                        <i class="fas fa-shield-alt fa-2x" style="color: var(--gold-accent);"></i>
+                        <div>
+                            <strong class="d-block text-dark">Verified Stripe Checkout</strong>
+                            <span class="small text-secondary">Your payment details are processed with 256-bit SSL encryption. We never store card credentials on our servers.</span>
                         </div>
-                        
-                        <div th:if="${cartItem.book.price > 0}">
-                            <form th:action="@{/checkout/{bookId}(bookId=${cartItem.book.id})}" method="get">
-                                <button type="submit" class="btn btn-primary btn-custom"
-                                        th:disabled="${cartItems.?[book.isDeleted].size() > 0 }">
-                                    <i class="fas fa-credit-card"></i>
-                                    Checkout
+                    </div>
+                </div>
+
+                <!-- Order Summary Card (Right Column) -->
+                <div class="col-lg-4">
+                    <div class="order-summary-card">
+                        <h2 class="summary-heading">Order Summary</h2>
+
+                        <div class="summary-row">
+                            <span>Selected Volumes</span>
+                            <span class="fw-bold" th:text="${cartItems.size()}">1</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Digital Delivery</span>
+                            <span class="text-success fw-bold">FREE (Instant)</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Applicable Taxes</span>
+                            <span class="text-muted">Included</span>
+                        </div>
+
+                        <div class="summary-row total-row">
+                            <span>Total Due</span>
+                            <span class="total-amount">
+                                ₹<span th:text="${cartTotal != null ? #numbers.formatDecimal(cartTotal, 1, 2) : '0.00'}">0.00</span>
+                            </span>
+                        </div>
+
+                        <!-- Checkout Button -->
+                        <div class="d-grid gap-2">
+                            <!-- Multi-Book Stripe Checkout Form -->
+                            <form th:action="@{/checkout-all}" method="post">
+                                <button type="submit" class="btn-luxury-primary w-100 py-3" th:disabled="${cartTotal == 0}">
+                                    <i class="fas fa-lock me-2"></i> Proceed to Stripe Checkout
                                 </button>
                             </form>
+                            <a href="/" class="btn-luxury-outline py-2 text-center mt-2">
+                                <i class="fas fa-plus me-1"></i> Add More Books
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="empty-cart" th:if="${cartItems.empty}">
-                <i class="fas fa-shopping-cart"></i>
-                <h4>Your cart is empty</h4>
-                <p class="text-muted">Browse our collection to add items to your cart</p>
-                <a href="/" class="btn btn-primary mt-3">Continue Shopping</a>
+            <!-- Empty Cart State -->
+            <div th:if="${cartItems == null or cartItems.empty}" class="empty-state-card">
+                <div class="empty-state-icon">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+                <h2 class="font-heading mb-2">Your Reading Cart is Empty</h2>
+                <p class="text-secondary mb-4" style="max-width: 440px; margin: 0 auto;">
+                    You haven't reserved any volumes yet. Discover our curated collection of literature, technical monographs, and rare editions.
+                </p>
+                <a href="/" class="btn-luxury-primary py-3 px-4">
+                    <i class="fas fa-compass me-2"></i> Explore Curated Books
+                </a>
             </div>
 
-            <div class="total-row glass-blur" th:if="${not cartItems.empty}">
-                <div>
-                    <h4 class="mb-0">Total Amount:</h4>
-                    <small class="text-muted">Inclusive of all charges</small>
-                </div>
-              <div class="text-end">
-                    <h3 class="mb-0 text-success">
-                        ₹<span th:text="${cartTotal != null ? #numbers.formatDecimal(cartTotal, 1, 2) : '0.00'}"></span>
-                    </h3>
-                <!--      <form th:action="@{/checkout-all}" method="post" class="mt-2">
-                        <button type="submit" class="btn btn-primary btn-lg"
-                                th:disabled="${cartItems.?[book.isDeleted].size() > 0}">
-                            <i class="fas fa-shopping-bag me-2"></i>
-                            Checkout All Items
-                        </button>
-                    </form>-->
-                </div>
-            </div>
-        </section>
-    </div>
+        </div>
+    </main>
 
-    <div class="footer mt-auto">
-        <div th:replace="common/footer :: footer"></div>
-    </div>
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
 </body>
 </html>

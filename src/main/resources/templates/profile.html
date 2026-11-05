@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reader Profile – Quickread Luxury Bookstore</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <!-- Profile Card -->
+                    <div class="card border-0 shadow-md p-4 p-md-5" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-lg);">
+                        <!-- Header -->
+                        <div class="d-flex align-items-center gap-4 mb-4 pb-4 border-bottom">
+                            <div class="brand-monogram" style="width: 64px; height: 64px; font-size: 1.8rem;">
+                                <span th:text="${user != null and user.username != null ? #strings.substring(user.username, 0, 1).toUpperCase() : 'U'}">U</span>
+                            </div>
+                            <div>
+                                <span class="section-subtitle-tag mb-1">Reader Dossier</span>
+                                <h1 class="font-heading fs-2 mb-0" th:text="${user != null ? user.username : 'Reader Profile'}">Profile Settings</h1>
+                                <small class="text-muted" th:text="${user != null ? user.email : ''}">user@domain.com</small>
+                            </div>
+                        </div>
+
+                        <!-- Update Profile Form -->
+                        <form th:action="@{/updateProfile/{userId}(userId=${user.userid})}" method="post">
+                            <div class="row g-4">
+                                <!-- Username -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="username" class="auth-form-label">Username</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fas fa-user auth-input-icon"></i>
+                                        <input type="text" class="auth-input-field" id="username" name="username" th:value="${user.username}" required />
+                                    </div>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="email" class="auth-form-label">Email Address</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fas fa-envelope auth-input-icon"></i>
+                                        <input type="email" class="auth-input-field" id="email" name="email" th:value="${user.email}" required />
+                                    </div>
+                                </div>
+
+                                <!-- Mobile Number -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="mobile" class="auth-form-label">Contact Number</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fas fa-phone auth-input-icon"></i>
+                                        <input type="tel" class="auth-input-field" id="mobile" name="mobile" th:value="${user.mobileno}" pattern="[0-9]{10}" maxlength="10" />
+                                    </div>
+                                    <small class="text-muted">10-digit mobile number for order notifications.</small>
+                                </div>
+
+                                <!-- Password (Optional) -->
+                                <div class="col-md-6 auth-form-group">
+                                    <label for="password" class="auth-form-label">Update Password (Optional)</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fas fa-lock auth-input-icon"></i>
+                                        <input type="password" class="auth-input-field" id="password" name="password" placeholder="Leave blank to retain current" />
+                                    </div>
+                                    <small class="text-muted">Leave blank if you do not wish to modify it.</small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mt-5 pt-3 border-top">
+                                <a href="/" class="btn-luxury-outline py-2 px-3">
+                                    <i class="fas fa-arrow-left me-1"></i> Return Home
+                                </a>
+                                <button type="submit" class="btn-luxury-primary py-2 px-4">
+                                    <i class="fas fa-save me-2"></i> Save Profile Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>

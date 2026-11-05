@@ -1,325 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - E-Library</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --success-color: #27ae60;
-        }
-		body {
-		           
-				background-image:url('/img/free book.jpg'); 
-		           min-height: 100vh;
-		           display: flex;
-				background-size: cover;                 /* makes the image cover the container */
-				background-position: center center;     /* centers the image */
-		        background-repeat: no-repeat;
-				width: 100%; 
-		           flex-direction: column;
-		           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-		       }
+    <title>Curatorial Administration – Quickread Luxury Bookstore</title>
 
-			   .glass-blur {
-			       background: rgba(255, 255, 255, 0.15); /* slight white tint */
-			       backdrop-filter: blur(10px);           /* the blur effect */
-			       -webkit-backdrop-filter: blur(10px);   /* Safari support */
-			       border-radius: 16px;
-			       border: 1px solid rgba(255, 255, 255, 0.2);
-			   }
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-
-       nav
-	   {
-		background: black;
-	   }
-        
-       h2
-       {
-       		margin-left: 250px;
-			align-self: center;
-       }
-
-        .sidebar 
-        {
-        	top:67px;
-			background: white;
-            height: calc(100vh - 56px);
-            position: fixed;
-            width: 240px;
-            padding: 1rem;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-        }
-
-        .sidebar h3 {
-            color: var(--primary-color);
-            font-weight: 600;
-            padding: 1rem 0;
-            border-bottom: 2px solid #eee;
-        }
-
-        .sidebar .nav-item {
-            margin: 0.5rem 0;
-        }
-
-        .sidebar .nav-item a {
-            color: #666;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: block;
-        }
-
-        .sidebar .nav-item a:hover,
-        .sidebar .nav-item a.active {
-            background: var(--secondary-color);
-            color: white !important;
-        }
-
-        main {
-           
-            padding: 2rem;
-            
-            min-height: calc(100vh - 56px);
-            
-            
-        }
-
-		
-        .card {
-        	margin-left:250px;
-            border: thick;
-			background: #e0e0e0;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            padding: 1.5rem;
-            width: 80%;
-            
-        }
-
-        .form-control {
-        	
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            border: 2px solid #e0e0e0;
-            
-        }
-
-        .form-control:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
-        }
-        
-        
-
-        .table thead {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .btn-action {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-edit {
-            background: var(--secondary-color);
-            color: white;
-        }
-
-        .btn-delete {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: rgba(52,152,219,0.05);
-        }
-
-    </style>
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-			<a class="navbar-brand d-flex align-items-center text-white" href="/">
-				<img src="/img/ebboklg.png" alt="Quickread Logo" class="logo-img me-2" style="height: 40px;">
-				<span class="d-none d-md-inline"> <legend>  Quickread </legend></span>
-			</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item"><a class="nav-link " href="/admindash"><i class="fas fa-home me-1"></i> Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/about"><i class="fas fa-info-circle me-1"></i> About</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/contact"><i class="fas fa-envelope me-1"></i> Contact</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link btn btn-danger text-white px-3" href="/logout">
-                            <i class="fas fa-sign-out-alt me-2"></i>Logout
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-	  
-    <div class="container-fluid ">
-        <div class="row ">
-            <nav class="sidebar glass-blur">
-                <h3><i class="fas fa-cogs me-2"></i>Admin Panel</h3>
-                <div class="nav flex-column">
-                    <div class="nav-item">
-                        <a href="#addBook" class="active"><i class="fas fa-plus-circle me-2"></i>Add Book</a>
+
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+
+            <!-- Admin Header -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="brand-monogram" style="width: 52px; height: 52px; font-size: 1.4rem;">
+                        <i class="fas fa-shield-alt"></i>
                     </div>
-                    <div class="nav-item">
-                        <a href="#updateBook"><i class="fas fa-edit me-2"></i>Update Book</a>
-                    </div>
-                    <div class="nav-item">
-                        <a href="#addCategory"><i class="fas fa-tags me-2"></i>Categories</a>
-                    </div>
-                    <div class="nav-item">
-                        <a href="#displayUsers"><i class="fas fa-users me-2"></i>Users</a>
+                    <div>
+                        <span class="section-subtitle-tag mb-0">Master Console</span>
+                        <h1 class="font-heading fs-2 mb-0">Curatorial Administration</h1>
                     </div>
                 </div>
-            </nav>
 
-            <main >
-                <!-- Add Book Section -->
-                <section id="addBook" class="mb-5">
-                   <h2 class="mb-4 text-white"><i class="fas fa-plus-circle me-2"></i>Add New Book</h2>
-                    <div class="card glass-blur">
-                     
-                        <form th:action="@{/addBooks}" method="POST" enctype="multipart/form-data">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Book Title</label>
-                                    <input type="text" class="form-control"  pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed"name="title" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Author</label>
-                                    <input type="text" class="form-control" name="author" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Category</label>
-                                    <select class="form-select" name="categoryId" required>
-                                        <option value="" disabled selected>Select category</option>
-                                        <option th:each="category : ${categories}" 
-                                                th:value="${category.id}" 
-                                                th:text="${category.name}"></option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Language</label>
-                                    <select class="form-select" name="language" required>
-                                        <option value="" disabled selected>Select language</option>
-                                        <option value="English">English</option>
-                                        <option value="Hindi">Hindi</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">ISBN</label>
-                                    <input type="text" class="form-control" name="isbn" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Price</label>
-                                    <input type="number" class="form-control" name="price" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Publishing Date</label>
-                                    <input type="date" class="form-control" name="publishDate" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">PDF File</label>
-                                    <input type="file" class="form-control" name="file" accept="application/pdf" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Cover Image</label>
-                                    <input type="file" class="form-control" name="coverImage" accept="image/*" required>
-                                </div>
-                                <div class="col-md-6">
-    								<label class="form-label">Publisher Name</label>
-    								<input type="text" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" class="form-control"  name="publishername" required>
-								</div>
-								<div class="col-md-6">
-    								<label class="form-label">File Type</label>
-    								<select class="form-select" name="fileType" required>
-        								<option value="" disabled selected>Select file type</option>
-        								<option value="application/pdf">PDF Document</option>
-        								<option value="application/epub+zip">EPUB File</option>
-        								<option value="text/plain">Text File</option>
-    								</select>
-								</div>
-                                <div class="col-12">
-                                    <label class="form-label">Description</label>
-                                    <textarea class="form-control" name="description" rows="3"></textarea>
-                                </div>
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-primary w-100 py-2">
-                                        <i class="fas fa-save me-2"></i>Add Book
-                                    </button>
-                                </div>
-                                
-                                
-                            </div>
-                        </form>
-                    </div>
-                </section>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/books/report/pdf}" class="btn-luxury-outline py-2 px-3">
+                        <i class="fas fa-file-pdf text-danger me-1"></i> Books PDF Report
+                    </a>
+                    <a href="/" class="btn-luxury-primary py-2 px-3">
+                        <i class="fas fa-store me-1"></i> View Live Store
+                    </a>
+                </div>
+            </div>
 
-                <!-- Book Management Section -->
-                <section id="displayBooks" class="mb-5">
-                    <h2 class="mb-4 text-white"><i class="fas fa-book-open me-2"></i>Manage Books</h2>
-                    <div class="card glass-blur">
-						<div class="card-header d-flex justify-content-end align-items-center">
-						            <div class="export-buttons ">
-						                <a th:href="@{/books/report/pdf}" class="btn btn-success btn-sm">
-						                    <i class="fas fa-file-pdf"></i> Export PDF
-						                </a>
-						               
-						            </div>
-						</div>
+            <!-- Alerts -->
+            <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                <i class="fas fa-exclamation-circle"></i>
+                <span th:text="${error}">Error message</span>
+            </div>
+            <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                <i class="fas fa-check-circle"></i>
+                <span th:text="${message}">Success message</span>
+            </div>
+            <div class="editorial-alert editorial-alert-success" th:if="${param.success}">
+                <i class="fas fa-check-circle"></i>
+                <span th:text="${param.success}">Update successful</span>
+            </div>
+
+            <!-- Admin Section Tabs -->
+            <ul class="nav nav-pills mb-4 p-2 rounded-3 border" style="background: #FFFFFF;" id="adminPillTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active category-filter-pill border-0" id="pills-books-tab" data-bs-toggle="pill" data-bs-target="#pills-books" type="button" role="tab">
+                        <i class="fas fa-book-open me-2"></i>Manage Books (<span th:text="${books != null ? books.size() : 0}">0</span>)
+                    </button>
+                </li>
+                <li class="nav-item ms-2" role="presentation">
+                    <button class="nav-link category-filter-pill border-0" id="pills-addbook-tab" data-bs-toggle="pill" data-bs-target="#pills-addbook" type="button" role="tab">
+                        <i class="fas fa-plus-circle me-2"></i>Add New Edition
+                    </button>
+                </li>
+                <li class="nav-item ms-2" role="presentation">
+                    <button class="nav-link category-filter-pill border-0" id="pills-categories-tab" data-bs-toggle="pill" data-bs-target="#pills-categories" type="button" role="tab">
+                        <i class="fas fa-tags me-2"></i>Categories (<span th:text="${categories != null ? categories.size() : 0}">0</span>)
+                    </button>
+                </li>
+                <li class="nav-item ms-2" role="presentation">
+                    <button class="nav-link category-filter-pill border-0" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab">
+                        <i class="fas fa-users me-2"></i>User Dossiers (<span th:text="${users != null ? users.size() : 0}">0</span>)
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="adminPillTabsContent">
+
+                <!-- 1. MANAGE BOOKS TAB -->
+                <div class="tab-pane fade show active" id="pills-books" role="tabpanel">
+                    <span id="displaybook"></span>
+                    <div class="orders-table-wrapper">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #FAF7F2;">
+                            <h4 class="font-heading fs-5 mb-0">Current Book Catalog</h4>
+                            <span class="text-muted small">Total volumes in registry: <strong th:text="${books != null ? books.size() : 0}">0</strong></span>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle">
+                            <table class="luxury-table">
                                 <thead>
                                     <tr>
-                                        
-                                        <th>Title</th>
-                                        <th>Author</th>
+                                        <th>Title &amp; Author</th>
                                         <th>Category</th>
-                                        <th>ISBN</th>
+                                        <th>ISBN Reference</th>
                                         <th>Price</th>
-										<th>Actions</th>
+                                        <th class="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:each="book : ${books}">
-                                    	 
-                                        <td th:text="${book.title}"></td>
-                                        <td th:text="${book.author}"></td>
-                                        <td th:text="${book.category.name}"></td>
-                                        <td th:text="${book.isbn}"></td>
-                                        <td th:text="'₹' + ${book.price}"></td>
-										<td>
-                                            <div class="d-flex gap-2">
-                                                <form th:action="@{/deleteBooks}" method="POST" class="d-inline">
-                                                    <input type="hidden" name="bookId" th:value="${book.id}">
-                                                    <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure?')">
-                                                        <i class="fas fa-trash"></i>
+                                        <td>
+                                            <div class="fw-bold text-dark" th:text="${book.title}">Book Title</div>
+                                            <small class="text-muted" th:text="'By ' + ${book.author}">Author</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge" style="background: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);"
+                                                  th:text="${book.category != null ? book.category.name : 'None'}">Category</span>
+                                        </td>
+                                        <td><code th:text="${book.isbn}">ISBN-1234</code></td>
+                                        <td>
+                                            <span class="fw-bold text-dark" th:if="${book.price > 0}">₹<span th:text="${book.price}"></span></span>
+                                            <span class="badge bg-success" th:if="${book.price == 0}">Free</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-inline-flex gap-2">
+                                                <!-- Edit Book Form -->
+                                                <form th:action="@{/updateBooks/{bookId}(bookId=${book.id})}" method="post">
+                                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Edit book metadata">
+                                                        <i class="fas fa-pen-to-square"></i>
                                                     </button>
                                                 </form>
-                                               <form th:action="@{/updateBooks/{bookId}(bookId=${book.id})}" method="post" class="d-inline">
-    												<button type="submit" class="btn btn-edit">
-        												<i class="fas fa-edit"></i>
-    												</button>
-												</form>
 
+                                                <!-- Delete Book Form -->
+                                                <form th:action="@{/deleteBooks}" method="post">
+                                                    <input type="hidden" name="bookId" th:value="${book.id}">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove edition" onclick="return confirm('Remove this volume from the catalog?')">
+                                                        <i class="fas fa-trash-can"></i>
+                                                    </button>
+                                                </form>
                                             </div>
                                         </td>
                                     </tr>
@@ -327,139 +140,202 @@
                             </table>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <!-- Category Management Section -->
-                <section id="addCategory" class="mb-5">
-                    <h2 class="mb-4 text-white"><i class="fas fa-tags me-2"></i>Manage Categories</h2>
-                    <div class="card glass-blur">
-                        <form th:action="@{/add-category}" method="POST" class="mb-4">
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label">Category Name</label>
-                                    <input type="text" class="form-control" pattern="[A-Za-z\s]+" title="Only letters and spaces are allowed" name="categoryName" required>
+                <!-- 2. ADD NEW BOOK TAB -->
+                <div class="tab-pane fade" id="pills-addbook" role="tabpanel">
+                    <span id="addBooks"></span>
+                    <span id="addBook"></span>
+                    <div class="card p-4 p-md-5 border-0 shadow-md" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-lg);">
+                        <div class="mb-4 pb-3 border-bottom">
+                            <span class="section-subtitle-tag mb-1">Catalog Expansion</span>
+                            <h3 class="font-heading fs-3 mb-0">Register New Literary Edition</h3>
+                        </div>
+
+                        <form th:action="@{/addBooks}" method="post" enctype="multipart/form-data">
+                            <div class="row g-4">
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Book Title</label>
+                                    <input type="text" class="auth-input-field" name="title" required placeholder="The Great Gatsby" />
                                 </div>
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-success w-100 py-2">
-                                        <i class="fas fa-plus-circle me-2"></i>Add Category
-                                    </button>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Author Name</label>
+                                    <input type="text" class="auth-input-field" name="author" required placeholder="F. Scott Fitzgerald" />
+                                </div>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Category</label>
+                                    <select class="editorial-select" name="categoryId" required style="padding-left: 1rem;">
+                                        <option value="" disabled selected>Select Category</option>
+                                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Language</label>
+                                    <select class="editorial-select" name="language" required style="padding-left: 1rem;">
+                                        <option value="English" selected>English</option>
+                                        <option value="Hindi">Hindi</option>
+                                        <option value="French">French</option>
+                                        <option value="German">German</option>
+                                        <option value="Sanskrit">Sanskrit</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">ISBN Reference</label>
+                                    <input type="text" class="auth-input-field" name="isbn" required placeholder="978-0-123456-47-2" />
+                                </div>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Price (INR - 0 for Free)</label>
+                                    <input type="number" class="auth-input-field" name="price" required placeholder="499" min="0" />
+                                </div>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Publication Date</label>
+                                    <input type="date" class="auth-input-field" name="publishDate" required />
+                                </div>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Publisher Name</label>
+                                    <input type="text" class="auth-input-field" name="publishername" required placeholder="Quickread Literary Press" />
+                                </div>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Digital Book File (PDF)</label>
+                                    <input type="file" class="form-control" name="file" accept="application/pdf" required />
+                                </div>
+                                <div class="col-md-6 auth-form-group">
+                                    <label class="auth-form-label">Cover Artwork (Image)</label>
+                                    <input type="file" class="form-control" name="coverImage" accept="image/*" required />
+                                </div>
+                                <div class="col-12 auth-form-group">
+                                    <label class="auth-form-label">Editorial Synopsis &amp; Description</label>
+                                    <textarea class="auth-input-field" name="description" rows="5" placeholder="Enter comprehensive overview, thematic background, and edition notes..." required style="padding-left: 1rem;"></textarea>
                                 </div>
                             </div>
+
+                            <button type="submit" class="btn-luxury-primary w-100 py-3 mt-4">
+                                <i class="fas fa-plus me-2"></i> Publish Edition to Store
+                            </button>
                         </form>
-                        
-						<div class="card-header d-flex justify-content-end align-items-center">
-						            
-						            <div>
-						                <button class="btn btn-primary btn-sm" onclick="printChart()">
-						                    <i class="fas fa-print me-2"></i>Print
-						                </button>
-						                <button class="btn btn-success btn-sm ms-2" onclick="saveChartAsImage()">
-						                    <i class="fas fa-download me-2"></i>Save
-						                </button>
-						            </div>
-						        </div>
+                    </div>
+                </div>
+
+                <!-- 3. CATEGORIES MANAGEMENT TAB -->
+                <div class="tab-pane fade" id="pills-categories" role="tabpanel">
+                    <span id="addCategory"></span>
+                    <span id="manageCategories"></span>
+                    <div class="row g-4">
+                        <!-- Add Category Card -->
+                        <div class="col-lg-5">
+                            <div class="card p-4 border-0 shadow-sm" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-md);">
+                                <h4 class="font-heading fs-5 mb-3">Add New Category</h4>
+                                <form th:action="@{/add-category}" method="post">
+                                    <div class="auth-form-group mb-3">
+                                        <label class="auth-form-label">Category Name</label>
+                                        <input type="text" class="auth-input-field" name="categoryName" placeholder="e.g. Philosophy, Sci-Fi, Classics" required />
+                                    </div>
+                                    <button type="submit" class="btn-luxury-primary w-100 py-2">
+                                        <i class="fas fa-plus me-1"></i> Create Category
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Categories List -->
+                        <div class="col-lg-7">
+                            <div class="orders-table-wrapper">
+                                <div class="table-responsive">
+                                    <table class="luxury-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Category Name</th>
+                                                <th class="text-end">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="cat : ${categories}">
+                                                <td>
+                                                    <span class="fw-bold text-dark" th:text="${cat.name}">Category</span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <form th:action="@{/delete-category}" method="post" class="d-inline">
+                                                        <input type="hidden" name="categoryId" th:value="${cat.id}">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this category?')">
+                                                            <i class="fas fa-trash-can"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. USERS DOSSIER TAB -->
+                <div class="tab-pane fade" id="pills-users" role="tabpanel">
+                    <div class="orders-table-wrapper">
+                        <div class="p-3 border-bottom" style="background: #FAF7F2;">
+                            <h4 class="font-heading fs-5 mb-0">Registered Reader Accounts</h4>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle">
+                            <table class="luxury-table">
                                 <thead>
                                     <tr>
-                                        
-                                        <th>Category Name</th>
-                                        <th>Actions</th>
+                                        <th>Reader</th>
+                                        <th>Email Address</th>
+                                        <th>Phone</th>
+                                        <th>Orders Count</th>
+                                        <th>Cart Items</th>
+                                        <th>Downloads</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr th:each="category : ${categories}">
-                                       
-                                        <td th:text="${category.name}"></td>
+                                    <tr th:each="u : ${users}">
+                                        <td class="fw-bold text-dark" th:text="${u.username}">Username</td>
+                                        <td th:text="${u.email}">email@domain.com</td>
+                                        <td th:text="${u.mobileno != null ? u.mobileno : 'N/A'}">Phone</td>
                                         <td>
-                                            <form th:action="@{/delete-category}" method="POST" class="d-inline">
-                                                <input type="hidden" name="categoryId" th:value="${category.id}">
-                                                <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure?')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
+                                            <span class="badge bg-secondary" th:text="${u.orders != null ? u.orders.size() : 0}">0</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border" th:text="${u.cartItems != null ? u.cartItems.size() : 0}">0</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success" th:text="${u.downloadedBooks != null ? u.downloadedBooks.size() : 0}">0</span>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                </section>
-
-                <!-- User Management Section -->
-                <section id="displayUsers" class="mb-5">
-                    <h2 class="mb-4 "><i class="fas fa-users me-2"></i>User Management</h2>
-					
-                    <div class="card glass-blur">
-						<!--<div class="card-header d-flex justify-content-end align-items-center">					
-							<form th:action="@{/admin/report/pdf}" method="get" class="d-flex gap-2">
-								<button type="submit" class="btn btn-outline-danger">
-								<i class="fas fa-file-pdf"></i> Export PDF
-							</button>
-							</form>
-						</div>-->
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead>
-                                    <tr>
-                                        
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Mobile Number</th>
-                                    	<th>Book Ordered</th>
-										<th>Book Titles</th>
-										<th>Books in Cart</th>
-										<th>Downloaded Books</th>
-                        				<th>Total Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="user : ${users}">
-                                        
-                                        <td th:text="${user.username}"></td>
-                                        <td th:text="${user.email}"></td>
-                                        <td th:text="${user.mobileno}"></td>
-                                    	<td>                  
-											<span class="text-muted small" th:text="${#lists.size(user.orders)}" ></span>
-                        				</td>
-										<td>
-											<ul>
-										    	<li th:each="order : ${user.orders}" th:text="${order.book.title}"></li>
-										    </ul>
-										</td>
-										<td th:text="${user.cartItems.size()}"></td>
-										<td th:text="${user.downloadedBooks.size()}"></td>
-                        				<td>
-                            					<span th:text="${#aggregates.sum(user.orders.![amount])}"></span>
-                        				</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Status Messages -->
-                <div class="mt-4">
-                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        <span th:text="${error}"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    <div th:if="${message}" class="alert alert-success alert-dismissible fade show">
-                        <i class="fas fa-check-circle me-2"></i>
-                        <span th:text="${message}"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
                 </div>
-            </main>
-        </div>
-		
-    </div>
-	<div th:replace="common/footer :: footer"></div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-	
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const hash = window.location.hash;
+            if (hash === '#addCategory' || hash === '#manageCategories' || hash === '#categories') {
+                const triggerEl = document.getElementById('pills-categories-tab');
+                if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            } else if (hash === '#addBooks' || hash === '#addBook') {
+                const triggerEl = document.getElementById('pills-addbook-tab');
+                if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            } else if (hash === '#displaybook' || hash === '#books') {
+                const triggerEl = document.getElementById('pills-books-tab');
+                if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            } else if (hash === '#users') {
+                const triggerEl = document.getElementById('pills-users-tab');
+                if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            }
+        });
+    </script>
 </body>
 </html>

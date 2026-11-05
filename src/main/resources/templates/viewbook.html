@@ -1,272 +1,181 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Details</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+    <title th:text="${book != null ? book.title + ' – Quickread Luxury Editions' : 'Book Details – Quickread'}">Book Details – Quickread</title>
 
-		
-		body {
-				        
-						background-image:url('/img/free book.jpg'); 
-				       
-				        display: flex;
-						justify-content: center;
-						align-items: center;
-						background-size: cover;                 /* makes the image cover the container */
-						background-position: center center;     /* centers the image */
-				        background-repeat: no-repeat;
-						width: 100%; 
-				        flex-direction: column;
-				        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-				}
-				.glass-blur {
-				    background: rgba(255, 255, 255, 0.15); /* slight white tint */
-				    backdrop-filter: blur(10px);           /* the blur effect */
-				    -webkit-backdrop-filter: blur(10px);   /* Safari support */
-				    border-radius: 16px;
-				    border: 1px solid rgba(255, 255, 255, 0.2);
-				}
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-		
-
-        .book-container {
-           
-			color: black;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            display: flex;
-            max-width: 1200px;
-            width: 100%;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-
-        .book-container:hover {
-            transform: translateY(-5px);
-        }
-
-        .book-image {
-            flex: 1;
-            background: #f8f9fb;
-            padding: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 700px;
-        }
-
-        .book-image img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .book-image img:hover {
-            transform: scale(1.03);
-        }
-
-        .book-details {
-            flex: 1.2;
-            padding: 2.5rem;
-            position: relative;
-        }
-
-        .book-details h2 {
-            color: #2c3e50;
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-            line-height: 1.2;
-        }
-
-        .detail-item {
-            margin-bottom: 1.2rem;
-            padding: 0.8rem 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .detail-item:last-child {
-            border-bottom: none;
-        }
-
-        .detail-item strong {
-            color: #7f8c8d;
-            display: block;
-            font-size: 0.9rem;
-            margin-bottom: 0.3rem;
-        }
-
-        .detail-item span {
-            color: #2c3e50;
-            font-size: 1rem;
-        }
-
-        .free-label {
-            background: #2ecc71;
-            color: white;
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            display: inline-block;
-        }
-
-        .buttons {
-            margin-top: 2rem;
-            display: flex;
-            gap: 1rem;
-        }
-
-        .button {
-            flex: 1;
-            padding: 1rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .button.add-to-cart {
-            background: #3498db;
-            color: white;
-            height: 50px;
-            width: 175px;
-        }
-
-        .button.add-to-cart:hover {
-            background: #2980b9;
-        }
-
-        .button.download {
-            background: rgb(0, 128, 255);
-            color: white;
-            height: 50px;
-            width: 175px;
-        }
-
-        .button i {
-            font-size: 1.2rem;
-        }
-
-        @media (max-width: 768px) {
-            .book-container {
-                flex-direction: column;
-                max-width: 500px;
-            }
-
-            .book-image {
-                min-height: 300px;
-                padding: 1.5rem;
-            }
-
-            .book-details {
-                padding: 1.5rem;
-            }
-        }
-
-        /* Back Button */
-        .back-button {
-            position: absolute;
-            top: 1.5rem;
-            left: 1.5rem;
-            background: rgba(255,255,255,0.9);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .back-button:hover {
-            background: white;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
-
-    </style>
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
 </head>
 <body>
-	
-	
-    <a href="/" class="back-button">
-        <i class="fas fa-arrow-left"></i>
-        Back
-    </a>
 
-	
-	
-	
-    <div class="book-container glass-blur">
-        <!-- Book Cover Image -->
-        <div class="book-image glass-blur">
-            <img th:src="${bookImage}" alt="Book Cover" class="book-cover">
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-4">
+        <div class="container">
+
+            <!-- Breadcrumb Navigation -->
+            <nav class="editorial-breadcrumb" aria-label="breadcrumb">
+                <ol>
+                    <li><a href="/"><i class="fas fa-home me-1"></i> Home</a></li>
+                    <li><i class="fas fa-angle-right"></i></li>
+                    <li><a href="/#curated-books">Collection</a></li>
+                    <li><i class="fas fa-angle-right"></i></li>
+                    <li th:if="${book.category != null}">
+                        <a th:href="@{/search(categoryId=${book.category.id})}" th:text="${book.category.name}">Category</a>
+                    </li>
+                    <li th:if="${book.category != null}"><i class="fas fa-angle-right"></i></li>
+                    <li class="active text-truncate" style="max-width: 280px;" th:text="${book.title}">Book Title</li>
+                </ol>
+            </nav>
+
+            <!-- Book Showcase Frame -->
+            <div class="book-details-frame">
+                <div class="row g-5 align-items-center">
+
+                    <!-- Left Column: Book Cover & Preview -->
+                    <div class="col-lg-5">
+                        <div class="details-cover-container">
+                            <img th:if="${bookImage != null and not #strings.isEmpty(bookImage)}" 
+                                 th:src="${bookImage}" 
+                                 class="details-cover-img" 
+                                 alt="Book cover"
+                                 onerror="this.onerror=null; this.src='/img/free book.jpg';" />
+                            <img th:unless="${bookImage != null and not #strings.isEmpty(bookImage)}"
+                                 src="/img/free book.jpg" 
+                                 class="details-cover-img" 
+                                 alt="Default cover" />
+                        </div>
+
+                        <!-- Preview & Format Options -->
+                        <div class="d-flex flex-column gap-2 mt-4">
+                            <a th:href="@{/viewpdf/{id}(id=${book.id})}" target="_blank" class="btn-luxury-outline w-100 py-3 text-center">
+                                <i class="fas fa-book-open-reader me-2"></i> Preview First 10 Pages (PDF)
+                            </a>
+                            <div class="text-center text-muted small mt-2">
+                                <i class="fas fa-file-pdf me-1"></i> Format: High-Resolution DRM-Free PDF
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Metadata, Description & Purchasing -->
+                    <div class="col-lg-7">
+                        <span class="details-category-pill" th:text="${book.category != null ? book.category.name : 'General Literature'}">Category</span>
+
+                        <h1 class="details-book-title" th:text="${book.title}">Book Title</h1>
+                        <div class="details-book-author">
+                            By <span th:text="${book.author}">Author Name</span>
+                        </div>
+
+                        <!-- Pricing Badge -->
+                        <div class="details-price-badge">
+                            <div th:if="${book.price == 0}">
+                                <span class="badge bg-success py-2 px-3 fs-6">Complimentary Edition</span>
+                            </div>
+                            <div th:unless="${book.price == 0}" class="d-flex align-items-baseline gap-2">
+                                <span class="text-muted" style="font-size: 1.1rem;">Price:</span>
+                                <span class="details-price-num">₹<span th:text="${book.price}">499</span></span>
+                                <span class="text-muted small">Inclusive of all digital rights</span>
+                            </div>
+                        </div>
+
+                        <!-- Editorial Synopsis -->
+                        <div class="mb-4">
+                            <h5 class="font-heading mb-2">Editorial Synopsis</h5>
+                            <p class="details-synopsis" th:text="${book.description}">
+                                Comprehensive book description detailing the themes, historical context, technical concepts, and literary resonance of this volume.
+                            </p>
+                        </div>
+
+                        <!-- Book Specifications Grid -->
+                        <div class="details-specs-grid">
+                            <div class="spec-item" th:if="${book.publishername != null and not #strings.isEmpty(book.publishername)}">
+                                <div class="spec-item-label">Publisher</div>
+                                <div class="spec-item-value" th:text="${book.publishername}">Quickread Press</div>
+                            </div>
+                            <div class="spec-item" th:if="${book.publishDate != null}">
+                                <div class="spec-item-label">Publication Date</div>
+                                <div class="spec-item-value" th:text="${book.publishDate}">2026-01-01</div>
+                            </div>
+                            <div class="spec-item" th:if="${book.language != null and not #strings.isEmpty(book.language)}">
+                                <div class="spec-item-label">Language</div>
+                                <div class="spec-item-value" th:text="${book.language}">English</div>
+                            </div>
+                            <div class="spec-item" th:if="${book.isbn != null and not #strings.isEmpty(book.isbn)}">
+                                <div class="spec-item-label">ISBN Reference</div>
+                                <div class="spec-item-value" th:text="${book.isbn}">978-0-123456-47-2</div>
+                            </div>
+                        </div>
+
+                        <!-- Action Bar -->
+                        <div class="details-action-bar">
+                            <!-- Paid Book: Add to Cart -->
+                            <form th:if="${book.price > 0}" th:action="@{/add/{bookId}(bookId=${book.id})}" method="post" class="flex-grow-1">
+                                <button type="submit" class="btn-luxury-primary w-100 py-3">
+                                    <i class="fas fa-shopping-bag me-2"></i> Add to Cart
+                                </button>
+                            </form>
+
+                            <!-- Paid Book: Direct Stripe Checkout -->
+                            <a th:if="${book.price > 0}" th:href="@{/checkout/{bookId}(bookId=${book.id})}" class="btn-luxury-dark py-3 px-4">
+                                <i class="fas fa-bolt me-2"></i> Instant Buy
+                            </a>
+
+                            <!-- Free Book: Instant Download if logged in -->
+                            <form th:if="${book.price == 0 and session.loggedInUser != null}" th:action="@{/download/{id}(id=${book.id})}" method="get" class="w-100">
+                                <button type="submit" class="btn btn-success btn-lg w-100 py-3" style="background-color: var(--success-accent); border: none;">
+                                    <i class="fas fa-download me-2"></i> Download Full Book (PDF)
+                                </button>
+                            </form>
+
+                            <!-- Free Book: Sign in prompt if logged out -->
+                            <a th:if="${book.price == 0 and session.loggedInUser == null}" href="/login" class="btn-luxury-primary w-100 py-3 text-center">
+                                <i class="fas fa-sign-in-alt me-2"></i> Sign In to Download Free Book
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reading Experience Guarantee Banner -->
+            <div class="row g-4 mt-2 mb-5">
+                <div class="col-md-4">
+                    <div class="feature-card-editorial p-4 text-center">
+                        <i class="fas fa-laptop-file fa-2x mb-3" style="color: var(--gold-accent);"></i>
+                        <h5 class="font-heading">Universal Compatibility</h5>
+                        <p class="small text-secondary mb-0">Optimized for Kindle, iPad, reMarkable, Kobo, and all desktop PDF readers.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card-editorial p-4 text-center">
+                        <i class="fas fa-infinity fa-2x mb-3" style="color: var(--gold-accent);"></i>
+                        <h5 class="font-heading">Lifetime Library Access</h5>
+                        <p class="small text-secondary mb-0">Re-download your purchased copies anytime without restriction or expiry.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card-editorial p-4 text-center">
+                        <i class="fas fa-lock fa-2x mb-3" style="color: var(--gold-accent);"></i>
+                        <h5 class="font-heading">Secure Stripe Billing</h5>
+                        <p class="small text-secondary mb-0">256-bit encrypted checkout with immediate receipt and order ledgering.</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
+    </main>
 
-        <!-- Book Details -->
-        <div class="book-details">
-            <h2 th:text="${book.title}">Book Title</h2>
-            
-            <div class="detail-item">
-                <strong>Author</strong>
-                <span th:text="${book.author}"></span>
-            </div>
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
 
-            <div class="detail-item">
-                <strong>Category</strong>
-                <span th:text="${book.category.name}"></span>
-            </div>
-
-            <div class="detail-item">
-                <strong>Price</strong>
-                <span th:if="${book.price == 0}" class="free-label">Free </span>
-                <span th:unless="${book.price == 0}" th:text="${book.price}"></span>
-            </div>
-            
-       		<div class="detail-item">
-                <strong>Publisher name</strong>
-                <span th:text="${book.publishername}"></span>
-            </div>      
-
-            <div class="detail-item">
-                <strong>Publication Date ( year-month-day )</strong>
-                <span th:text="${book.publishDate}"></span>
-                
-            </div>
-
-            <div class="detail-item">
-                <strong>Language</strong>
-                <span th:text="${book.language}"></span>
-            </div>
-
-            <div class="detail-item">
-                <strong>Description</strong>
-                <p style="color: #666; line-height: 1.5; margin-top: 0.5rem;" th:text="${book.description}"></p>
-            </div>
-
-            <div class="buttons">             
-                <a th:href="@{/viewpdf/{id}(id=${book.id})}" class="button download">                  
-                    preview
-                </a>
-            </div>
-        </div>
-    </div>
-	
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
 </body>
 </html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Library &amp; Orders – Quickread</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+
+            <!-- Page Title -->
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div>
+                    <span class="section-subtitle-tag mb-1">Your Personal Collection</span>
+                    <h1 class="font-heading fs-2 mb-0">My Library &amp; Order Receipts</h1>
+                </div>
+                <a href="/" class="btn-luxury-outline py-2 px-3">
+                    <i class="fas fa-compass me-2"></i> Browse More Titles
+                </a>
+            </div>
+
+            <!-- Orders Table / List -->
+            <div th:if="${orders != null and not #lists.isEmpty(orders)}" class="orders-table-wrapper">
+                <div class="table-responsive">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>Volume Title</th>
+                                <th>Author / Category</th>
+                                <th>Amount Paid</th>
+                                <th>Payment Status</th>
+                                <th class="text-end">Digital Access</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="order : ${orders}">
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="brand-monogram" style="width: 36px; height: 36px; font-size: 1rem;">
+                                            <i class="fas fa-book"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="font-heading fs-6 mb-0 text-dark" th:text="${order.book.title}">Book Title</h5>
+                                            <small class="text-muted" th:text="'Edition #' + ${order.id}">Order #1</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="text-dark fw-medium" th:text="${order.book.author}">Author Name</div>
+                                    <small class="text-muted" th:text="${order.book.category != null ? order.book.category.name : 'Literature'}">Category</small>
+                                </td>
+                                <td>
+                                    <span class="fw-bold" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.1rem;"
+                                          th:text="'₹' + ${#numbers.formatDecimal(order.amount, 1, 2)}">₹499.00</span>
+                                </td>
+                                <td>
+                                    <span class="status-badge-paid">
+                                        <i class="fas fa-check-circle me-1"></i> <span th:text="${order.paymentStatus}">PAID</span>
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a th:href="@{/download/{id}(id=${order.book.id})}" class="btn-luxury-primary py-2 px-3" style="font-size: 0.85rem;" title="Download PDF to device">
+                                        <i class="fas fa-download me-1"></i> Download PDF
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Empty Orders State -->
+            <div th:if="${orders == null or #lists.isEmpty(orders)}" class="empty-state-card">
+                <div class="empty-state-icon">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <h2 class="font-heading mb-2">No Volumes in Your Library Yet</h2>
+                <p class="text-secondary mb-4" style="max-width: 440px; margin: 0 auto;">
+                    You have not acquired any books yet. Once you complete a purchase or download a free edition, it will appear here permanently.
+                </p>
+                <a href="/" class="btn-luxury-primary py-3 px-4">
+                    <i class="fas fa-compass me-2"></i> Explore Curated Catalog
+                </a>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>
