@@ -258,12 +258,17 @@
 
                                 <!-- Action Buttons -->
                                 <div class="book-card-actions">
-                                    <!-- Paid Book: Add to Cart -->
-                                    <form th:if="${book.price > 0}" th:action="@{/add/{bookId}(bookId=${book.id})}" method="post">
+                                    <!-- Paid Book: Add to Cart (Logged In) -->
+                                    <form th:if="${book.price > 0 and session.loggedInUser != null}" th:action="@{/add/{bookId}(bookId=${book.id})}" method="post">
                                         <button type="submit" class="btn-card-cart" title="Add to Cart">
                                             <i class="fas fa-shopping-bag"></i> Add to Cart
                                         </button>
                                     </form>
+
+                                    <!-- Paid Book: Sign In to Purchase (Logged Out) -->
+                                    <a th:if="${book.price > 0 and session.loggedInUser == null}" th:href="@{/login(targetBookId=${book.id})}" class="btn-card-cart text-decoration-none" title="Sign In to Purchase">
+                                        <i class="fas fa-shopping-bag"></i> Add to Cart
+                                    </a>
 
                                     <!-- Free Book: Instant Download if Logged In -->
                                     <form th:if="${book.price == 0 and session.loggedInUser != null}" th:action="@{/download/{id}(id=${book.id})}" method="get">

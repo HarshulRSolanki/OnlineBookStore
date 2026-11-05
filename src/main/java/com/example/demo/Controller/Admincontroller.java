@@ -16,12 +16,16 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.Entity.Book;
 import com.example.demo.Entity.Category;
+import com.example.demo.Entity.User;
 import com.example.demo.Repository.BookRepo;
 import com.example.demo.Repository.CartRepo;
 import com.example.demo.Repository.CategoryRepo;
 import com.example.demo.Repository.DownloadRepo;
 import com.example.demo.Repository.OrderRepo;
 import com.example.demo.Repository.UserRepo;
+import com.example.demo.Repository.InquiryRepo;
+import com.example.demo.Entity.Inquiry;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
@@ -54,6 +58,9 @@ public class Admincontroller
     
     @Autowired
     private OrderRepo orderRepo;
+
+    @Autowired
+    private InquiryRepo inquiryRepo;
 
     @org.springframework.web.bind.annotation.InitBinder
     public void initBinder(org.springframework.web.bind.WebDataBinder binder) {
@@ -323,7 +330,8 @@ public class Admincontroller
     {   	
     	model.addAttribute("categories", categoryRepo.findAll());
         model.addAttribute("books", bookRepo.findAll());
-        model.addAttribute("users",userRepo.findAll());
+        model.addAttribute("users", userRepo.findAll());
+        model.addAttribute("inquiries", inquiryRepo.findAllByOrderBySubmittedAtDesc());
         return "Admin/admindash";
     }
   
@@ -532,5 +540,37 @@ public class Admincontroller
              return "redirect:admindash";
          }
          return "redirect:/admindash#manageCategories";
-     }        
+     }
+
+     @PostMapping("/delete-user")
+     public String deleteUser(@RequestParam Long userId, RedirectAttributes redirectAttributes) {
+         Optional<User> userOpt = userRepo.findById(userId);
+         if (userOpt.isPresent()) {
+             User user = userOpt.get();
+             try {
+                 // Delete related records to respect foreign key constraints
+                 cartRepo.deleteAll(cartRepo.findByUser(user));
+                 downloadRepo.deleteAll(downloadRepo.findByUser(user));
+                 orderRepo.deleteAll(orderRepo.findByUser(user));
+                 userRepo.delete(user);
+                 redirectAttributes.addFlashAttribute("message", "User dossier '" + user.getUsername() + "' removed successfully.");
+             } catch (Exception e) {
+                 redirectAttributes.addFlashAttribute("error", "Could not delete user: " + e.getMessage());
+             }
+         } else {
+             redirectAttributes.addFlashAttribute("error", "User not found.");
+         }
+         return "redirect:/admindash#users";
+     }
+
+     @PostMapping("/delete-inquiry")
+     public String deleteInquiry(@RequestParam Long inquiryId, RedirectAttributes redirectAttributes) {
+         try {
+             inquiryRepo.deleteById(inquiryId);
+             redirectAttributes.addFlashAttribute("message", "Inquiry removed successfully.");
+         } catch (Exception e) {
+             redirectAttributes.addFlashAttribute("error", "Could not remove inquiry: " + e.getMessage());
+         }
+         return "redirect:/admindash#inquiries";
+     }
 }

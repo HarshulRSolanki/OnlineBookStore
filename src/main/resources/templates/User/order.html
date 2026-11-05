@@ -41,6 +41,7 @@
                                 <th>Author / Category</th>
                                 <th>Amount Paid</th>
                                 <th>Payment Status</th>
+                                <th>Order Date</th>
                                 <th class="text-end">Digital Access</th>
                             </tr>
                         </thead>
@@ -52,28 +53,32 @@
                                             <i class="fas fa-book"></i>
                                         </div>
                                         <div>
-                                            <h5 class="font-heading fs-6 mb-0 text-dark" th:text="${order.book.title}">Book Title</h5>
-                                            <small class="text-muted" th:text="'Edition #' + ${order.id}">Order #1</small>
+                                            <h5 class="font-heading fs-6 mb-0 text-dark" th:text="${order.book != null ? order.book.title : 'Acquired Edition'}">Book Title</h5>
+                                            <small class="text-muted" th:text="'Receipt #' + ${order.id}">Order #1</small>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="text-dark fw-medium" th:text="${order.book.author}">Author Name</div>
-                                    <small class="text-muted" th:text="${order.book.category != null ? order.book.category.name : 'Literature'}">Category</small>
+                                    <div class="text-dark fw-medium" th:text="${order.book != null ? order.book.author : 'Literary Work'}">Author Name</div>
+                                    <small class="text-muted" th:text="${order.book != null and order.book.category != null ? order.book.category.name : 'Curated'}">Category</small>
                                 </td>
                                 <td>
                                     <span class="fw-bold" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.1rem;"
-                                          th:text="'₹' + ${#numbers.formatDecimal(order.amount, 1, 2)}">₹499.00</span>
+                                          th:text="'₹' + ${order.amount}">₹499.00</span>
                                 </td>
                                 <td>
                                     <span class="status-badge-paid">
-                                        <i class="fas fa-check-circle me-1"></i> <span th:text="${order.paymentStatus}">PAID</span>
+                                        <i class="fas fa-check-circle me-1"></i> <span th:text="${order.paymentStatus != null ? order.paymentStatus : 'SUCCESS'}">PAID</span>
                                     </span>
                                 </td>
+                                <td>
+                                    <span class="small text-muted" th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMM yyyy') : 'Recent'}">05 Nov 2026</span>
+                                </td>
                                 <td class="text-end">
-                                    <a th:href="@{/download/{id}(id=${order.book.id})}" class="btn-luxury-primary py-2 px-3" style="font-size: 0.85rem;" title="Download PDF to device">
+                                    <a th:if="${order.book != null}" th:href="@{/download/{id}(id=${order.book.id})}" class="btn-luxury-primary py-2 px-3" style="font-size: 0.85rem;" title="Download PDF to device">
                                         <i class="fas fa-download me-1"></i> Download PDF
                                     </a>
+                                    <span th:unless="${order.book != null}" class="badge bg-secondary">Archived</span>
                                 </td>
                             </tr>
                         </tbody>

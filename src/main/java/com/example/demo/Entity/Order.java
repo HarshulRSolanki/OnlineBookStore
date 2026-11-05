@@ -103,5 +103,9 @@ public class Order
 		return orderDate;
 	}
 
+	public void setOrderDate(LocalDateTime orderDate) {
+		this.orderDate = orderDate;
+	}
+
 	
 }

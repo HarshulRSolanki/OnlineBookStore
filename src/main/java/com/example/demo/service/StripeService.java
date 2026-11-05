@@ -19,21 +19,29 @@ public class StripeService {
     @Value("${stripe.api.key}")
     private String stripeSecretKey;
 
+    @Value("${server.port:8525}")
+    private String serverPort;
+
     public String createCheckoutSession(Long bookId, String bookTitle, double price) throws StripeException {
+        return createCheckoutSession(bookId, bookTitle, price, null, null);
+    }
+
+    public String createCheckoutSession(Long bookId, String bookTitle, double price, Long userId, String userEmail) throws StripeException {
         Stripe.apiKey = stripeSecretKey;
 
-        // Create a Stripe checkout session
-        SessionCreateParams params = SessionCreateParams.builder()
+        String baseUrl = "http://localhost:" + serverPort;
+
+        SessionCreateParams.Builder builder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl("http://localhost:8525/success?session_id={CHECKOUT_SESSION_ID}&bookId=" + bookId)
-                .setCancelUrl("http://localhost:8525/cancel")
+                .setSuccessUrl(baseUrl + "/success?session_id={CHECKOUT_SESSION_ID}&bookId=" + bookId)
+                .setCancelUrl(baseUrl + "/cancel")
                 .addLineItem(
                         SessionCreateParams.LineItem.builder()
                                 .setQuantity(1L)
                                 .setPriceData(
                                         SessionCreateParams.LineItem.PriceData.builder()
                                                 .setCurrency("INR")
-                                                .setUnitAmount((long) (price * 100)) // Stripe works in cents
+                                                .setUnitAmount((long) (price * 100))
                                                 .setProductData(
                                                         SessionCreateParams.LineItem.PriceData.ProductData.builder()
                                                                 .setName(bookTitle)
@@ -42,48 +50,68 @@ public class StripeService {
                                                 .build()
                                 )
                                 .build()
-                )
-                .build();
+                );
 
-        Session session = Session.create(params);
-        return session.getUrl(); // Return Stripe checkout URL
+        if (userId != null) {
+            builder.putMetadata("userId", String.valueOf(userId));
+        }
+        if (userEmail != null && !userEmail.trim().isEmpty()) {
+            builder.putMetadata("userEmail", userEmail.trim());
+            builder.setCustomerEmail(userEmail.trim());
+        }
+
+        Session session = Session.create(builder.build());
+        return session.getUrl();
     }
-    
-    
+
     public String createCheckoutSessionForMultipleBooks(List<Cart> cartItems, double totalAmount) throws StripeException {
+        return createCheckoutSessionForMultipleBooks(cartItems, totalAmount, null, null);
+    }
+
+    public String createCheckoutSessionForMultipleBooks(List<Cart> cartItems, double totalAmount, Long userId, String userEmail) throws StripeException {
+        Stripe.apiKey = stripeSecretKey;
+
+        String baseUrl = "http://localhost:" + serverPort;
         List<SessionCreateParams.LineItem> lineItems = new ArrayList<>();
 
         for (Cart cart : cartItems) {
             Book book = cart.getBook();
-            lineItems.add(
-                SessionCreateParams.LineItem.builder()
-                    .setQuantity(1L)
-                    .setPriceData(
-                        SessionCreateParams.LineItem.PriceData.builder()
-                            .setCurrency("usd") // or "inr", etc.
-                            .setUnitAmount((long) (book.getPrice() * 100)) // Stripe needs amount in cents/paise
-                            .setProductData(
-                                SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName(book.getTitle())
-                                    .build()
-                            )
-                            .build()
-                    )
-                    .build()
-            );
+            if (book != null && !book.isDeleted()) {
+                lineItems.add(
+                    SessionCreateParams.LineItem.builder()
+                        .setQuantity(1L)
+                        .setPriceData(
+                            SessionCreateParams.LineItem.PriceData.builder()
+                                .setCurrency("INR")
+                                .setUnitAmount((long) (book.getPrice() * 100))
+                                .setProductData(
+                                    SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                        .setName(book.getTitle())
+                                        .build()
+                                )
+                                .build()
+                        )
+                        .build()
+                );
+            }
         }
 
-        SessionCreateParams params = SessionCreateParams.builder()
+        SessionCreateParams.Builder builder = SessionCreateParams.builder()
             .setMode(SessionCreateParams.Mode.PAYMENT)
-            .setSuccessUrl("http://localhost:8080/payment-success?session_id={CHECKOUT_SESSION_ID}")
-            .setCancelUrl("http://localhost:8080/cart?paymentCancelled=true")
-            .addAllLineItem(lineItems) 
-            .putMetadata("source", "ebookstore")
-            .build();
+            .setSuccessUrl(baseUrl + "/payment-success?session_id={CHECKOUT_SESSION_ID}")
+            .setCancelUrl(baseUrl + "/cart?paymentCancelled=true")
+            .addAllLineItem(lineItems)
+            .putMetadata("source", "ebookstore");
 
-        Session session = Session.create(params);
-        return session.getUrl(); // This is the Stripe checkout URL
+        if (userId != null) {
+            builder.putMetadata("userId", String.valueOf(userId));
+        }
+        if (userEmail != null && !userEmail.trim().isEmpty()) {
+            builder.putMetadata("userEmail", userEmail.trim());
+            builder.setCustomerEmail(userEmail.trim());
+        }
+
+        Session session = Session.create(builder.build());
+        return session.getUrl();
     }
 }
-    
-

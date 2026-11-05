@@ -28,6 +28,8 @@ import com.example.demo.Repository.UserRepo;
 import com.example.demo.service.CartService;
 import com.example.demo.service.EmailService;
 import com.example.demo.service.OTPservice;
+import com.example.demo.Entity.Inquiry;
+import com.example.demo.Repository.InquiryRepo;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -57,6 +59,9 @@ public class Logincontroller
     
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private InquiryRepo inquiryRepo;
     
     @GetMapping("/")
     public String index(HttpSession session,Model model) 
@@ -142,6 +147,7 @@ public class Logincontroller
             model.addAttribute("categories", categoryRepo.findAll());
             model.addAttribute("books", bookRepo.findAll());
             model.addAttribute("users", userRepo.findAll());
+            model.addAttribute("inquiries", inquiryRepo.findAllByOrderBySubmittedAtDesc());
             return "Admin/admindash";
         }
 
@@ -345,11 +351,22 @@ public class Logincontroller
                                     @RequestParam("message") String message,
                                     Model model) {
         
-        // Send emails to admin & user
-        emailService.sendContactEmail(name, email, subject, message);
+        try {
+            Inquiry inquiry = new Inquiry(name, email, subject, message);
+            inquiryRepo.save(inquiry);
+        } catch (Exception e) {
+            System.err.println("Notice: Could not record inquiry in database: " + e.getMessage());
+        }
+
+        try {
+            // Send emails to admin & user
+            emailService.sendContactEmail(name, email, subject, message);
+        } catch (Exception e) {
+            System.err.println("Notice: Could not send contact email: " + e.getMessage());
+        }
 
         // Show success message
-        model.addAttribute("success", "Your message has been sent successfully!");
+        model.addAttribute("success", "Your message has been received! Our concierge team will review your inquiry shortly.");
         return "contact"; // Redirect back to the contact page
     }
     

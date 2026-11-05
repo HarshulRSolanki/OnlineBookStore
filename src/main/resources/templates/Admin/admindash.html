@@ -78,6 +78,11 @@
                         <i class="fas fa-users me-2"></i>User Dossiers (<span th:text="${users != null ? users.size() : 0}">0</span>)
                     </button>
                 </li>
+                <li class="nav-item ms-2" role="presentation">
+                    <button class="nav-link category-filter-pill border-0" id="pills-inquiries-tab" data-bs-toggle="pill" data-bs-target="#pills-inquiries" type="button" role="tab">
+                        <i class="fas fa-envelope-open-text me-2"></i>Reader Inquiries (<span th:text="${inquiries != null ? inquiries.size() : 0}">0</span>)
+                    </button>
+                </li>
             </ul>
 
             <!-- Tab Content -->
@@ -272,6 +277,7 @@
 
                 <!-- 4. USERS DOSSIER TAB -->
                 <div class="tab-pane fade" id="pills-users" role="tabpanel">
+                    <span id="users"></span>
                     <div class="orders-table-wrapper">
                         <div class="p-3 border-bottom" style="background: #FAF7F2;">
                             <h4 class="font-heading fs-5 mb-0">Registered Reader Accounts</h4>
@@ -286,6 +292,7 @@
                                         <th>Orders Count</th>
                                         <th>Cart Items</th>
                                         <th>Downloads</th>
+                                        <th class="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -301,6 +308,71 @@
                                         </td>
                                         <td>
                                             <span class="badge bg-success" th:text="${u.downloadedBooks != null ? u.downloadedBooks.size() : 0}">0</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <form th:action="@{/delete-user}" method="post" class="d-inline" onsubmit="return confirm('Permanently remove this user account and associated cart/order records?');">
+                                                <input type="hidden" name="userId" th:value="${u.userid}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete reader account">
+                                                    <i class="fas fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. READER INQUIRIES TAB -->
+                <div class="tab-pane fade" id="pills-inquiries" role="tabpanel">
+                    <span id="inquiries"></span>
+                    <div class="orders-table-wrapper">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #FAF7F2;">
+                            <h4 class="font-heading fs-5 mb-0">Reader Inquiries &amp; Concierge Messages</h4>
+                            <span class="text-muted small">Total received: <strong th:text="${inquiries != null ? inquiries.size() : 0}">0</strong></span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="luxury-table">
+                                <thead>
+                                    <tr>
+                                        <th>Reader &amp; Contact</th>
+                                        <th>Subject</th>
+                                        <th>Message Overview</th>
+                                        <th>Received Date</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${inquiries == null or #lists.isEmpty(inquiries)}">
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            <i class="fas fa-inbox fa-2x mb-2 d-block" style="color: var(--gold-accent);"></i>
+                                            No inquiries received yet.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="inq : ${inquiries}">
+                                        <td>
+                                            <div class="fw-bold text-dark" th:text="${inq.name}">Sender Name</div>
+                                            <a th:href="'mailto:' + ${inq.email}" class="small text-decoration-none" style="color: var(--primary-accent);" th:text="${inq.email}">email@domain.com</a>
+                                        </td>
+                                        <td>
+                                            <span class="badge" style="background: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);" th:text="${inq.subject}">Subject</span>
+                                        </td>
+                                        <td>
+                                            <div style="max-width: 450px; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary);" th:text="${inq.message}">
+                                                Detailed inquiry message...
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="small text-muted" th:text="${inq.submittedAt != null ? #temporals.format(inq.submittedAt, 'dd MMM yyyy, HH:mm') : 'Recent'}">05 Nov 2026, 18:30</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <form th:action="@{/delete-inquiry}" method="post" class="d-inline" onsubmit="return confirm('Remove this inquiry record?');">
+                                                <input type="hidden" name="inquiryId" th:value="${inq.id}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove inquiry">
+                                                    <i class="fas fa-trash-can"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -333,6 +405,9 @@
                 if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
             } else if (hash === '#users') {
                 const triggerEl = document.getElementById('pills-users-tab');
+                if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            } else if (hash === '#inquiries') {
+                const triggerEl = document.getElementById('pills-inquiries-tab');
                 if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
             }
         });
