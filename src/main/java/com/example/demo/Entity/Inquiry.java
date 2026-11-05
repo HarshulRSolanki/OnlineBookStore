@@ -96,3 +96,4 @@ public class Inquiry {
         this.status = status;
     }
 }
+

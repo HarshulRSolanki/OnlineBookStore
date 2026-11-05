@@ -9,3 +9,4 @@ import com.example.demo.Entity.Inquiry;
 public interface InquiryRepo extends JpaRepository<Inquiry, Long> {
     List<Inquiry> findAllByOrderBySubmittedAtDesc();
 }
+
