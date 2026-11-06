@@ -1,3 +1,4 @@
+
 package com.example.demo.service;
 
 import java.time.Year;
@@ -115,7 +116,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(toEmail);
-            helper.setSubject("🔑 " + otpCode + " is your Quickread Verification Code");
+            helper.setSubject("🔑 Quickread Verification Code");
 
             Context context = new Context();
             context.setVariable("otp", otpCode);
@@ -146,7 +147,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(toEmail);
-            helper.setSubject("🔒 Quickread Password Reset Code: " + resetCode);
+            helper.setSubject("🔒 Quickread Password Reset Request");
 
             Context context = new Context();
             context.setVariable("resetCode", resetCode);

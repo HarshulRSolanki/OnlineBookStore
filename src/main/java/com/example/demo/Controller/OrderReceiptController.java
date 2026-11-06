@@ -124,3 +124,4 @@ public class OrderReceiptController {
         return "redirect:/order";
     }
 }
+
