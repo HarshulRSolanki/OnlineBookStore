@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quickread - Order Receipt &amp; Tax Invoice</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #F5F0E8;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #2C211B;
+            -webkit-font-smoothing: antialiased;
+        }
+        .email-wrapper {
+            width: 100%;
+            background-color: #F5F0E8;
+            padding: 30px 15px;
+        }
+        .email-container {
+            max-width: 620px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(44, 33, 27, 0.08);
+            border: 1px solid #E5D9C8;
+        }
+        .header-bar {
+            background-color: #2C211B;
+            padding: 30px 35px;
+            text-align: center;
+        }
+        .brand-monogram {
+            display: inline-block;
+            width: 44px;
+            height: 44px;
+            line-height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8B6B45, #C5A46D);
+            color: #FFFFFF;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        .brand-title {
+            color: #FAF7F2;
+            font-size: 22px;
+            letter-spacing: 2px;
+            margin: 0;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .brand-subtitle {
+            color: #C5A46D;
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .content-body {
+            padding: 35px 35px 25px 35px;
+        }
+        .intro-box {
+            border-bottom: 1px solid #EFE7DA;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        .intro-greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2C211B;
+            margin: 0 0 8px 0;
+        }
+        .intro-desc {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #6E6259;
+            margin: 0;
+        }
+        .invoice-card {
+            background-color: #FAF7F2;
+            border: 1px solid #E5D9C8;
+            border-radius: 6px;
+            padding: 18px 20px;
+            margin-bottom: 25px;
+        }
+        .invoice-grid {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .invoice-grid td {
+            padding: 5px 0;
+            font-size: 13px;
+        }
+        .invoice-label {
+            color: #8B6B45;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            width: 40%;
+        }
+        .invoice-val {
+            color: #2C211B;
+            font-weight: 600;
+            text-align: right;
+        }
+        .status-badge {
+            display: inline-block;
+            background-color: #E8F5E9;
+            color: #2E7D32;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .table-items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        .table-items th {
+            background-color: #2C211B;
+            color: #FFFFFF;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 12px;
+            text-align: left;
+        }
+        .table-items td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #EFE7DA;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        .book-title {
+            font-weight: 700;
+            color: #2C211B;
+            margin-bottom: 3px;
+        }
+        .book-meta {
+            font-size: 11px;
+            color: #817568;
+        }
+        .table-summary {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        .table-summary td {
+            padding: 6px 0;
+            font-size: 13px;
+        }
+        .table-summary .summary-label {
+            color: #6E6259;
+        }
+        .table-summary .summary-val {
+            text-align: right;
+            color: #2C211B;
+            font-weight: 600;
+        }
+        .total-row td {
+            border-top: 2px solid #2C211B;
+            padding-top: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #2C211B;
+        }
+        .cta-box {
+            text-align: center;
+            padding: 20px 0;
+            border-top: 1px solid #EFE7DA;
+            border-bottom: 1px solid #EFE7DA;
+            margin-bottom: 25px;
+        }
+        .btn-access {
+            display: inline-block;
+            background: linear-gradient(135deg, #8B6B45, #C5A46D);
+            color: #FFFFFF !important;
+            text-decoration: none;
+            padding: 13px 28px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .notice-box {
+            background-color: #FAF6EF;
+            border-left: 3px solid #8B6B45;
+            padding: 12px 15px;
+            font-size: 12px;
+            color: #6E6259;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+        .footer-bar {
+            background-color: #EFE7DA;
+            padding: 25px 35px;
+            text-align: center;
+            font-size: 11px;
+            color: #817568;
+            line-height: 1.6;
+        }
+        .footer-bar a {
+            color: #8B6B45;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="email-wrapper">
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header-bar">
+            <div class="brand-monogram">Q</div>
+            <h1 class="brand-title">Quickread</h1>
+            <div class="brand-subtitle">Curated Literary Editions &bull; Official Tax Invoice</div>
+        </div>
+
+        <!-- Body -->
+        <div class="content-body">
+            <div class="intro-box">
+                <p class="intro-greeting">Dear <span th:text="${customerName}">Reader</span>,</p>
+                <p class="intro-desc">
+                    Thank you for your acquisition. We are delighted to confirm that your payment has been successfully verified, and your edition is now unlocked in your digital bookshelf.
+                </p>
+            </div>
+
+            <!-- Receipt Metadata Grid -->
+            <div class="invoice-card">
+                <table class="invoice-grid">
+                    <tr>
+                        <td class="invoice-label">Receipt Number</td>
+                        <td class="invoice-val" style="font-family: monospace;" th:text="${receiptNumber}">REC-20261106-0001</td>
+                    </tr>
+                    <tr>
+                        <td class="invoice-label">Order Number</td>
+                        <td class="invoice-val" style="font-family: monospace;" th:text="${orderNumber}">ORD-20261106-0001</td>
+                    </tr>
+                    <tr>
+                        <td class="invoice-label">Date &amp; Time</td>
+                        <td class="invoice-val" th:text="${orderDate}">06 Nov 2026, 09:45 IST</td>
+                    </tr>
+                    <tr>
+                        <td class="invoice-label">Payment Status</td>
+                        <td class="invoice-val"><span class="status-badge" th:text="${paymentStatus}">PAID - VERIFIED</span></td>
+                    </tr>
+                    <tr>
+                        <td class="invoice-label">Payment Method</td>
+                        <td class="invoice-val">Stripe Card / Online Checkout</td>
+                    </tr>
+                    <tr th:if="${stripePaymentReference != null}">
+                        <td class="invoice-label">Stripe Reference</td>
+                        <td class="invoice-val" style="font-family: monospace; font-size: 11px;" th:text="${stripePaymentReference}">ch_stripe_ref</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Itemized Products Table -->
+            <table class="table-items">
+                <thead>
+                    <tr>
+                        <th>Edition / Work</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Unit Price</th>
+                        <th style="text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="book-title" th:text="${bookTitle}">The Art of War</div>
+                            <div class="book-meta">Author: <span th:text="${bookAuthor}">Sun Tzu</span> &bull; <span th:text="${bookCategory}">Philosophy</span></div>
+                        </td>
+                        <td style="text-align: center; font-weight: 600;" th:text="${quantity}">1</td>
+                        <td style="text-align: right;" th:text="'₹' + ${unitPrice}">₹499.00</td>
+                        <td style="text-align: right; font-weight: 700;" th:text="'₹' + ${amount}">₹499.00</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Financial Summary -->
+            <table class="table-summary">
+                <tr>
+                    <td class="summary-label">Subtotal</td>
+                    <td class="summary-val" th:text="'₹' + ${subtotal}">₹499.00</td>
+                </tr>
+                <tr>
+                    <td class="summary-label">Digital Delivery Fee</td>
+                    <td class="summary-val" style="color: #2E7D32;">FREE (Instant Access)</td>
+                </tr>
+                <tr>
+                    <td class="summary-label">Taxes &amp; Curatorial Handling</td>
+                    <td class="summary-val">Included</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Total Amount Paid</td>
+                    <td class="summary-val" style="font-size: 17px; color: #2C211B;" th:text="'₹' + ${amount}">₹499.00</td>
+                </tr>
+            </table>
+
+            <!-- Call to Action -->
+            <div class="cta-box">
+                <a th:href="${libraryUrl}" href="/order" class="btn-access">
+                    Open Your Library &amp; Download PDF
+                </a>
+            </div>
+
+            <!-- Notice -->
+            <div class="notice-box">
+                <strong>Attached Document:</strong> An official, print-ready PDF Tax Invoice and Receipt (<code>Receipt-<span th:text="${receiptNumber}">REC-001</span>.pdf</code>) has been attached to this email for your accounting and permanent records.
+            </div>
+
+            <p style="font-size: 13px; color: #6E6259; line-height: 1.5; margin: 0;">
+                If you have questions or require any curatorial support, please reply to this email or contact our concierges at <a href="mailto:itechperson985@gmail.com" style="color: #8B6B45;">itechperson985@gmail.com</a>.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-bar">
+            &copy; <span th:text="${currentYear}">2026</span> Quickread Bookstore Atelier. All Rights Reserved.<br>
+            Designed for discerning readers and literary collectors worldwide.<br>
+            This is an automated transaction confirmation issued upon verified Stripe payment.
+        </div>
+    </div>
+</div>
+</body>
+</html>

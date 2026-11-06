@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Receipt ' + ${order.receiptNumber != null ? order.receiptNumber : ('#' + order.id)} + ' – Quickread'">Order Receipt – Quickread</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+
+    <style>
+        @media print {
+            .no-print, header, footer, .btn-luxury-outline, .btn-luxury-primary {
+                display: none !important;
+            }
+            body {
+                background: #FFFFFF !important;
+                color: #000000 !important;
+            }
+            .receipt-card {
+                box-shadow: none !important;
+                border: 1px solid #CCCCCC !important;
+                margin: 0 !important;
+                padding: 20px !important;
+            }
+        }
+        .receipt-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(44, 33, 27, 0.06);
+            overflow: hidden;
+        }
+        .receipt-header-banner {
+            background: var(--dark-section);
+            color: #FAF7F2;
+            padding: 2.2rem 2.5rem;
+        }
+        .receipt-meta-box {
+            background: var(--cream-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1.25rem 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}" class="no-print"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container" style="max-width: 820px;">
+
+            <!-- Back Navigation & Top Actions -->
+            <div class="d-flex align-items-center justify-content-between mb-4 no-print">
+                <a href="/order" class="btn-luxury-outline py-2 px-3">
+                    <i class="fas fa-arrow-left me-2"></i> Return to Orders &amp; Library
+                </a>
+                <div class="d-flex gap-2">
+                    <button onclick="window.print()" class="btn-luxury-outline py-2 px-3">
+                        <i class="fas fa-print me-1"></i> Print
+                    </button>
+                    <a th:href="@{/orders/{id}/receipt/download(id=${order.id})}" class="btn-luxury-primary py-2 px-3">
+                        <i class="fas fa-file-pdf me-1"></i> Download PDF
+                    </a>
+                </div>
+            </div>
+
+            <!-- Receipt Container -->
+            <div class="receipt-card">
+                <!-- Header Banner -->
+                <div class="receipt-header-banner">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="brand-monogram" style="width: 52px; height: 52px; font-size: 1.4rem;">
+                                <span>Q</span>
+                            </div>
+                            <div>
+                                <h2 class="font-heading fs-3 mb-0 text-white">Quickread</h2>
+                                <span class="small" style="color: var(--gold-accent); letter-spacing: 1px; text-transform: uppercase;">Curated Literary Editions &bull; Official Tax Invoice</span>
+                            </div>
+                        </div>
+                        <div class="text-md-end">
+                            <span class="badge" style="background: rgba(197, 164, 109, 0.2); color: #E9DDCB; border: 1px solid #C5A46D; font-size: 0.85rem; padding: 6px 12px; letter-spacing: 0.5px;">
+                                <i class="fas fa-check-circle me-1 text-success"></i> VERIFIED PAYMENT
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipt Details Body -->
+                <div class="p-4 p-md-5">
+
+                    <!-- Metadata Grid -->
+                    <div class="receipt-meta-box mb-4">
+                        <div class="row g-3">
+                            <div class="col-sm-6 col-md-3">
+                                <span class="text-muted small text-uppercase fw-semibold d-block">Receipt Number</span>
+                                <strong class="text-dark font-monospace" th:text="${order.receiptNumber != null ? order.receiptNumber : ('REC-' + order.id)}">REC-20261106-0001</strong>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <span class="text-muted small text-uppercase fw-semibold d-block">Order Number</span>
+                                <strong class="text-dark font-monospace" th:text="${order.orderNumber != null ? order.orderNumber : ('ORD-' + order.id)}">ORD-20261106-0001</strong>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <span class="text-muted small text-uppercase fw-semibold d-block">Date of Purchase</span>
+                                <span class="text-dark fw-medium" th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMM yyyy, HH:mm') : 'Recent'}">06 Nov 2026</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <span class="text-muted small text-uppercase fw-semibold d-block">Payment Method</span>
+                                <span class="text-dark fw-medium">Stripe Gateway</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer & Transaction Row -->
+                    <div class="row g-4 mb-4 pb-3 border-bottom">
+                        <div class="col-md-6">
+                            <h6 class="font-heading text-dark mb-2 text-uppercase fs-7" style="letter-spacing: 1px; color: var(--primary-accent) !important;">Customer Dossier</h6>
+                            <div class="fw-bold text-dark fs-6" th:text="${order.user != null ? order.user.username : 'Distinguished Reader'}">Harshul Solanki</div>
+                            <div class="text-muted small" th:text="${order.user != null ? order.user.email : 'N/A'}">reader@example.com</div>
+                            <div class="text-muted small" th:if="${order.user != null and order.user.mobileno != null}" th:text="'Phone: ' + ${order.user.mobileno}">Phone: +91 9400000000</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="font-heading text-dark mb-2 text-uppercase fs-7" style="letter-spacing: 1px; color: var(--primary-accent) !important;">Transaction Details</h6>
+                            <div class="small text-muted mb-1">
+                                Stripe Session: <code th:text="${order.stripeSessionId != null ? order.stripeSessionId : 'Stripe-Direct'}">cs_live_...</code>
+                            </div>
+                            <div class="small text-muted mb-1" th:if="${order.stripePaymentIntentId != null}">
+                                Payment Intent: <code th:text="${order.stripePaymentIntentId}">pi_live_...</code>
+                            </div>
+                            <div class="small text-muted">
+                                Digital Access: <span class="badge bg-success">Permanent Instant Delivery</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Itemized Purchases Table -->
+                    <div class="table-responsive mb-4">
+                        <table class="luxury-table w-100">
+                            <thead>
+                                <tr>
+                                    <th>Volume / Description</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark fs-6" th:text="${order.book != null ? order.book.title : 'Acquired Edition'}">Book Title</div>
+                                        <small class="text-muted" th:text="'Author: ' + (${order.book != null ? order.book.author : 'Curated Works'}) + ' • Category: ' + (${order.book != null and order.book.category != null ? order.book.category.name : 'Literature'})">Author &bull; Category</small>
+                                    </td>
+                                    <td class="text-center fw-medium" th:text="${order.quantity > 0 ? order.quantity : 1}">1</td>
+                                    <td class="text-end font-monospace" th:text="'₹' + ${order.unitPrice > 0 ? order.unitPrice : order.amount}">₹499.00</td>
+                                    <td class="text-end fw-bold font-monospace" th:text="'₹' + ${order.amount}">₹499.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="row justify-content-end mb-4">
+                        <div class="col-md-6">
+                            <table class="table table-borderless small mb-0">
+                                <tr>
+                                    <td class="text-muted">Subtotal</td>
+                                    <td class="text-end fw-medium" th:text="'₹' + ${order.amount}">₹499.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Digital Access &amp; Delivery</td>
+                                    <td class="text-end text-success fw-medium">FREE</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Curatorial Taxes (GST/HST)</td>
+                                    <td class="text-end text-muted">Included</td>
+                                </tr>
+                                <tr class="border-top">
+                                    <td class="fs-6 fw-bold text-dark pt-3">Final Amount Paid</td>
+                                    <td class="fs-5 fw-bold text-dark text-end pt-3 font-heading" th:text="'₹' + ${order.amount}">₹499.00</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Digital Actions Box -->
+                    <div class="p-3 rounded-3 d-flex flex-wrap align-items-center justify-content-between gap-3 no-print" style="background: var(--light-section); border: 1px solid var(--border-color);">
+                        <div>
+                            <span class="fw-bold text-dark d-block">Ready to Read?</span>
+                            <small class="text-secondary">Your high-resolution PDF edition is prepared for direct download.</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a th:if="${order.book != null}" th:href="@{/download/{id}(id=${order.book.id})}" class="btn-luxury-primary py-2 px-3">
+                                <i class="fas fa-book-open me-1"></i> Download Book PDF
+                            </a>
+                            <form th:action="@{/orders/{id}/receipt/resend(id=${order.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn-luxury-outline py-2 px-3" title="Resend copy to your email">
+                                    <i class="fas fa-envelope me-1"></i> Resend Email
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Receipt Footer -->
+                <div class="p-4 border-top text-center text-muted small" style="background: #FAF7F2;">
+                    Quickread Bookstore Atelier &bull; Confidential Proof of Purchase &bull; Support: <a href="mailto:itechperson985@gmail.com" class="text-dark">itechperson985@gmail.com</a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}" class="no-print"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>

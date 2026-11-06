@@ -1,103 +1,183 @@
 package com.example.demo.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
-public class OTPservice
-{
-	@Autowired
-    private JavaMailSender mailSender;
+public class OTPservice {
+
+    @Autowired
+    private EmailService emailService;
 
     private final Map<String, OTPData> otpStore = new ConcurrentHashMap<>();
     private static final long OTP_VALIDITY_DURATION = 5 * 60 * 1000; // 5 minutes
+    private static final long RESEND_COOLDOWN_DURATION = 60 * 1000;  // 60 seconds
+    private static final int MAX_FAILED_ATTEMPTS = 5;
 
-    // Generate and store OTP for a user
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    /**
+     * Check if user is eligible to request a new OTP (60s cooldown)
+     */
+    public boolean canResend(String email) {
+        if (email == null) return false;
+        OTPData data = otpStore.get(email.trim().toLowerCase());
+        if (data == null) return true;
+        return (System.currentTimeMillis() - data.getLastSentTimestamp()) >= RESEND_COOLDOWN_DURATION;
+    }
+
+    /**
+     * Seconds remaining before user can resend
+     */
+    public long getCooldownRemainingSeconds(String email) {
+        if (email == null) return 0;
+        OTPData data = otpStore.get(email.trim().toLowerCase());
+        if (data == null) return 0;
+        long elapsed = System.currentTimeMillis() - data.getLastSentTimestamp();
+        if (elapsed >= RESEND_COOLDOWN_DURATION) return 0;
+        return (RESEND_COOLDOWN_DURATION - elapsed) / 1000;
+    }
+
+    /**
+     * Generate cryptographically secure 6-digit OTP and store SHA-256 hash
+     */
     public String generateOTP(String email) {
-        String otp = String.valueOf(new Random().nextInt(900000) + 100000); // Generate 6-digit OTP
-        OTPData otpData = new OTPData(otp, System.currentTimeMillis());
+        if (email == null) return null;
+        String normalizedEmail = email.trim().toLowerCase();
 
-        otpStore.put(email, otpData); // Store only the latest OTP for each user
+        // Generate 6-digit number [100000, 999999]
+        int code = 100000 + secureRandom.nextInt(900000);
+        String otp = String.valueOf(code);
+
+        String hashedOtp = hashOtp(otp);
+        long now = System.currentTimeMillis();
+
+        OTPData otpData = new OTPData(hashedOtp, now, now, 0);
+        otpStore.put(normalizedEmail, otpData);
+
         return otp;
     }
 
-    // Send OTP via email
+    /**
+     * Send OTP using branded HTML email template
+     */
     public void sendOTP(String email, String otp) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("Your OTP Code");
-            message.setText("Your OTP for verification is: " + otp + "\nThis OTP is valid for 5 minutes.");
-            mailSender.send(message);
-        } catch (Exception e) {
-            System.err.println("Notice: Could not send OTP email via SMTP (" + e.getMessage() + ")");
-            System.out.println("=================================================");
-            System.out.println("🔑 [QUICKREAD VERIFICATION OTP]");
-            System.out.println("Email: " + email);
-            System.out.println("OTP Code: " + otp);
-            System.out.println("=================================================");
-        }
+        emailService.sendOtpEmail(email, otp);
     }
 
-    // Verify OTP for a user
-    public boolean verifyOTP(String email, String otp) {
-        OTPData otpData = otpStore.get(email);
+    /**
+     * Verify OTP with security hash, expiration, and brute-force attempt limits
+     */
+    public boolean verifyOTP(String email, String rawOtp) {
+        if (email == null || rawOtp == null || rawOtp.trim().isEmpty()) {
+            return false;
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+        OTPData otpData = otpStore.get(normalizedEmail);
 
         if (otpData == null) {
-            return false; // No OTP found for the user
+            return false;
         }
 
         long currentTime = System.currentTimeMillis();
-        if ((currentTime - otpData.getTimestamp()) > OTP_VALIDITY_DURATION) {
-            otpStore.remove(email); // Remove expired OTP
+
+        // 1. Expiration check (5 minutes)
+        if ((currentTime - otpData.getCreatedAt()) > OTP_VALIDITY_DURATION) {
+            otpStore.remove(normalizedEmail);
             return false;
         }
 
-        if (otpData.getOtp().equals(otp)) {
-            otpStore.remove(email); // Remove OTP after successful verification
+        // 2. Max attempts check
+        if (otpData.getAttempts() >= MAX_FAILED_ATTEMPTS) {
+            otpStore.remove(normalizedEmail);
+            return false;
+        }
+
+        // 3. Cryptographic hash comparison
+        String hashedAttempt = hashOtp(rawOtp.trim());
+        if (otpData.getHashedOtp().equals(hashedAttempt)) {
+            // Immediate invalidation on success
+            otpStore.remove(normalizedEmail);
             return true;
-        }
-
-        long elapsedTimeSeconds = (currentTime - otpData.getTimestamp()) / 1000; // Convert to seconds
-        if (elapsedTimeSeconds > 300) { // 300 seconds = 5 minutes
-            otpStore.remove(email); // Remove expired OTP
+        } else {
+            // Increment failed attempt counter
+            int attempts = otpData.incrementAttempts();
+            if (attempts >= MAX_FAILED_ATTEMPTS) {
+                // Brute-force threshold exceeded: invalidate immediately
+                otpStore.remove(normalizedEmail);
+                System.err.println("Brute-force protection: Inactivated OTP for " + normalizedEmail + " after 5 failed attempts.");
+            }
             return false;
         }
-
-        
-        return false; // Invalid OTP
     }
 
-    // Scheduled task to remove expired OTPs every minute
-    @Scheduled(fixedRate = 60000) // Runs every 60 seconds
+    /**
+     * SHA-256 hash helper
+     */
+    private String hashOtp(String plainOtp) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(plainOtp.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm missing in JVM", e);
+        }
+    }
+
+    /**
+     * Periodic scheduled cleanup of expired OTPs every 60 seconds
+     */
+    @Scheduled(fixedRate = 60000)
     public void cleanupExpiredOTPs() {
         long currentTime = System.currentTimeMillis();
-        otpStore.entrySet().removeIf(entry -> (currentTime - entry.getValue().getTimestamp()) > OTP_VALIDITY_DURATION);
+        otpStore.entrySet().removeIf(entry -> (currentTime - entry.getValue().getCreatedAt()) > OTP_VALIDITY_DURATION);
     }
 
-    // Inner class to store OTP data
+    /**
+     * Thread-safe OTP record
+     */
     private static class OTPData {
-        private final String otp;
-        private final long timestamp;
+        private final String hashedOtp;
+        private final long createdAt;
+        private final long lastSentTimestamp;
+        private int attempts;
 
-        public OTPData(String otp, long timestamp) {
-            this.otp = otp;
-            this.timestamp = timestamp;
+        public OTPData(String hashedOtp, long createdAt, long lastSentTimestamp, int attempts) {
+            this.hashedOtp = hashedOtp;
+            this.createdAt = createdAt;
+            this.lastSentTimestamp = lastSentTimestamp;
+            this.attempts = attempts;
         }
 
-        public String getOtp() {
-            return otp;
+        public String getHashedOtp() {
+            return hashedOtp;
         }
 
-        public long getTimestamp() {
-            return timestamp;
+        public long getCreatedAt() {
+            return createdAt;
+        }
+
+        public long getLastSentTimestamp() {
+            return lastSentTimestamp;
+        }
+
+        public int getAttempts() {
+            return attempts;
+        }
+
+        public synchronized int incrementAttempts() {
+            this.attempts++;
+            return this.attempts;
         }
     }
 }

@@ -37,16 +37,22 @@
                     <table class="luxury-table">
                         <thead>
                             <tr>
+                                <th>Order Ref</th>
                                 <th>Volume Title</th>
                                 <th>Author / Category</th>
                                 <th>Amount Paid</th>
                                 <th>Payment Status</th>
                                 <th>Order Date</th>
-                                <th class="text-end">Digital Access</th>
+                                <th class="text-end">Receipts &amp; Access</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="order : ${orders}">
+                                <td>
+                                    <span class="badge font-monospace" style="background: #FAF7F2; color: var(--primary-accent); border: 1px solid var(--border-color);"
+                                          th:text="${order.orderNumber != null ? order.orderNumber : ('ORD-' + order.id)}">ORD-001</span>
+                                    <div class="small text-muted font-monospace mt-1" th:text="${order.receiptNumber != null ? order.receiptNumber : ('REC-' + order.id)}">REC-001</div>
+                                </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="brand-monogram" style="width: 36px; height: 36px; font-size: 1rem;">
@@ -54,7 +60,7 @@
                                         </div>
                                         <div>
                                             <h5 class="font-heading fs-6 mb-0 text-dark" th:text="${order.book != null ? order.book.title : 'Acquired Edition'}">Book Title</h5>
-                                            <small class="text-muted" th:text="'Receipt #' + ${order.id}">Order #1</small>
+                                            <small class="text-muted" th:text="'Qty: ' + (${order.quantity > 0 ? order.quantity : 1})">Qty: 1</small>
                                         </div>
                                     </div>
                                 </td>
@@ -68,17 +74,30 @@
                                 </td>
                                 <td>
                                     <span class="status-badge-paid">
-                                        <i class="fas fa-check-circle me-1"></i> <span th:text="${order.paymentStatus != null ? order.paymentStatus : 'SUCCESS'}">PAID</span>
+                                        <i class="fas fa-check-circle me-1"></i> <span th:text="${order.paymentStatus != null ? order.paymentStatus : 'PAID'}">PAID</span>
                                     </span>
                                 </td>
                                 <td>
                                     <span class="small text-muted" th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMM yyyy') : 'Recent'}">05 Nov 2026</span>
                                 </td>
                                 <td class="text-end">
-                                    <a th:if="${order.book != null}" th:href="@{/download/{id}(id=${order.book.id})}" class="btn-luxury-primary py-2 px-3" style="font-size: 0.85rem;" title="Download PDF to device">
-                                        <i class="fas fa-download me-1"></i> Download PDF
-                                    </a>
-                                    <span th:unless="${order.book != null}" class="badge bg-secondary">Archived</span>
+                                    <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                                        <!-- View Tax Receipt -->
+                                        <a th:href="@{/orders/{id}/receipt(id=${order.id})}" class="btn-luxury-outline py-2 px-3" style="font-size: 0.8rem;" title="View official tax receipt">
+                                            <i class="fas fa-receipt me-1"></i> View Receipt
+                                        </a>
+
+                                        <!-- Download PDF Tax Invoice -->
+                                        <a th:href="@{/orders/{id}/receipt/download(id=${order.id})}" class="btn-luxury-outline py-2 px-3" style="font-size: 0.8rem;" title="Download official PDF receipt">
+                                            <i class="fas fa-file-invoice text-danger me-1"></i> PDF Receipt
+                                        </a>
+
+                                        <!-- Download Book File -->
+                                        <a th:if="${order.book != null}" th:href="@{/download/{id}(id=${order.book.id})}" class="btn-luxury-primary py-2 px-3" style="font-size: 0.8rem;" title="Download book edition to device">
+                                            <i class="fas fa-download me-1"></i> Download Book
+                                        </a>
+                                        <span th:unless="${order.book != null}" class="badge bg-secondary">Archived</span>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>

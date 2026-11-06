@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Analytics &amp; Reports – Quickread Admin</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Chart.js 4 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+
+    <style>
+        @media print {
+            .no-print, header, footer, .filter-card, .btn-group, .export-bar {
+                display: none !important;
+            }
+            body {
+                background: #FFFFFF !important;
+                color: #000000 !important;
+            }
+            .stat-card, .chart-card, .orders-table-wrapper {
+                box-shadow: none !important;
+                border: 1px solid #DDDDDD !important;
+            }
+        }
+        .stat-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem 1.4rem;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(44, 33, 27, 0.08);
+            border-color: var(--primary-accent);
+        }
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            background: #FAF7F2;
+            color: var(--primary-accent);
+        }
+        .stat-val {
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0.35rem 0 0.15rem 0;
+            line-height: 1.1;
+        }
+        .stat-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .filter-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(44, 33, 27, 0.04);
+        }
+        .chart-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(44, 33, 27, 0.04);
+            height: 100%;
+        }
+        .chart-card h5 {
+            font-family: var(--font-heading);
+            color: var(--text-primary);
+            font-size: 1.05rem;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.6rem;
+        }
+        .status-badge-paid {
+            background: #E8F5E9;
+            color: #2E7D32;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .status-badge-pending {
+            background: #FFF8E1;
+            color: #F57F17;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .status-badge-failed {
+            background: #FFEBEE;
+            color: #C62828;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <div th:replace="~{common/header :: navbar}" class="no-print"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container-fluid px-lg-5">
+
+            <!-- Top Header & Action Controls -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="brand-monogram" style="width: 50px; height: 50px; font-size: 1.3rem;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <span class="section-subtitle-tag mb-0">Financial Intelligence &bull; Live Database Records</span>
+                        <h1 class="font-heading fs-2 mb-0">Book Sales Analytics &amp; Reports</h1>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 no-print">
+                    <!-- Export PDF -->
+                    <a th:href="@{/admin/reports/export/pdf(startDate=${filterStartDate},endDate=${filterEndDate},categoryId=${filterCategoryId},bookName=${filterBookName},paymentStatus=${filterPaymentStatus})}"
+                       class="btn-luxury-outline py-2 px-3" title="Export landscape A4 PDF report with charts & summaries">
+                        <i class="fas fa-file-pdf text-danger me-1"></i> Export PDF
+                    </a>
+
+                    <!-- Export Excel -->
+                    <a th:href="@{/admin/reports/export/excel(startDate=${filterStartDate},endDate=${filterEndDate},categoryId=${filterCategoryId},bookName=${filterBookName},paymentStatus=${filterPaymentStatus})}"
+                       class="btn-luxury-outline py-2 px-3" title="Export Microsoft Excel spreadsheet (.xlsx)">
+                        <i class="fas fa-file-excel text-success me-1"></i> Export Excel
+                    </a>
+
+                    <!-- Export CSV -->
+                    <a th:href="@{/admin/reports/export/csv(startDate=${filterStartDate},endDate=${filterEndDate},categoryId=${filterCategoryId},bookName=${filterBookName},paymentStatus=${filterPaymentStatus})}"
+                       class="btn-luxury-outline py-2 px-3" title="Export standard CSV">
+                        <i class="fas fa-file-csv text-primary me-1"></i> Export CSV
+                    </a>
+
+                    <!-- Print Report -->
+                    <button onclick="window.print()" class="btn-luxury-outline py-2 px-3">
+                        <i class="fas fa-print me-1"></i> Print
+                    </button>
+
+                    <!-- Back to Admin Dashboard -->
+                    <a th:href="@{/admindash}" class="btn-luxury-primary py-2 px-3">
+                        <i class="fas fa-arrow-left me-1"></i> Admin Console
+                    </a>
+                </div>
+            </div>
+
+            <!-- MODULE 2: DASHBOARD STATISTIC CARDS (8 Real-time DB Metrics) -->
+            <div class="row g-3 mb-4">
+                <!-- 1. Total Revenue -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="stat-label">Total Revenue</span>
+                            <div class="stat-icon" style="color: #2E7D32; background: #E8F5E9;"><i class="fas fa-indian-rupee-sign"></i></div>
+                        </div>
+                        <div class="stat-val" th:text="'₹' + ${#numbers.formatDecimal(stats.totalRevenue, 1, 2)}">₹0.00</div>
+                        <small class="text-muted">Verified Stripe Gross</small>
+                    </div>
+                </div>
+
+                <!-- 2. Total Orders -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="stat-label">Total Orders</span>
+                            <div class="stat-icon" style="color: #1565C0; background: #E3F2FD;"><i class="fas fa-box"></i></div>
+                        </div>
+                        <div class="stat-val" th:text="${stats.totalOrders}">0</div>
+                        <small class="text-muted">Recorded Transactions</small>
+                    </div>
+                </div>
+
+                <!-- 3. Total Books Sold -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="stat-label">Total Books Sold</span>
+                            <div class="stat-icon" style="color: #8B6B45; background: #FAF6EF;"><i class="fas fa-book-open"></i></div>
+                        </div>
+                        <div class="stat-val" th:text="${stats.totalBooksSold}">0</div>
+                        <small class="text-muted">Digital Copies Dispatched</small>
+                    </div>
+                </div>
+
+                <!-- 4. Average Order Value -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="stat-label">Avg Order Value (AOV)</span>
+                            <div class="stat-icon" style="color: #6A1B9A; background: #F3E5F5;"><i class="fas fa-scale-balanced"></i></div>
+                        </div>
+                        <div class="stat-val" th:text="'₹' + ${#numbers.formatDecimal(stats.averageOrderValue, 1, 2)}">₹0.00</div>
+                        <small class="text-muted">Revenue Per Order</small>
+                    </div>
+                </div>
+
+                <!-- 5. Successful Payments -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="stat-label">Successful Payments</span>
+                            <div class="stat-icon" style="color: #2E7D32; background: #E8F5E9;"><i class="fas fa-circle-check"></i></div>
+                        </div>
+                        <div class="stat-val text-success" th:text="${stats.successfulPayments}">0</div>
+                        <small class="text-muted">Completed &amp; Paid</small>
+                    </div>
+                </div>
+
+                <!-- 6. Pending Orders -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="stat-label">Pending Orders</span>
+                            <div class="stat-icon" style="color: #E65100; background: #FFF3E0;"><i class="fas fa-clock"></i></div>
+                        </div>
+                        <div class="stat-val text-warning" th:text="${stats.pendingOrders}">0</div>
+                        <small class="text-muted">Awaiting Stripe Capture</small>
+                    </div>
+                </div>
+
+                <!-- 7. Cancelled / Failed Orders -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="stat-label">Cancelled / Failed</span>
+                            <div class="stat-icon" style="color: #C62828; background: #FFEBEE;"><i class="fas fa-ban"></i></div>
+                        </div>
+                        <div class="stat-val text-danger" th:text="${stats.cancelledOrders}">0</div>
+                        <small class="text-muted">Unfinished Sessions</small>
+                    </div>
+                </div>
+
+                <!-- 8. Best-Selling Book -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="stat-label">Best-Selling Book</span>
+                            <div class="stat-icon" style="color: #C5A46D; background: #FFF9E6;"><i class="fas fa-crown"></i></div>
+                        </div>
+                        <div class="stat-val fs-6 text-truncate" style="font-family: inherit; font-weight: 700;" th:text="${stats.bestSellingBook}">N/A</div>
+                        <small class="text-muted">Highest Volume Title</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INTERACTIVE SALES CHARTS SECTION (Chart.js) -->
+            <div class="row g-4 mb-4">
+                <!-- Chart 1: Daily Sales Trend -->
+                <div class="col-lg-6">
+                    <div class="chart-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5><i class="fas fa-chart-line text-primary me-2"></i>Daily Sales Trend (Last 7 Days)</h5>
+                            <span class="badge bg-light text-dark border">INR Revenue</span>
+                        </div>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="dailySalesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Monthly Sales Performance -->
+                <div class="col-lg-6">
+                    <div class="chart-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5><i class="fas fa-chart-column text-success me-2"></i>Monthly Sales Performance (Last 6 Months)</h5>
+                            <span class="badge bg-light text-dark border">INR Revenue</span>
+                        </div>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="monthlySalesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart 3: Revenue by Book Category -->
+                <div class="col-lg-6">
+                    <div class="chart-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5><i class="fas fa-chart-pie text-warning me-2"></i>Revenue by Category</h5>
+                            <span class="badge bg-light text-dark border">Category Share</span>
+                        </div>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="categoryRevenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart 4: Order Status Breakdown -->
+                <div class="col-lg-6">
+                    <div class="chart-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5><i class="fas fa-doughnut-chart text-info me-2"></i>Order Status Distribution</h5>
+                            <span class="badge bg-light text-dark border">All Orders</span>
+                        </div>
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="orderStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORT FILTERS PANEL -->
+            <div class="filter-card mb-4 no-print">
+                <form th:action="@{/admin/reports}" method="get" class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Start Date</label>
+                        <input type="date" name="startDate" th:value="${filterStartDate}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted text-uppercase">End Date</label>
+                        <input type="date" name="endDate" th:value="${filterEndDate}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Book Category</label>
+                        <select name="categoryId" class="form-select form-select-sm">
+                            <option value="0">All Categories</option>
+                            <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == filterCategoryId}">Category</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Book Title</label>
+                        <input type="text" name="bookName" th:value="${filterBookName}" placeholder="Search title..." class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Payment Status</label>
+                        <select name="paymentStatus" class="form-select form-select-sm">
+                            <option value="ALL" th:selected="${filterPaymentStatus == 'ALL'}">All Statuses</option>
+                            <option value="PAID" th:selected="${filterPaymentStatus == 'PAID' || filterPaymentStatus == 'SUCCESS'}">Paid / Success</option>
+                            <option value="PENDING" th:selected="${filterPaymentStatus == 'PENDING'}">Pending</option>
+                            <option value="FAILED" th:selected="${filterPaymentStatus == 'FAILED' || filterPaymentStatus == 'CANCELLED'}">Failed / Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1 d-flex gap-1">
+                        <button type="submit" class="btn-luxury-primary btn-sm w-100 py-2" title="Apply Filters">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <a th:href="@{/admin/reports}" class="btn btn-outline-secondary btn-sm py-2" title="Reset Filters">
+                            <i class="fas fa-rotate-left"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TABULAR SALES REPORT -->
+            <div class="orders-table-wrapper">
+                <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2" style="background: #FAF7F2;">
+                    <div>
+                        <h4 class="font-heading fs-5 mb-0">Detailed Sales Ledger</h4>
+                        <small class="text-muted">Showing <strong th:text="${orders != null ? orders.size() : 0}">0</strong> matching transactions</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 no-print">
+                        <input type="text" id="tableLiveSearch" placeholder="Quick search table..." class="form-control form-control-sm" style="max-width: 200px;">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="luxury-table w-100" id="salesTable">
+                        <thead>
+                            <tr>
+                                <th>Order Ref</th>
+                                <th>Receipt #</th>
+                                <th>Customer</th>
+                                <th>Book Volume</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Total Amount</th>
+                                <th>Payment Method</th>
+                                <th>Status</th>
+                                <th>Date &amp; Time</th>
+                                <th class="text-end no-print">Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="order : ${orders}">
+                                <td>
+                                    <strong class="font-monospace text-dark" th:text="${order.orderNumber != null ? order.orderNumber : ('ORD-' + order.id)}">ORD-20261106-0001</strong>
+                                </td>
+                                <td>
+                                    <span class="font-monospace text-muted small" th:text="${order.receiptNumber != null ? order.receiptNumber : ('REC-' + order.id)}">REC-20261106-0001</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${order.user != null ? order.user.username : 'Reader'}">Reader Name</div>
+                                    <small class="text-muted" th:text="${order.user != null ? order.user.email : ''}">reader@email.com</small>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${order.book != null ? order.book.title : 'Edition'}">Book Title</div>
+                                    <small class="text-muted" th:text="${order.book != null and order.book.category != null ? order.book.category.name : '-'}">Category</small>
+                                </td>
+                                <td class="text-center fw-medium" th:text="${order.quantity > 0 ? order.quantity : 1}">1</td>
+                                <td class="text-end font-monospace" th:text="'₹' + ${#numbers.formatDecimal(order.unitPrice > 0 ? order.unitPrice : order.amount, 1, 2)}">₹499.00</td>
+                                <td class="text-end fw-bold font-monospace" th:text="'₹' + ${#numbers.formatDecimal(order.amount, 1, 2)}">₹499.00</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fab fa-stripe text-primary me-1"></i> Stripe
+                                    </span>
+                                </td>
+                                <td>
+                                    <span th:if="${order.paymentStatus == 'PAID' or order.paymentStatus == 'SUCCESS'}" class="status-badge-paid">
+                                        <i class="fas fa-check-circle me-1"></i> PAID
+                                    </span>
+                                    <span th:if="${order.paymentStatus == 'PENDING'}" class="status-badge-pending">
+                                        <i class="fas fa-clock me-1"></i> PENDING
+                                    </span>
+                                    <span th:if="${order.paymentStatus != 'PAID' and order.paymentStatus != 'SUCCESS' and order.paymentStatus != 'PENDING'}" class="status-badge-failed">
+                                        <i class="fas fa-ban me-1"></i> <span th:text="${order.paymentStatus != null ? order.paymentStatus : 'FAILED'}">FAILED</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="small text-muted" th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd-MM-yyyy HH:mm') : '-'}">06-11-2026 09:45</span>
+                                </td>
+                                <td class="text-end no-print">
+                                    <div class="d-inline-flex gap-1">
+                                        <a th:href="@{/orders/{id}/receipt(id=${order.id})}" class="btn btn-outline-secondary btn-sm py-1 px-2" title="View Customer Receipt">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a th:href="@{/orders/{id}/receipt/download(id=${order.id})}" class="btn btn-outline-danger btn-sm py-1 px-2" title="Download Official Tax PDF">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${orders == null or #lists.isEmpty(orders)}">
+                                <td colspan="11" class="text-center py-4 text-muted">
+                                    <i class="fas fa-inbox fs-3 d-block mb-2"></i>
+                                    No sales records match the selected date or filter parameters.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}" class="no-print"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+
+    <!-- Chart.js Live Initialization Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Live table quick-search
+            const searchInput = document.getElementById('tableLiveSearch');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', function () {
+                    const filter = searchInput.value.toLowerCase();
+                    const rows = document.querySelectorAll('#salesTable tbody tr');
+                    rows.forEach(row => {
+                        const text = row.innerText.toLowerCase();
+                        row.style.display = text.includes(filter) ? '' : 'none';
+                    });
+                });
+            }
+
+            // Fetch live analytics from /admin/reports/analytics
+            fetch('/admin/reports/analytics')
+                .then(response => response.json())
+                .then(data => {
+                    initCharts(data);
+                })
+                .catch(err => {
+                    console.error('Could not load chart analytics:', err);
+                });
+
+            function initCharts(data) {
+                const colors = {
+                    espresso: '#2C211B',
+                    gold: '#C5A46D',
+                    tan: '#8B6B45',
+                    cream: '#FAF7F2',
+                    border: '#E5D9C8',
+                    palette: ['#8B6B45', '#C5A46D', '#2C211B', '#59402E', '#3E5C76', '#1D3557', '#6D6875']
+                };
+
+                // 1. Daily Sales Chart
+                const ctxDaily = document.getElementById('dailySalesChart');
+                if (ctxDaily && data.dailyLabels) {
+                    new Chart(ctxDaily, {
+                        type: 'line',
+                        data: {
+                            labels: data.dailyLabels,
+                            datasets: [{
+                                label: 'Revenue (₹)',
+                                data: data.dailyValues,
+                                borderColor: colors.tan,
+                                backgroundColor: 'rgba(139, 107, 69, 0.15)',
+                                fill: true,
+                                tension: 0.35,
+                                borderWidth: 2,
+                                pointBackgroundColor: colors.gold,
+                                pointRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: val => '₹' + val
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 2. Monthly Sales Chart
+                const ctxMonthly = document.getElementById('monthlySalesChart');
+                if (ctxMonthly && data.monthlyLabels) {
+                    new Chart(ctxMonthly, {
+                        type: 'bar',
+                        data: {
+                            labels: data.monthlyLabels,
+                            datasets: [{
+                                label: 'Monthly Revenue (₹)',
+                                data: data.monthlyValues,
+                                backgroundColor: colors.espresso,
+                                hoverBackgroundColor: colors.tan,
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: val => '₹' + val
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 3. Category Revenue Chart
+                const ctxCategory = document.getElementById('categoryRevenueChart');
+                if (ctxCategory && data.categoryLabels && data.categoryLabels.length > 0) {
+                    new Chart(ctxCategory, {
+                        type: 'doughnut',
+                        data: {
+                            labels: data.categoryLabels,
+                            datasets: [{
+                                data: data.categoryValues,
+                                backgroundColor: colors.palette,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                }
+
+                // 4. Order Status Breakdown
+                const ctxStatus = document.getElementById('orderStatusChart');
+                if (ctxStatus && data.statusLabels) {
+                    new Chart(ctxStatus, {
+                        type: 'pie',
+                        data: {
+                            labels: data.statusLabels,
+                            datasets: [{
+                                data: data.statusValues,
+                                backgroundColor: ['#2E7D32', '#F57F17', '#C62828'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

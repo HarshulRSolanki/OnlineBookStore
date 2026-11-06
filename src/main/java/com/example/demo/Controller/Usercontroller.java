@@ -85,6 +85,9 @@ public class Usercontroller {
 	@Autowired
 	private StripeService stripeService;
 
+	@Autowired
+	private com.example.demo.service.OrderReceiptService orderReceiptService;
+
 	@GetMapping("/userdash")
 	public String user(HttpSession session, Model model) {
 		User user = (User) session.getAttribute("loggedInUser");
@@ -212,11 +215,17 @@ public class Usercontroller {
 
 	@PostMapping("/resend-otp")
 	public String resendOtp(@RequestParam("email") String email, Model model) {
+		if (email != null && !otpservice.canResend(email)) {
+			long remaining = otpservice.getCooldownRemainingSeconds(email);
+			model.addAttribute("email", email);
+			model.addAttribute("error", "Security Cooldown: Please wait " + remaining + " seconds before requesting a new code.");
+			return "verifyotp";
+		}
 		// Generate a new OTP and send it again
 		String newOtp = otpservice.generateOTP(email);
 		otpservice.sendOTP(email, newOtp);
 		model.addAttribute("email", email);
-		model.addAttribute("message", "A new OTP has been sent to your email.");
+		model.addAttribute("message", "A new secure verification code has been dispatched to your email.");
 		return "verifyotp";
 	}
 
@@ -382,6 +391,12 @@ public class Usercontroller {
 			return "redirect:/cart";
 		}
 
+		// ✅ Check idempotency to prevent duplicate orders and emails
+		if (orderRepo.findByStripeSessionId(sessionId).isPresent()) {
+			redirectAttributes.addFlashAttribute("message", "Payment verified! Your edition is ready in your library.");
+			return "redirect:/order";
+		}
+
 		// ✅ Fetch user details from session, metadata, or customer email
 		User user = (User) sessionHttp.getAttribute("loggedInUser");
 		if (user == null && session.getMetadata() != null && session.getMetadata().containsKey("userId")) {
@@ -416,11 +431,20 @@ public class Usercontroller {
 		Order order = new Order();
 		order.setUser(user);
 		order.setBook(book);
-		order.setAmount(book.getPrice());
-		order.setPaymentStatus("SUCCESS");
+		order.setQuantity(1);
+		double price = (double) book.getPrice();
+		order.setUnitPrice(price);
+		order.setAmount(price);
+		order.setPaymentStatus("PAID");
 		order.setCheckedout(true);
 		order.setOrderDate(LocalDateTime.now());
-		orderRepo.save(order);
+		order.setStripeSessionId(sessionId);
+		if (session.getPaymentIntent() != null) {
+			order.setStripePaymentIntentId(session.getPaymentIntent());
+		}
+
+		// Automated receipt processing & email dispatch with PDF attachment
+		orderReceiptService.processAndSendReceipt(order, sessionId, session.getPaymentIntent());
 
 		// Store download record if not already stored
 		if (!downloadRepo.existsByUserAndBook(user, book)) {
@@ -431,14 +455,7 @@ public class Usercontroller {
 			downloadRepo.save(download);
 		}
 
-		// ✅ Send order confirmation email safely
-		try {
-			emailService.sendOrderConfirmation(user.getEmail(), book.getTitle(), book.getPrice());
-		} catch (Exception e) {
-			System.err.println("Notice: Could not send order confirmation email: " + e.getMessage());
-		}
-
-		redirectAttributes.addFlashAttribute("message", "Payment successful! The edition has been added to your library.");
+		redirectAttributes.addFlashAttribute("message", "Payment successful! The edition and tax receipt have been issued.");
 		return "redirect:/order";
 	}
 
@@ -451,6 +468,12 @@ public class Usercontroller {
 		if (session == null || !"paid".equals(session.getPaymentStatus())) {
 			redirectAttributes.addFlashAttribute("error", "Payment could not be verified.");
 			return "redirect:/cart";
+		}
+
+		// Check idempotency
+		if (orderRepo.findByStripeSessionId(sessionId).isPresent()) {
+			redirectAttributes.addFlashAttribute("message", "Payment verified! Your editions are ready in your library.");
+			return "redirect:/order";
 		}
 
 		User user = (User) sessionHttp.getAttribute("loggedInUser");
@@ -483,13 +506,23 @@ public class Usercontroller {
 			Order order = new Order();
 			order.setUser(user);
 			order.setBook(cart.getBook());
-			order.setAmount(cart.getBook().getPrice());
-			order.setPaymentStatus("SUCCESS");
+			int qty = cart.getQuantity() > 0 ? cart.getQuantity() : 1;
+			order.setQuantity(qty);
+			double price = (double) cart.getBook().getPrice();
+			order.setUnitPrice(price);
+			order.setAmount(price * qty);
+			order.setPaymentStatus("PAID");
 			order.setCheckedout(true);
 			order.setOrderDate(LocalDateTime.now());
-			orderRepo.save(order);
+			order.setStripeSessionId(sessionId);
+			if (session.getPaymentIntent() != null) {
+				order.setStripePaymentIntentId(session.getPaymentIntent());
+			}
 
-			// Optionally, also store as a downloaded book
+			// Automated receipt processing & email dispatch with PDF attachment
+			orderReceiptService.processAndSendReceipt(order, sessionId, session.getPaymentIntent());
+
+			// Store as downloaded book
 			if (!downloadRepo.existsByUserAndBook(user, cart.getBook())) {
 				Download download = new Download();
 				download.setUser(user);
@@ -497,20 +530,13 @@ public class Usercontroller {
 				download.setDownloadDate(LocalDateTime.now());
 				downloadRepo.save(download);
 			}
-
-			// Send email safely
-			try {
-				emailService.sendOrderConfirmation(user.getEmail(), cart.getBook().getTitle(), cart.getBook().getPrice());
-			} catch (Exception e) {
-				System.err.println("Notice: Could not send order confirmation email: " + e.getMessage());
-			}
 		}
 
 		// Clear cart after order is saved
 		cartService.clearCart(user.getUserid());
 		sessionHttp.setAttribute("cartTotal", 0.0);
 
-		redirectAttributes.addFlashAttribute("message", "Payment successful! Your order has been placed.");
+		redirectAttributes.addFlashAttribute("message", "Payment successful! Your orders and official receipts have been generated.");
 		return "redirect:/order";
 	}
 
