@@ -35,8 +35,7 @@ import com.example.demo.service.OTPservice;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
-public class Logincontroller 
-{		
+public class Logincontroller {
     @Value("${app.admin.username:admin123}")
     private String adminUsername;
 
@@ -45,40 +44,39 @@ public class Logincontroller
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-		
+
     @Autowired
-    private UserRepo userRepo;	
+    private UserRepo userRepo;
 
     @Autowired
     private BookRepo bookRepo;
-    
+
     @Autowired
     private CartRepo cartRepo;
-    
+
     @Autowired
     private CategoryRepo categoryRepo;
-    
+
     @Autowired
     private CartService cartService;
-    
+
     @Autowired
     private OTPservice otpservice;
-    
+
     @Autowired
     private EmailService emailService;
 
     @Autowired
     private InquiryRepo inquiryRepo;
-    
+
     @GetMapping("/")
-    public String index(HttpSession session, Model model) 
-    {
+    public String index(HttpSession session, Model model) {
         Object user = session.getAttribute("loggedInUser");
         boolean isLoggedIn = user != null;
-        
+
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("logoutUser", !isLoggedIn);
-    	
+
         List<Book> books = bookRepo.findByIsDeletedFalse();
         List<Category> categories = categoryRepo.findAll();
 
@@ -98,7 +96,7 @@ public class Logincontroller
 
     @GetMapping("/books")
     public String getBooks(@RequestParam(value = "sort", required = false, defaultValue = "title_asc") String sort,
-                           Model model) {
+            Model model) {
 
         Sort sortObj;
 
@@ -130,11 +128,10 @@ public class Logincontroller
 
     @GetMapping("/login")
     public String login(@RequestParam(value = "targetBookId", required = false) Long targetBookId,
-                        @RequestParam(value = "error", required = false) String error,
-                        @RequestParam(value = "message", required = false) String message,
-                        Model model,
-                        HttpSession session) 
-    {
+            @RequestParam(value = "error", required = false) String error,
+            @RequestParam(value = "message", required = false) String message,
+            Model model,
+            HttpSession session) {
         if (session.getAttribute("loggedInUser") != null) {
             Object loggedIn = session.getAttribute("loggedInUser");
             if ("Admin".equalsIgnoreCase(loggedIn.toString())) {
@@ -161,16 +158,17 @@ public class Logincontroller
             @RequestParam(value = "targetBookId", required = false) Long targetBookId,
             RedirectAttributes redirectAttributes,
             HttpSession session,
-            Model model) 
-    {
+            Model model) {
         String trimmedUser = username != null ? username.trim() : "";
         String trimmedPass = password != null ? password.trim() : "";
 
-        // 🔹 1. Admin Login (supports config property or default admin123 / admin)
+        // 🔹 1. Admin Login (supports config property, admin123, or admin)
         boolean isAdminUser = (adminUsername != null && adminUsername.equalsIgnoreCase(trimmedUser))
-                || "admin123".equalsIgnoreCase(trimmedUser);
+                || "admin123".equalsIgnoreCase(trimmedUser)
+                || "admin".equalsIgnoreCase(trimmedUser);
         boolean isAdminPass = (adminPassword != null && adminPassword.equals(trimmedPass))
-                || "admin".equals(trimmedPass);
+                || "admin".equals(trimmedPass)
+                || "admin123".equals(trimmedPass);
 
         if (isAdminUser && isAdminPass) {
             session.setAttribute("loggedInUser", "Admin");
@@ -210,13 +208,15 @@ public class Logincontroller
             // Check BCrypt with raw password
             try {
                 passwordMatches = passwordEncoder.matches(password, user.getPassword());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
 
             // Check BCrypt with trimmed password
             if (!passwordMatches && !password.equals(trimmedPass)) {
                 try {
                     passwordMatches = passwordEncoder.matches(trimmedPass, user.getPassword());
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             // Fallback for plain-text password stored in database
@@ -232,9 +232,24 @@ public class Logincontroller
                         user.setPassword(passwordEncoder.encode(trimmedPass));
                         userRepo.save(user);
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
         }
+            
+
+            // Auto-upgrade to fast BCrypt if matched
+            if (passwordMatches) {
+                try {
+                    if (passwordEncoder.upgradeEncoding(user.getPassword())
+                            || !user.getPassword().startsWith("$2a$10$")) {
+                        user.setPassword(passwordEncoder.encode(trimmedPass));
+                        userRepo.save(user);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        
 
         // 🔹 4. Invalid Login Handling
         if (user == null || !passwordMatches) {
@@ -279,7 +294,8 @@ public class Logincontroller
             if (cartItems != null) {
                 totalCartPrice = cartItems.stream()
                         .filter(cart -> cart != null && cart.getBook() != null)
-                        .mapToDouble(cart -> (double) cart.getBook().getPrice() * (cart.getQuantity() > 0 ? cart.getQuantity() : 1))
+                        .mapToDouble(cart -> (double) cart.getBook().getPrice()
+                                * (cart.getQuantity() > 0 ? cart.getQuantity() : 1))
                         .sum();
             }
         } catch (Exception e) {
@@ -289,39 +305,35 @@ public class Logincontroller
         session.setAttribute("cartTotal", totalCartPrice);
         return "redirect:/";
     }
+
     @GetMapping("/logout")
-    public String logout(HttpSession session)
-    {
-        session.invalidate(); 
+    public String logout(HttpSession session) {
+        session.invalidate();
         return "redirect:/login";
     }
-    
+
     @PostMapping("/logout")
-    public String logouts(HttpSession session)
-    {
-        session.invalidate(); 
+    public String logouts(HttpSession session) {
+        session.invalidate();
         return "redirect:/login";
     }
 
     @GetMapping("/errorpage")
-    public String handleError(Model model)
-    {
+    public String handleError(Model model) {
         model.addAttribute("errorMessage", "Something went wrong. Please try again later.");
         return "errorpage";
     }
-    
+
     @GetMapping("/forgetpwd")
-    public String forgetpass()
-    {
-    	return "forgetpwd";
+    public String forgetpass() {
+        return "forgetpwd";
     }
-  
+
     @PostMapping("/forgetpwd")
     public String forgetPassword(@RequestParam("email") String email, Model model) {
         // Check if the email exists in the database
         User userOptional = userRepo.findByEmail(email);
-        if (userOptional == null)
-        {
+        if (userOptional == null) {
             model.addAttribute("error", "Email not found. Please check and try again.");
             return "forgetpwd"; // Redirects back to forget password page
         }
@@ -340,18 +352,18 @@ public class Logincontroller
             return "errorpage"; // Stay on forget password page if there's an error
         }
     }
-    
+
     @GetMapping("/newpass")
     public String newpass(@RequestParam("email") String email, Model model) {
         model.addAttribute("email", email);
         return "User/newpwd";
     }
-    
+
     @PostMapping("/newpass")
     public String setNewPassword(@RequestParam("email") String email,
-                                 @RequestParam("newPassword") String newPassword,
-                                 @RequestParam("confirmPassword") String confirmPassword,
-                                 RedirectAttributes redirectAttributes) {
+            @RequestParam("newPassword") String newPassword,
+            @RequestParam("confirmPassword") String confirmPassword,
+            RedirectAttributes redirectAttributes) {
 
         User user = userRepo.findByEmail(email);
         if (user == null) {
@@ -368,27 +380,22 @@ public class Logincontroller
         userRepo.save(user);
 
         redirectAttributes.addFlashAttribute("success", "Password updated successfully!");
-        return "redirect:/login";  // Redirect to login page
+        return "redirect:/login"; // Redirect to login page
     }
-    
+
     @GetMapping("/search")
     public String searchBooks(@RequestParam(value = "title", required = false) String title,
-                              @RequestParam(value = "author", required = false) String author,
-                              @RequestParam(value = "categoryId", required = false) Long categoryId, 
-                              Model model) {
+            @RequestParam(value = "author", required = false) String author,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            Model model) {
 
         List<Book> books = new ArrayList<>();
 
-        if (title != null && !title.isEmpty())
-        {
+        if (title != null && !title.isEmpty()) {
             books = bookRepo.findByTitleContainingIgnoreCaseAndIsDeletedFalse(title);
-        } 
-        else if (author != null && !author.isEmpty())
-        {
+        } else if (author != null && !author.isEmpty()) {
             books = bookRepo.findByAuthorContainingIgnoreCaseAndIsDeletedFalse(author);
-        } 
-        else if (categoryId != null) 
-        {
+        } else if (categoryId != null) {
             Optional<Category> categoryOpt = categoryRepo.findById(categoryId);
             if (categoryOpt.isPresent()) {
                 Category category = categoryOpt.get();
@@ -397,9 +404,7 @@ public class Logincontroller
                 // Optional: Handle case where category ID is invalid
                 model.addAttribute("error", "Category not found.");
             }
-        }
-        else
-        {
+        } else {
             // Fetch all non-deleted books when no search criteria are provided
             books = bookRepo.findByIsDeletedFalse();
         }
@@ -414,7 +419,7 @@ public class Logincontroller
         }
 
         // Always add categories to the model
-        List<Category > categories = categoryRepo.findAll();
+        List<Category> categories = categoryRepo.findAll();
         model.addAttribute("categories", categories);
         model.addAttribute("books", books);
         model.addAttribute("bookImages", bookImages);
@@ -425,20 +430,19 @@ public class Logincontroller
 
         return "index"; // Return to the index page with search results
     }
-        
+
     @GetMapping("/contact")
-    public String contact() 
-    {       
+    public String contact() {
         return "contact";
     }
-    
+
     @PostMapping("/contact")
     public String handleContactForm(@RequestParam("name") String name,
-                                    @RequestParam("email") String email,
-                                    @RequestParam("subject") String subject,
-                                    @RequestParam("message") String message,
-                                    Model model) {
-        
+            @RequestParam("email") String email,
+            @RequestParam("subject") String subject,
+            @RequestParam("message") String message,
+            Model model) {
+
         try {
             Inquiry inquiry = new Inquiry(name, email, subject, message);
             inquiryRepo.save(inquiry);
@@ -454,11 +458,11 @@ public class Logincontroller
         }
 
         // Show success message
-        model.addAttribute("success", "Your message has been received! Our concierge team will review your inquiry shortly.");
+        model.addAttribute("success",
+                "Your message has been received! Our concierge team will review your inquiry shortly.");
         return "contact"; // Redirect back to the contact page
     }
-    
-    
+
     @GetMapping("/about")
     public String about(Model model) {
         model.addAttribute("pageTitle", "About Us - Book Haven");
