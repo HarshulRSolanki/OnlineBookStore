@@ -127,8 +127,28 @@ public class Logincontroller
     
     
     @GetMapping("/login")
-    public String login() 
+    public String login(@RequestParam(value = "targetBookId", required = false) Long targetBookId,
+                        @RequestParam(value = "error", required = false) String error,
+                        @RequestParam(value = "message", required = false) String message,
+                        Model model,
+                        HttpSession session) 
     {
+        if (session.getAttribute("loggedInUser") != null) {
+            Object loggedIn = session.getAttribute("loggedInUser");
+            if ("Admin".equalsIgnoreCase(loggedIn.toString())) {
+                return "redirect:/admindash";
+            }
+            return "redirect:/";
+        }
+        if (targetBookId != null) {
+            model.addAttribute("targetBookId", targetBookId);
+        }
+        if (error != null) {
+            model.addAttribute("error", error);
+        }
+        if (message != null) {
+            model.addAttribute("message", message);
+        }
         return "login";
     }
 
@@ -141,36 +161,53 @@ public class Logincontroller
             HttpSession session,
             Model model) 
     	{
+        String trimmedUser = username != null ? username.trim() : "";
+        String trimmedPass = password != null ? password.trim() : "";
+
         // 🔹 Admin Login
-        if ("admin123".equals(username) && "admin".equals(password)) {
+        if ("admin123".equalsIgnoreCase(trimmedUser) && "admin".equals(trimmedPass)) {
             session.setAttribute("loggedInUser", "Admin");
-            model.addAttribute("categories", categoryRepo.findAll());
-            model.addAttribute("books", bookRepo.findAll());
-            model.addAttribute("users", userRepo.findAll());
-            model.addAttribute("inquiries", inquiryRepo.findAllByOrderBySubmittedAtDesc());
-            return "Admin/admindash";
+            return "redirect:/admindash";
         }
 
-        // 🔹 User Login
-        User user = userRepo.findByUsername(username);
+        // 🔹 User Login (lookup by username or email)
+        User user = userRepo.findByUsername(trimmedUser);
         if (user == null) {
-            user = userRepo.findByEmail(username);
+            user = userRepo.findByEmail(trimmedUser);
         }
-        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+        if (user == null) {
+            user = userRepo.getUserByEmail(trimmedUser);
+        }
+
+        boolean passwordMatches = false;
+        if (user != null && user.getPassword() != null && password != null) {
+            try {
+                passwordMatches = passwordEncoder.matches(password, user.getPassword());
+            } catch (Exception e) {
+                // Fallback for plain-text password in database
+                passwordMatches = password.equals(user.getPassword());
+            }
+            if (!passwordMatches && password.equals(user.getPassword())) {
+                passwordMatches = true;
+            }
+        }
+
+        if (user == null || !passwordMatches) {
             model.addAttribute("error", "Invalid username or password. Please try again.");
+            if (targetBookId != null) {
+                model.addAttribute("targetBookId", targetBookId);
+            }
             return "login";
         }
 
         // ✅ Successful login
         session.setAttribute("loggedInUser", user);
 
-        // ✅ If a book was selected before login, add it to the cart
+        // ✅ If a book was selected before login, add it to the cart and redirect to cart
         if (targetBookId != null) {
             Optional<Book> bookOpt = bookRepo.findById(targetBookId);
             if (bookOpt.isPresent()) {
                 Book book = bookOpt.get();
-                
-                // Check if book is already in cart
                 boolean exists = cartRepo.existsByUserAndBook(user, book);
                 if (!exists) {
                     Cart cartItem = new Cart();
@@ -183,21 +220,16 @@ public class Logincontroller
                     redirectAttributes.addFlashAttribute("error", "Book is already in your cart.");
                 }
             }
+            return "redirect:/cart";
         }
 
-        // ✅ Load user's cart items
+        // ✅ Load user's cart items and update cart total
         List<Cart> cartItems = cartService.getCartItems(user.getUserid());
-        model.addAttribute("cartItems", cartItems);
-
-        // ✅ Calculate total cart price
         double totalCartPrice = cartItems.stream()
-                .mapToDouble(cart -> cart.getBook().getPrice() * cart.getQuantity()) // Sum price * quantity
+                .mapToDouble(cart -> cart.getBook().getPrice() * cart.getQuantity())
                 .sum();
 
-        // ✅ Store total price in session & model
-        model.addAttribute("categories", categoryRepo.findAll());
         session.setAttribute("cartTotal", totalCartPrice);
-        model.addAttribute("cartTotal", totalCartPrice);
         return "redirect:/";
     }
     

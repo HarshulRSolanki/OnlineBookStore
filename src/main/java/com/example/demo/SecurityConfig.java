@@ -15,18 +15,17 @@ public class SecurityConfig   {
     @Bean
     protected SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-        	
-            .csrf(csrf -> csrf.disable())  // Disable CSRF (Only for testing)
-            .formLogin(form -> form.disable()) // Disable login
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+            .formLogin(form -> form.disable())
             .logout(logout -> logout.logoutSuccessUrl("/"));      
         	
         return http.build();
     }
 
-   
     @Bean
     protected PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(17);
+        return new BCryptPasswordEncoder();
     }
     
     @PostConstruct

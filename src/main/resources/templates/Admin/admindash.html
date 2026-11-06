@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
     <!-- Luxury Editorial Stylesheet -->
     <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
 </head>
+
 <body>
 
     <!-- Header Navigation -->
@@ -60,34 +62,45 @@
             </div>
 
             <!-- Admin Section Tabs -->
-            <ul class="nav nav-pills mb-4 p-2 rounded-3 border" style="background: #FFFFFF;" id="adminPillTabs" role="tablist">
+            <ul class="nav nav-pills mb-4 p-2 rounded-3 border" style="background: #FFFFFF;" id="adminPillTabs"
+                role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active category-filter-pill border-0" id="pills-books-tab" data-bs-toggle="pill" data-bs-target="#pills-books" type="button" role="tab">
-                        <i class="fas fa-book-open me-2"></i>Manage Books (<span th:text="${books != null ? books.size() : 0}">0</span>)
+                    <button class="nav-link active category-filter-pill border-0" id="pills-books-tab"
+                        data-bs-toggle="pill" data-bs-target="#pills-books" type="button" role="tab">
+                        <i class="fas fa-book-open me-2"></i>Manage Books (<span
+                            th:text="${books != null ? books.size() : 0}">0</span>)
                     </button>
                 </li>
                 <li class="nav-item ms-2" role="presentation">
-                    <button class="nav-link category-filter-pill border-0" id="pills-addbook-tab" data-bs-toggle="pill" data-bs-target="#pills-addbook" type="button" role="tab">
+                    <button class="nav-link category-filter-pill border-0" id="pills-addbook-tab" data-bs-toggle="pill"
+                        data-bs-target="#pills-addbook" type="button" role="tab">
                         <i class="fas fa-plus-circle me-2"></i>Add New Edition
                     </button>
                 </li>
                 <li class="nav-item ms-2" role="presentation">
-                    <button class="nav-link category-filter-pill border-0" id="pills-categories-tab" data-bs-toggle="pill" data-bs-target="#pills-categories" type="button" role="tab">
-                        <i class="fas fa-tags me-2"></i>Categories (<span th:text="${categories != null ? categories.size() : 0}">0</span>)
+                    <button class="nav-link category-filter-pill border-0" id="pills-categories-tab"
+                        data-bs-toggle="pill" data-bs-target="#pills-categories" type="button" role="tab">
+                        <i class="fas fa-tags me-2"></i>Categories (<span
+                            th:text="${categories != null ? categories.size() : 0}">0</span>)
                     </button>
                 </li>
                 <li class="nav-item ms-2" role="presentation">
-                    <button class="nav-link category-filter-pill border-0" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab">
-                        <i class="fas fa-users me-2"></i>User Dossiers (<span th:text="${users != null ? users.size() : 0}">0</span>)
+                    <button class="nav-link category-filter-pill border-0" id="pills-users-tab" data-bs-toggle="pill"
+                        data-bs-target="#pills-users" type="button" role="tab">
+                        <i class="fas fa-users me-2"></i>User Dossiers (<span
+                            th:text="${users != null ? users.size() : 0}">0</span>)
                     </button>
                 </li>
                 <li class="nav-item ms-2" role="presentation">
-                    <button class="nav-link category-filter-pill border-0" id="pills-inquiries-tab" data-bs-toggle="pill" data-bs-target="#pills-inquiries" type="button" role="tab">
-                        <i class="fas fa-envelope-open-text me-2"></i>Reader Inquiries (<span th:text="${inquiries != null ? inquiries.size() : 0}">0</span>)
+                    <button class="nav-link category-filter-pill border-0" id="pills-inquiries-tab"
+                        data-bs-toggle="pill" data-bs-target="#pills-inquiries" type="button" role="tab">
+                        <i class="fas fa-envelope-open-text me-2"></i>Reader Inquiries (<span
+                            th:text="${inquiries != null ? inquiries.size() : 0}">0</span>)
                     </button>
                 </li>
                 <li class="nav-item ms-2" role="presentation">
-                    <a th:href="@{/admin/reports}" class="nav-link category-filter-pill border-0 text-decoration-none" style="display: inline-flex; align-items: center;">
+                    <a th:href="@{/admin/reports}" class="nav-link category-filter-pill border-0 text-decoration-none"
+                        style="display: inline-flex; align-items: center;">
                         <i class="fas fa-chart-line me-2 text-warning"></i>Sales Reports &amp; Analytics
                     </a>
                 </li>
@@ -100,9 +113,11 @@
                 <div class="tab-pane fade show active" id="pills-books" role="tabpanel">
                     <span id="displaybook"></span>
                     <div class="orders-table-wrapper">
-                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #FAF7F2;">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center"
+                            style="background: #FAF7F2;">
                             <h4 class="font-heading fs-5 mb-0">Current Book Catalog</h4>
-                            <span class="text-muted small">Total volumes in registry: <strong th:text="${books != null ? books.size() : 0}">0</strong></span>
+                            <span class="text-muted small">Total volumes in registry: <strong
+                                    th:text="${books != null ? books.size() : 0}">0</strong></span>
                         </div>
                         <div class="table-responsive">
                             <table class="luxury-table">
@@ -122,19 +137,23 @@
                                             <small class="text-muted" th:text="'By ' + ${book.author}">Author</small>
                                         </td>
                                         <td>
-                                            <span class="badge" style="background: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);"
-                                                  th:text="${book.category != null ? book.category.name : 'None'}">Category</span>
+                                            <span class="badge"
+                                                style="background: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);"
+                                                th:text="${book.category != null ? book.category.name : 'None'}">Category</span>
                                         </td>
                                         <td><code th:text="${book.isbn}">ISBN-1234</code></td>
                                         <td>
-                                            <span class="fw-bold text-dark" th:if="${book.price > 0}">₹<span th:text="${book.price}"></span></span>
+                                            <span class="fw-bold text-dark" th:if="${book.price > 0}">₹<span
+                                                    th:text="${book.price}"></span></span>
                                             <span class="badge bg-success" th:if="${book.price == 0}">Free</span>
                                         </td>
                                         <td class="text-end">
                                             <div class="d-inline-flex gap-2">
                                                 <!-- Edit Book Form -->
-                                                <form th:action="@{/updateBooks/{bookId}(bookId=${book.id})}" method="post">
-                                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Edit book metadata">
+                                                <form th:action="@{/updateBooks/{bookId}(bookId=${book.id})}"
+                                                    method="post">
+                                                    <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                                        title="Edit book metadata">
                                                         <i class="fas fa-pen-to-square"></i>
                                                     </button>
                                                 </form>
@@ -142,7 +161,9 @@
                                                 <!-- Delete Book Form -->
                                                 <form th:action="@{/deleteBooks}" method="post">
                                                     <input type="hidden" name="bookId" th:value="${book.id}">
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove edition" onclick="return confirm('Remove this volume from the catalog?')">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                        title="Remove edition"
+                                                        onclick="return confirm('Remove this volume from the catalog?')">
                                                         <i class="fas fa-trash-can"></i>
                                                     </button>
                                                 </form>
@@ -159,7 +180,8 @@
                 <div class="tab-pane fade" id="pills-addbook" role="tabpanel">
                     <span id="addBooks"></span>
                     <span id="addBook"></span>
-                    <div class="card p-4 p-md-5 border-0 shadow-md" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-lg);">
+                    <div class="card p-4 p-md-5 border-0 shadow-md"
+                        style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-lg);">
                         <div class="mb-4 pb-3 border-bottom">
                             <span class="section-subtitle-tag mb-1">Catalog Expansion</span>
                             <h3 class="font-heading fs-3 mb-0">Register New Literary Edition</h3>
@@ -169,22 +191,27 @@
                             <div class="row g-4">
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Book Title</label>
-                                    <input type="text" class="auth-input-field" name="title" required placeholder="The Great Gatsby" />
+                                    <input type="text" class="auth-input-field" name="title" required
+                                        placeholder="The Great Gatsby" />
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Author Name</label>
-                                    <input type="text" class="auth-input-field" name="author" required placeholder="F. Scott Fitzgerald" />
+                                    <input type="text" class="auth-input-field" name="author" required
+                                        placeholder="F. Scott Fitzgerald" />
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Category</label>
-                                    <select class="editorial-select" name="categoryId" required style="padding-left: 1rem;">
+                                    <select class="editorial-select" name="categoryId" required
+                                        style="padding-left: 1rem;">
                                         <option value="" disabled selected>Select Category</option>
-                                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                                        <option th:each="cat : ${categories}" th:value="${cat.id}"
+                                            th:text="${cat.name}"></option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Language</label>
-                                    <select class="editorial-select" name="language" required style="padding-left: 1rem;">
+                                    <select class="editorial-select" name="language" required
+                                        style="padding-left: 1rem;">
                                         <option value="English" selected>English</option>
                                         <option value="Hindi">Hindi</option>
                                         <option value="French">French</option>
@@ -194,11 +221,13 @@
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">ISBN Reference</label>
-                                    <input type="text" class="auth-input-field" name="isbn" required placeholder="978-0-123456-47-2" />
+                                    <input type="text" class="auth-input-field" name="isbn" required
+                                        placeholder="978-0-123456-47-2" />
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Price (INR - 0 for Free)</label>
-                                    <input type="number" class="auth-input-field" name="price" required placeholder="499" min="0" />
+                                    <input type="number" class="auth-input-field" name="price" required
+                                        placeholder="499" min="0" />
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Publication Date</label>
@@ -206,19 +235,24 @@
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Publisher Name</label>
-                                    <input type="text" class="auth-input-field" name="publishername" required placeholder="Quickread Literary Press" />
+                                    <input type="text" class="auth-input-field" name="publishername" required
+                                        placeholder="Quickread Literary Press" />
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Digital Book File (PDF)</label>
-                                    <input type="file" class="form-control" name="file" accept="application/pdf" required />
+                                    <input type="file" class="form-control" name="file" accept="application/pdf"
+                                        required />
                                 </div>
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Cover Artwork (Image)</label>
-                                    <input type="file" class="form-control" name="coverImage" accept="image/*" required />
+                                    <input type="file" class="form-control" name="coverImage" accept="image/*"
+                                        required />
                                 </div>
                                 <div class="col-12 auth-form-group">
                                     <label class="auth-form-label">Editorial Synopsis &amp; Description</label>
-                                    <textarea class="auth-input-field" name="description" rows="5" placeholder="Enter comprehensive overview, thematic background, and edition notes..." required style="padding-left: 1rem;"></textarea>
+                                    <textarea class="auth-input-field" name="description" rows="5"
+                                        placeholder="Enter comprehensive overview, thematic background, and edition notes..."
+                                        required style="padding-left: 1rem;"></textarea>
                                 </div>
                             </div>
 
@@ -236,12 +270,14 @@
                     <div class="row g-4">
                         <!-- Add Category Card -->
                         <div class="col-lg-5">
-                            <div class="card p-4 border-0 shadow-sm" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-md);">
+                            <div class="card p-4 border-0 shadow-sm"
+                                style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-md);">
                                 <h4 class="font-heading fs-5 mb-3">Add New Category</h4>
                                 <form th:action="@{/add-category}" method="post">
                                     <div class="auth-form-group mb-3">
                                         <label class="auth-form-label">Category Name</label>
-                                        <input type="text" class="auth-input-field" name="categoryName" placeholder="e.g. Philosophy, Sci-Fi, Classics" required />
+                                        <input type="text" class="auth-input-field" name="categoryName"
+                                            placeholder="e.g. Philosophy, Sci-Fi, Classics" required />
                                     </div>
                                     <button type="submit" class="btn-luxury-primary w-100 py-2">
                                         <i class="fas fa-plus me-1"></i> Create Category
@@ -264,12 +300,15 @@
                                         <tbody>
                                             <tr th:each="cat : ${categories}">
                                                 <td>
-                                                    <span class="fw-bold text-dark" th:text="${cat.name}">Category</span>
+                                                    <span class="fw-bold text-dark"
+                                                        th:text="${cat.name}">Category</span>
                                                 </td>
                                                 <td class="text-end">
-                                                    <form th:action="@{/delete-category}" method="post" class="d-inline">
+                                                    <form th:action="@{/delete-category}" method="post"
+                                                        class="d-inline">
                                                         <input type="hidden" name="categoryId" th:value="${cat.id}">
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this category?')">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                            onclick="return confirm('Delete this category?')">
                                                             <i class="fas fa-trash-can"></i>
                                                         </button>
                                                     </form>
@@ -309,18 +348,23 @@
                                         <td th:text="${u.email}">email@domain.com</td>
                                         <td th:text="${u.mobileno != null ? u.mobileno : 'N/A'}">Phone</td>
                                         <td>
-                                            <span class="badge bg-secondary" th:text="${u.orders != null ? u.orders.size() : 0}">0</span>
+                                            <span class="badge bg-secondary"
+                                                th:text="${u.orders != null ? u.orders.size() : 0}">0</span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-light text-dark border" th:text="${u.cartItems != null ? u.cartItems.size() : 0}">0</span>
+                                            <span class="badge bg-light text-dark border"
+                                                th:text="${u.cartItems != null ? u.cartItems.size() : 0}">0</span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-success" th:text="${u.downloadedBooks != null ? u.downloadedBooks.size() : 0}">0</span>
+                                            <span class="badge bg-success"
+                                                th:text="${u.downloadedBooks != null ? u.downloadedBooks.size() : 0}">0</span>
                                         </td>
                                         <td class="text-end">
-                                            <form th:action="@{/delete-user}" method="post" class="d-inline" onsubmit="return confirm('Permanently remove this user account and associated cart/order records?');">
+                                            <form th:action="@{/delete-user}" method="post" class="d-inline"
+                                                onsubmit="return confirm('Permanently remove this user account and associated cart/order records?');">
                                                 <input type="hidden" name="userId" th:value="${u.userid}">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete reader account">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                    title="Delete reader account">
                                                     <i class="fas fa-trash-can"></i>
                                                 </button>
                                             </form>
@@ -336,9 +380,11 @@
                 <div class="tab-pane fade" id="pills-inquiries" role="tabpanel">
                     <span id="inquiries"></span>
                     <div class="orders-table-wrapper">
-                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #FAF7F2;">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center"
+                            style="background: #FAF7F2;">
                             <h4 class="font-heading fs-5 mb-0">Reader Inquiries &amp; Concierge Messages</h4>
-                            <span class="text-muted small">Total received: <strong th:text="${inquiries != null ? inquiries.size() : 0}">0</strong></span>
+                            <span class="text-muted small">Total received: <strong
+                                    th:text="${inquiries != null ? inquiries.size() : 0}">0</strong></span>
                         </div>
                         <div class="table-responsive">
                             <table class="luxury-table">
@@ -354,30 +400,40 @@
                                 <tbody>
                                     <tr th:if="${inquiries == null or #lists.isEmpty(inquiries)}">
                                         <td colspan="5" class="text-center py-4 text-muted">
-                                            <i class="fas fa-inbox fa-2x mb-2 d-block" style="color: var(--gold-accent);"></i>
+                                            <i class="fas fa-inbox fa-2x mb-2 d-block"
+                                                style="color: var(--gold-accent);"></i>
                                             No inquiries received yet.
                                         </td>
                                     </tr>
                                     <tr th:each="inq : ${inquiries}">
                                         <td>
                                             <div class="fw-bold text-dark" th:text="${inq.name}">Sender Name</div>
-                                            <a th:href="'mailto:' + ${inq.email}" class="small text-decoration-none" style="color: var(--primary-accent);" th:text="${inq.email}">email@domain.com</a>
+                                            <a th:href="'mailto:' + ${inq.email}" class="small text-decoration-none"
+                                                style="color: var(--primary-accent);"
+                                                th:text="${inq.email}">email@domain.com</a>
                                         </td>
                                         <td>
-                                            <span class="badge" style="background: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);" th:text="${inq.subject}">Subject</span>
+                                            <span class="badge"
+                                                style="background: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);"
+                                                th:text="${inq.subject}">Subject</span>
                                         </td>
                                         <td>
-                                            <div style="max-width: 450px; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary);" th:text="${inq.message}">
+                                            <div style="max-width: 450px; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary);"
+                                                th:text="${inq.message}">
                                                 Detailed inquiry message...
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="small text-muted" th:text="${inq.submittedAt != null ? #temporals.format(inq.submittedAt, 'dd MMM yyyy, HH:mm') : 'Recent'}">05 Nov 2026, 18:30</span>
+                                            <span class="small text-muted"
+                                                th:text="${inq.submittedAt != null ? #temporals.format(inq.submittedAt, 'dd MMM yyyy, HH:mm') : 'Recent'}">05
+                                                Nov 2026, 18:30</span>
                                         </td>
                                         <td class="text-end">
-                                            <form th:action="@{/delete-inquiry}" method="post" class="d-inline" onsubmit="return confirm('Remove this inquiry record?');">
+                                            <form th:action="@{/delete-inquiry}" method="post" class="d-inline"
+                                                onsubmit="return confirm('Remove this inquiry record?');">
                                                 <input type="hidden" name="inquiryId" th:value="${inq.id}">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove inquiry">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                    title="Remove inquiry">
                                                     <i class="fas fa-trash-can"></i>
                                                 </button>
                                             </form>
@@ -421,4 +477,5 @@
         });
     </script>
 </body>
+
 </html>
