@@ -89,12 +89,17 @@
                             <!-- Customer Dropdown -->
                             <th:block th:if="${session.loggedInUser != 'Admin'}">
                                 <a class="user-dropdown-toggle dropdown-toggle text-decoration-none" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span class="user-avatar-circle" th:text="${#strings.substring(session.loggedInUser.username, 0, 1).toUpperCase()}">U</span>
-                                    <span th:text="${session.loggedInUser.username}">Reader</span>
+                                    <span class="user-avatar-circle" th:text="${session.loggedInUser.username != null and session.loggedInUser.username.length() > 0 ? #strings.substring(session.loggedInUser.username, 0, 1).toUpperCase() : 'U'}">U</span>
+                                    <span th:text="${session.loggedInUser.username != null ? session.loggedInUser.username : 'Reader'}">Reader</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end luxury-dropdown-menu">
                                     <li>
-                                        <a class="luxury-dropdown-item" th:href="@{/editProfile(userId=${session.loggedInUser.userid})}">
+                                        <a class="luxury-dropdown-item" href="/userdash">
+                                            <i class="fas fa-home"></i> Reader Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="luxury-dropdown-item" th:href="@{/editProfile(userId=${session.loggedInUser.userid != null ? session.loggedInUser.userid : 0})}">
                                             <i class="fas fa-user-circle"></i> Reader Profile
                                         </a>
                                     </li>

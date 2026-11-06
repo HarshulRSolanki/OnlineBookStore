@@ -69,12 +69,12 @@
 
                 <!-- Login Form -->
                 <form th:action="@{/login}" method="post">
-                    <!-- Username Input -->
+                    <!-- Username / Email Input -->
                     <div class="auth-form-group">
-                        <label for="username" class="auth-form-label">Username</label>
+                        <label for="username" class="auth-form-label">Username or Email</label>
                         <div class="auth-input-wrapper">
                             <i class="fas fa-user auth-input-icon"></i>
-                            <input type="text" name="username" id="username" class="auth-input-field" placeholder="Enter your username" required autofocus />
+                            <input type="text" name="username" id="username" class="auth-input-field" placeholder="Enter your username or email" required autofocus />
                         </div>
                     </div>
 

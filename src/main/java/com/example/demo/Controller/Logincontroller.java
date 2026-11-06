@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -20,24 +21,30 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.example.demo.Entity.Book;
 import com.example.demo.Entity.Cart;
 import com.example.demo.Entity.Category;
+import com.example.demo.Entity.Inquiry;
 import com.example.demo.Entity.User;
 import com.example.demo.Repository.BookRepo;
 import com.example.demo.Repository.CartRepo;
 import com.example.demo.Repository.CategoryRepo;
+import com.example.demo.Repository.InquiryRepo;
 import com.example.demo.Repository.UserRepo;
 import com.example.demo.service.CartService;
 import com.example.demo.service.EmailService;
 import com.example.demo.service.OTPservice;
-import com.example.demo.Entity.Inquiry;
-import com.example.demo.Repository.InquiryRepo;
 
 import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class Logincontroller 
 {		
-	@Autowired
-	PasswordEncoder passwordEncoder;
+    @Value("${app.admin.username:admin123}")
+    private String adminUsername;
+
+    @Value("${app.admin.password:admin}")
+    private String adminPassword;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 		
     @Autowired
     private UserRepo userRepo;	
@@ -64,17 +71,15 @@ public class Logincontroller
     private InquiryRepo inquiryRepo;
     
     @GetMapping("/")
-    public String index(HttpSession session,Model model) 
+    public String index(HttpSession session, Model model) 
     {
-    	
-    	Object user = session.getAttribute("loggedInUser");
+        Object user = session.getAttribute("loggedInUser");
         boolean isLoggedIn = user != null;
         
-        model.addAttribute("loggedInUser", isLoggedIn);
+        model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("logoutUser", !isLoggedIn);
     	
-    	
-    	List<Book> books = bookRepo.findByIsDeletedFalse();
+        List<Book> books = bookRepo.findByIsDeletedFalse();
         List<Category> categories = categoryRepo.findAll();
 
         // Encode each book's image in Base64 and store it in a map
@@ -87,11 +92,10 @@ public class Logincontroller
         }
         model.addAttribute("categories", categories);
         model.addAttribute("books", books);
-        model.addAttribute("bookImages", bookImages); // Store encoded images for each book
+        model.addAttribute("bookImages", bookImages);
         return "index";
     }
 
-    
     @GetMapping("/books")
     public String getBooks(@RequestParam(value = "sort", required = false, defaultValue = "title_asc") String sort,
                            Model model) {
@@ -120,12 +124,10 @@ public class Logincontroller
 
         List<Book> books = bookRepo.findAll(sortObj);
         model.addAttribute("books", books);
-        model.addAttribute("sort", sort); // so selected option can stay selected
-        return "index"; // name of your Thymeleaf template
+        model.addAttribute("sort", sort);
+        return "index";
     }
 
-    
-    
     @GetMapping("/login")
     public String login(@RequestParam(value = "targetBookId", required = false) Long targetBookId,
                         @RequestParam(value = "error", required = false) String error,
@@ -160,18 +162,41 @@ public class Logincontroller
             RedirectAttributes redirectAttributes,
             HttpSession session,
             Model model) 
-    	{
+    {
         String trimmedUser = username != null ? username.trim() : "";
         String trimmedPass = password != null ? password.trim() : "";
 
-        // 🔹 Admin Login
-        if ("admin123".equalsIgnoreCase(trimmedUser) && "admin".equals(trimmedPass)) {
+        // 🔹 1. Admin Login (supports config property or default admin123 / admin)
+        boolean isAdminUser = (adminUsername != null && adminUsername.equalsIgnoreCase(trimmedUser))
+                || "admin123".equalsIgnoreCase(trimmedUser);
+        boolean isAdminPass = (adminPassword != null && adminPassword.equals(trimmedPass))
+                || "admin".equals(trimmedPass);
+
+        if (isAdminUser && isAdminPass) {
             session.setAttribute("loggedInUser", "Admin");
             return "redirect:/admindash";
         }
 
-        // 🔹 User Login (lookup by username or email)
-        User user = userRepo.findByUsername(trimmedUser);
+        // 🔹 2. Customer User Login (lookup by username or email, case-insensitive and whitespace-tolerant)
+        User user = null;
+        try {
+            List<User> flexibleMatches = userRepo.findByIdentifierFlexible(trimmedUser);
+            if (flexibleMatches != null && !flexibleMatches.isEmpty()) {
+                user = flexibleMatches.get(0);
+            }
+        } catch (Exception e) {
+            System.err.println("Notice: Flexible user lookup fallback: " + e.getMessage());
+        }
+
+        if (user == null) {
+            user = userRepo.findByUsernameIgnoreCase(trimmedUser);
+        }
+        if (user == null) {
+            user = userRepo.findByEmailIgnoreCase(trimmedUser);
+        }
+        if (user == null) {
+            user = userRepo.findByUsername(trimmedUser);
+        }
         if (user == null) {
             user = userRepo.findByEmail(trimmedUser);
         }
@@ -179,19 +204,39 @@ public class Logincontroller
             user = userRepo.getUserByEmail(trimmedUser);
         }
 
+        // 🔹 3. Password Verification
         boolean passwordMatches = false;
         if (user != null && user.getPassword() != null && password != null) {
+            // Check BCrypt with raw password
             try {
                 passwordMatches = passwordEncoder.matches(password, user.getPassword());
-            } catch (Exception e) {
-                // Fallback for plain-text password in database
-                passwordMatches = password.equals(user.getPassword());
+            } catch (Exception ignored) {}
+
+            // Check BCrypt with trimmed password
+            if (!passwordMatches && !password.equals(trimmedPass)) {
+                try {
+                    passwordMatches = passwordEncoder.matches(trimmedPass, user.getPassword());
+                } catch (Exception ignored) {}
             }
-            if (!passwordMatches && password.equals(user.getPassword())) {
-                passwordMatches = true;
+
+            // Fallback for plain-text password stored in database
+            if (!passwordMatches) {
+                String storedPass = user.getPassword();
+                passwordMatches = password.equals(storedPass) || trimmedPass.equals(storedPass.trim());
+            }
+
+            // Auto-upgrade to fast BCrypt if matched
+            if (passwordMatches) {
+                try {
+                    if (passwordEncoder.upgradeEncoding(user.getPassword()) || !user.getPassword().startsWith("$2a$10$")) {
+                        user.setPassword(passwordEncoder.encode(trimmedPass));
+                        userRepo.save(user);
+                    }
+                } catch (Exception ignored) {}
             }
         }
 
+        // 🔹 4. Invalid Login Handling
         if (user == null || !passwordMatches) {
             model.addAttribute("error", "Invalid username or password. Please try again.");
             if (targetBookId != null) {
@@ -200,39 +245,50 @@ public class Logincontroller
             return "login";
         }
 
-        // ✅ Successful login
+        // 🔹 5. Successful Login: Store User in Session
         session.setAttribute("loggedInUser", user);
 
-        // ✅ If a book was selected before login, add it to the cart and redirect to cart
+        // If targetBookId was present (redirected from purchase), add to cart
         if (targetBookId != null) {
-            Optional<Book> bookOpt = bookRepo.findById(targetBookId);
-            if (bookOpt.isPresent()) {
-                Book book = bookOpt.get();
-                boolean exists = cartRepo.existsByUserAndBook(user, book);
-                if (!exists) {
-                    Cart cartItem = new Cart();
-                    cartItem.setUser(user);
-                    cartItem.setBook(book);
-                    cartItem.setQuantity(1);
-                    cartRepo.save(cartItem);
-                    redirectAttributes.addFlashAttribute("success", "Book added to cart!");
-                } else {
-                    redirectAttributes.addFlashAttribute("error", "Book is already in your cart.");
+            try {
+                Optional<Book> bookOpt = bookRepo.findById(targetBookId);
+                if (bookOpt.isPresent()) {
+                    Book book = bookOpt.get();
+                    boolean exists = cartRepo.existsByUserAndBook(user, book);
+                    if (!exists) {
+                        Cart cartItem = new Cart();
+                        cartItem.setUser(user);
+                        cartItem.setBook(book);
+                        cartItem.setQuantity(1);
+                        cartRepo.save(cartItem);
+                        redirectAttributes.addFlashAttribute("success", "Book added to cart!");
+                    } else {
+                        redirectAttributes.addFlashAttribute("error", "Book is already in your cart.");
+                    }
                 }
+            } catch (Exception e) {
+                System.err.println("Notice: Could not add target book to cart: " + e.getMessage());
             }
             return "redirect:/cart";
         }
 
-        // ✅ Load user's cart items and update cart total
-        List<Cart> cartItems = cartService.getCartItems(user.getUserid());
-        double totalCartPrice = cartItems.stream()
-                .mapToDouble(cart -> cart.getBook().getPrice() * cart.getQuantity())
-                .sum();
+        // Calculate and cache cart total
+        double totalCartPrice = 0.0;
+        try {
+            List<Cart> cartItems = cartService.getCartItems(user.getUserid());
+            if (cartItems != null) {
+                totalCartPrice = cartItems.stream()
+                        .filter(cart -> cart != null && cart.getBook() != null)
+                        .mapToDouble(cart -> (double) cart.getBook().getPrice() * (cart.getQuantity() > 0 ? cart.getQuantity() : 1))
+                        .sum();
+            }
+        } catch (Exception e) {
+            System.err.println("Notice: Error calculating cart total: " + e.getMessage());
+        }
 
         session.setAttribute("cartTotal", totalCartPrice);
         return "redirect:/";
     }
-    
     @GetMapping("/logout")
     public String logout(HttpSession session)
     {

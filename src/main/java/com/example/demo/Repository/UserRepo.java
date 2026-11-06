@@ -10,28 +10,25 @@ import org.springframework.stereotype.Repository;
 import com.example.demo.Entity.User;
 
 @Repository
-public interface UserRepo extends JpaRepository<User,Long> {
+public interface UserRepo extends JpaRepository<User, Long> {
 
-	 User findByUsername(String username);
+    User findByUsername(String username);
 
-	boolean existsByEmail(String email);
+    User findByUsernameIgnoreCase(String username);
 
-	public User getUserByEmail(String name);
+    boolean existsByEmail(String email);
 
-	User findByEmail(String email);
+    User getUserByEmail(String email);
 
-	Optional<User> findById(Long userId);
+    User findByEmail(String email);
 
+    User findByEmailIgnoreCase(String email);
 
-	
-	@Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.orders LEFT JOIN FETCH u.downloadedBooks LEFT JOIN FETCH u.cartItems")
-	List<User> fetchUserReportData();
+    @Query("SELECT u FROM User u WHERE LOWER(TRIM(u.username)) = LOWER(TRIM(:identifier)) OR LOWER(TRIM(u.email)) = LOWER(TRIM(:identifier))")
+    List<User> findByIdentifierFlexible(@org.springframework.data.repository.query.Param("identifier") String identifier);
 
-	
-	//List<User> getAllUsers();
+    Optional<User> findById(Long userId);
 
-	
-
-	
-
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.orders LEFT JOIN FETCH u.downloadedBooks LEFT JOIN FETCH u.cartItems")
+    List<User> fetchUserReportData();
 }

@@ -90,10 +90,11 @@ public class Usercontroller {
 
 	@GetMapping("/userdash")
 	public String user(HttpSession session, Model model) {
-		User user = (User) session.getAttribute("loggedInUser");
-		if (user == null) {
+		Object loggedIn = session.getAttribute("loggedInUser");
+		if (!(loggedIn instanceof User)) {
 			return "redirect:/login";
 		}
+		User user = (User) loggedIn;
 		List<Cart> cartItems = cartRepo.findByUser(user);
 		model.addAttribute("cartItems", cartItems);
 		return "User/userdash";
@@ -101,10 +102,11 @@ public class Usercontroller {
 
 	@PostMapping("/userdash")
 	public String userdash(HttpSession session, Model model) {
-		User user = (User) session.getAttribute("loggedInUser");
-		if (user == null) {
+		Object loggedIn = session.getAttribute("loggedInUser");
+		if (!(loggedIn instanceof User)) {
 			return "redirect:/login";
 		}
+		User user = (User) loggedIn;
 		List<Cart> cartItems = cartRepo.findByUser(user);
 		model.addAttribute("cartItems", cartItems);
 		return "redirect:/userdash";
@@ -123,37 +125,41 @@ public class Usercontroller {
 			@RequestParam("mobilenumber") String mobilenumber,
 			Model model, HttpSession session) {
 
+		String trimmedName = name != null ? name.trim() : "";
+		String trimmedEmail = email != null ? email.trim() : "";
+		String trimmedMobile = mobilenumber != null ? mobilenumber.trim() : "";
+
 		if (!password.equals(confirmPassword)) {
 			model.addAttribute("error", "Passwords do not match.");
 			return "User/userreg";
 		}
 
-		if (userRepo.existsByEmail(email)) {
+		if (userRepo.existsByEmail(trimmedEmail) || userRepo.findByEmailIgnoreCase(trimmedEmail) != null) {
 			model.addAttribute("error", "Email already registered.");
 			return "User/userreg";
 		}
 
-		if (userRepo.findByUsername(name) != null) {
+		if (userRepo.findByUsernameIgnoreCase(trimmedName) != null) {
 			model.addAttribute("error", "Username is already taken. Please choose another.");
 			return "User/userreg";
 		}
 
 		user = new User();
-		user.setUsername(name);
-		user.setEmail(email);
+		user.setUsername(trimmedName);
+		user.setEmail(trimmedEmail);
 		user.setPassword(passwordEncoder.encode(password));
-		user.setMobileno(mobilenumber);
+		user.setMobileno(trimmedMobile);
 		user.setIsregistered(false);
 
 		session.setAttribute("tempUser", user);
 
-		String otp = otpservice.generateOTP(email);
-		otpservice.sendOTP(email, otp);
+		String otp = otpservice.generateOTP(trimmedEmail);
+		otpservice.sendOTP(trimmedEmail, otp);
 		user.setOtp(otp); // Store OTP in user entity
 
 		// Redirect to OTP verification page
-		model.addAttribute("email", email);
-		return "verifyotp"; // Ensure you have an "otpverify.html" template
+		model.addAttribute("email", trimmedEmail);
+		return "verifyotp";
 	}
 
 	@GetMapping("/verify-otp")
@@ -164,7 +170,8 @@ public class Usercontroller {
 	@PostMapping("/verify-otp")
 	public String verifyOTP(@RequestParam("email") String email,
 			@RequestParam("otp") String otp,
-			Model model, HttpSession session) {
+			Model model, HttpSession session,
+			RedirectAttributes redirectAttributes) {
 
 		// Validate email and OTP
 		if (email == null || otp == null || email.isEmpty() || otp.isEmpty()) {
@@ -204,7 +211,7 @@ public class Usercontroller {
 			// Remove user from session after successful registration
 			session.removeAttribute("tempUser");
 
-			model.addAttribute("message", "Registration successful! Please log in.");
+			redirectAttributes.addFlashAttribute("message", "Registration successful! Please log in.");
 			return "redirect:/login";
 
 		} catch (Exception e) {
