@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -18,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.demo.AuthHelper;
 import com.example.demo.Entity.Book;
 import com.example.demo.Entity.Cart;
 import com.example.demo.Entity.Category;
@@ -32,15 +32,11 @@ import com.example.demo.service.CartService;
 import com.example.demo.service.EmailService;
 import com.example.demo.service.OTPservice;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class Logincontroller {
-    @Value("${app.admin.username:admin123}")
-    private String adminUsername;
-
-    @Value("${app.admin.password:admin}")
-    private String adminPassword;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -69,37 +65,44 @@ public class Logincontroller {
     @Autowired
     private InquiryRepo inquiryRepo;
 
+    @Autowired
+    private AuthHelper authHelper;
+
+    private Map<Long, String> buildBookImagesMap(List<Book> books) {
+        Map<Long, String> bookImages = new HashMap<>();
+        if (books != null) {
+            for (Book book : books) {
+                if (book != null && book.getCoverImage() != null && book.getCoverImage().length > 0) {
+                    String base64Image = Base64.getEncoder().encodeToString(book.getCoverImage());
+                    bookImages.put(book.getId(), "data:image/jpeg;base64," + base64Image);
+                }
+            }
+        }
+        return bookImages;
+    }
+
     @GetMapping("/")
     public String index(HttpSession session, Model model) {
-        Object user = session.getAttribute("loggedInUser");
-        boolean isLoggedIn = user != null;
-
+        boolean isLoggedIn = authHelper.isAuthenticated(session);
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("logoutUser", !isLoggedIn);
 
         List<Book> books = bookRepo.findByIsDeletedFalse();
         List<Category> categories = categoryRepo.findAll();
 
-        // Encode each book's image in Base64 and store it in a map
-        Map<Long, String> bookImages = new HashMap<>();
-        for (Book book : books) {
-            if (book.getCoverImage() != null) {
-                String base64Image = Base64.getEncoder().encodeToString(book.getCoverImage());
-                bookImages.put(book.getId(), "data:image/jpeg;base64," + base64Image);
-            }
-        }
         model.addAttribute("categories", categories);
         model.addAttribute("books", books);
-        model.addAttribute("bookImages", bookImages);
+        model.addAttribute("bookImages", buildBookImagesMap(books));
         return "index";
     }
 
     @GetMapping("/books")
-    public String getBooks(@RequestParam(value = "sort", required = false, defaultValue = "title_asc") String sort,
+    public String getBooks(
+            @RequestParam(value = "sort", required = false, defaultValue = "title_asc") String sort,
+            HttpSession session,
             Model model) {
 
         Sort sortObj;
-
         switch (sort) {
             case "title_desc":
                 sortObj = Sort.by(Sort.Direction.DESC, "title");
@@ -111,31 +114,49 @@ public class Logincontroller {
                 sortObj = Sort.by(Sort.Direction.DESC, "price");
                 break;
             case "date_asc":
-                sortObj = Sort.by(Sort.Direction.ASC, "createdAt");
+                sortObj = Sort.by(Sort.Direction.ASC, "publishDate");
                 break;
             case "date_desc":
-                sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
+                sortObj = Sort.by(Sort.Direction.DESC, "publishDate");
                 break;
             default:
                 sortObj = Sort.by(Sort.Direction.ASC, "title");
         }
 
-        List<Book> books = bookRepo.findAll(sortObj);
+        List<Book> books = bookRepo.findAll(sortObj).stream()
+                .filter(b -> !b.isDeleted())
+                .toList();
+
+        model.addAttribute("isLoggedIn", authHelper.isAuthenticated(session));
+        model.addAttribute("categories", categoryRepo.findAll());
         model.addAttribute("books", books);
+        model.addAttribute("bookImages", buildBookImagesMap(books));
         model.addAttribute("sort", sort);
         return "index";
     }
 
+    @GetMapping("/categories")
+    public String categoriesDirectory(HttpSession session, Model model) {
+        List<Book> books = bookRepo.findByIsDeletedFalse();
+        List<Category> categories = categoryRepo.findAll();
+
+        model.addAttribute("isLoggedIn", authHelper.isAuthenticated(session));
+        model.addAttribute("categories", categories);
+        model.addAttribute("books", books);
+        model.addAttribute("bookImages", buildBookImagesMap(books));
+        return "index";
+    }
+
     @GetMapping("/login")
-    public String login(@RequestParam(value = "targetBookId", required = false) Long targetBookId,
+    public String login(
+            @RequestParam(value = "targetBookId", required = false) Long targetBookId,
             @RequestParam(value = "error", required = false) String error,
             @RequestParam(value = "message", required = false) String message,
             Model model,
             HttpSession session) {
-        if (session.getAttribute("loggedInUser") != null) {
-            Object loggedIn = session.getAttribute("loggedInUser");
-            if ("Admin".equalsIgnoreCase(loggedIn.toString())) {
-                return "redirect:/admindash";
+        if (authHelper.isAuthenticated(session)) {
+            if (authHelper.isAdmin(session)) {
+                return "redirect:/admin/dashboard";
             }
             return "redirect:/";
         }
@@ -162,20 +183,15 @@ public class Logincontroller {
         String trimmedUser = username != null ? username.trim() : "";
         String trimmedPass = password != null ? password.trim() : "";
 
-        // 🔹 1. Admin Login (supports config property, admin123, or admin)
-        boolean isAdminUser = (adminUsername != null && adminUsername.equalsIgnoreCase(trimmedUser))
-                || "admin123".equalsIgnoreCase(trimmedUser)
-                || "admin".equalsIgnoreCase(trimmedUser);
-        boolean isAdminPass = (adminPassword != null && adminPassword.equals(trimmedPass))
-                || "admin".equals(trimmedPass)
-                || "admin123".equals(trimmedPass);
-
-        if (isAdminUser && isAdminPass) {
-            session.setAttribute("loggedInUser", "Admin");
-            return "redirect:/admindash";
+        if (trimmedUser.isEmpty() || trimmedPass.isEmpty()) {
+            model.addAttribute("error", "Please enter both username/email and password.");
+            if (targetBookId != null) {
+                model.addAttribute("targetBookId", targetBookId);
+            }
+            return "login";
         }
 
-        // 🔹 2. Customer User Login (lookup by username or email, case-insensitive and whitespace-tolerant)
+        // Database-backed lookup by username or email
         User user = null;
         try {
             List<User> flexibleMatches = userRepo.findByIdentifierFlexible(trimmedUser);
@@ -198,20 +214,15 @@ public class Logincontroller {
         if (user == null) {
             user = userRepo.findByEmail(trimmedUser);
         }
-        if (user == null) {
-            user = userRepo.getUserByEmail(trimmedUser);
-        }
 
-        // 🔹 3. Password Verification
+        // Password verification
         boolean passwordMatches = false;
         if (user != null && user.getPassword() != null && password != null) {
-            // Check BCrypt with raw password
             try {
                 passwordMatches = passwordEncoder.matches(password, user.getPassword());
             } catch (Exception ignored) {
             }
 
-            // Check BCrypt with trimmed password
             if (!passwordMatches && !password.equals(trimmedPass)) {
                 try {
                     passwordMatches = passwordEncoder.matches(trimmedPass, user.getPassword());
@@ -219,39 +230,22 @@ public class Logincontroller {
                 }
             }
 
-            // Fallback for plain-text password stored in database
-            if (!passwordMatches) {
+            if (!passwordMatches && !user.getPassword().startsWith("$2")) {
                 String storedPass = user.getPassword();
                 passwordMatches = password.equals(storedPass) || trimmedPass.equals(storedPass.trim());
             }
 
-            // Auto-upgrade to fast BCrypt if matched
             if (passwordMatches) {
                 try {
-                    if (passwordEncoder.upgradeEncoding(user.getPassword()) || !user.getPassword().startsWith("$2a$10$")) {
+                    if (passwordEncoder.upgradeEncoding(user.getPassword()) || !user.getPassword().startsWith("$2")) {
                         user.setPassword(passwordEncoder.encode(trimmedPass));
-                        userRepo.save(user);
+                        user = userRepo.save(user);
                     }
                 } catch (Exception ignored) {
                 }
             }
         }
-            
 
-            // Auto-upgrade to fast BCrypt if matched
-            if (passwordMatches) {
-                try {
-                    if (passwordEncoder.upgradeEncoding(user.getPassword())
-                            || !user.getPassword().startsWith("$2a$10$")) {
-                        user.setPassword(passwordEncoder.encode(trimmedPass));
-                        userRepo.save(user);
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        
-
-        // 🔹 4. Invalid Login Handling
         if (user == null || !passwordMatches) {
             model.addAttribute("error", "Invalid username or password. Please try again.");
             if (targetBookId != null) {
@@ -260,62 +254,67 @@ public class Logincontroller {
             return "login";
         }
 
-        // 🔹 5. Successful Login: Store User in Session
-        session.setAttribute("loggedInUser", user);
+        if (!user.isEnabled()) {
+            model.addAttribute("error", "This account has been deactivated. Please contact support.");
+            return "login";
+        }
 
-        // If targetBookId was present (redirected from purchase), add to cart
+        // Sync HTTP session & Spring Security Context with authenticated user + role
+        authHelper.syncSessionAuth(session, user);
+
+        // Administrators always go to dedicated Admin Dashboard
+        if (user.isAdmin()) {
+            return "redirect:/admin/dashboard";
+        }
+
+        // If targetBookId was provided, add book to customer's cart
         if (targetBookId != null) {
             try {
                 Optional<Book> bookOpt = bookRepo.findById(targetBookId);
-                if (bookOpt.isPresent()) {
+                if (bookOpt.isPresent() && !bookOpt.get().isDeleted()) {
                     Book book = bookOpt.get();
-                    boolean exists = cartRepo.existsByUserAndBook(user, book);
-                    if (!exists) {
+                    Optional<Cart> existingCartOpt = cartRepo.findByUserAndBook(user, book);
+                    if (existingCartOpt.isEmpty()) {
                         Cart cartItem = new Cart();
                         cartItem.setUser(user);
                         cartItem.setBook(book);
                         cartItem.setQuantity(1);
                         cartRepo.save(cartItem);
-                        redirectAttributes.addFlashAttribute("success", "Book added to cart!");
+                        redirectAttributes.addFlashAttribute("message", "Book added to cart!");
                     } else {
-                        redirectAttributes.addFlashAttribute("error", "Book is already in your cart.");
+                        redirectAttributes.addFlashAttribute("message", "This book is already in your cart.");
                     }
                 }
             } catch (Exception e) {
                 System.err.println("Notice: Could not add target book to cart: " + e.getMessage());
             }
+            session.setAttribute("cartTotal", cartService.calculateCartTotal(user));
             return "redirect:/cart";
         }
 
-        // Calculate and cache cart total
-        double totalCartPrice = 0.0;
-        try {
-            List<Cart> cartItems = cartService.getCartItems(user.getUserid());
-            if (cartItems != null) {
-                totalCartPrice = cartItems.stream()
-                        .filter(cart -> cart != null && cart.getBook() != null)
-                        .mapToDouble(cart -> (double) cart.getBook().getPrice()
-                                * (cart.getQuantity() > 0 ? cart.getQuantity() : 1))
-                        .sum();
-            }
-        } catch (Exception e) {
-            System.err.println("Notice: Error calculating cart total: " + e.getMessage());
-        }
-
-        session.setAttribute("cartTotal", totalCartPrice);
+        session.setAttribute("cartTotal", cartService.calculateCartTotal(user));
         return "redirect:/";
     }
 
     @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
+    public String logout(HttpSession session, RedirectAttributes redirectAttributes) {
+        authHelper.clearAuth(session);
+        redirectAttributes.addFlashAttribute("message", "You have been signed out cleanly.");
         return "redirect:/login";
     }
 
     @PostMapping("/logout")
-    public String logouts(HttpSession session) {
-        session.invalidate();
+    public String logouts(HttpSession session, RedirectAttributes redirectAttributes) {
+        authHelper.clearAuth(session);
+        redirectAttributes.addFlashAttribute("message", "You have been signed out cleanly.");
         return "redirect:/login";
+    }
+
+    @GetMapping("/access-denied")
+    public String accessDenied(HttpServletResponse response, Model model) {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        model.addAttribute("errorMessage", "You do not have administrator permissions to access this resource.");
+        return "error/403";
     }
 
     @GetMapping("/errorpage")
@@ -331,104 +330,113 @@ public class Logincontroller {
 
     @PostMapping("/forgetpwd")
     public String forgetPassword(@RequestParam("email") String email, Model model) {
-        // Check if the email exists in the database
-        User userOptional = userRepo.findByEmail(email);
+        String normalizedEmail = email != null ? email.trim() : "";
+        User userOptional = userRepo.findByEmailIgnoreCase(normalizedEmail);
+        if (userOptional == null) {
+            userOptional = userRepo.findByEmail(normalizedEmail);
+        }
         if (userOptional == null) {
             model.addAttribute("error", "Email not found. Please check and try again.");
-            return "forgetpwd"; // Redirects back to forget password page
+            return "forgetpwd";
         }
 
         try {
-            // Generate OTP and send to user
-            String otp = otpservice.generateOTP(email);
-            otpservice.sendOTP(email, otp);
+            String targetEmail = userOptional.getEmail();
+            String otp = otpservice.generateOTP(targetEmail);
+            otpservice.sendOTP(targetEmail, otp);
 
-            // Redirect to OTP verification page with email pre-filled
-            model.addAttribute("email", email);
+            model.addAttribute("email", targetEmail);
             model.addAttribute("message", "An OTP has been sent to your email for verification.");
-            return "verifyotp"; // Go to OTP verification page
+            return "verifyotp";
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Failed to send OTP. Please try again.");
-            return "errorpage"; // Stay on forget password page if there's an error
+            return "errorpage";
         }
     }
 
     @GetMapping("/newpass")
-    public String newpass(@RequestParam("email") String email, Model model) {
+    public String newpass(@RequestParam("email") String email, HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+        String verifiedEmail = (String) session.getAttribute("verifiedResetEmail");
+        if (verifiedEmail == null || email == null || !verifiedEmail.equalsIgnoreCase(email.trim())) {
+            redirectAttributes.addFlashAttribute("error", "Please verify your OTP before resetting your password.");
+            return "redirect:/forgetpwd";
+        }
         model.addAttribute("email", email);
         return "User/newpwd";
     }
 
     @PostMapping("/newpass")
-    public String setNewPassword(@RequestParam("email") String email,
+    public String setNewPassword(
+            @RequestParam("email") String email,
             @RequestParam("newPassword") String newPassword,
             @RequestParam("confirmPassword") String confirmPassword,
+            HttpSession session,
             RedirectAttributes redirectAttributes) {
 
-        User user = userRepo.findByEmail(email);
+        String verifiedEmail = (String) session.getAttribute("verifiedResetEmail");
+        if (verifiedEmail == null || email == null || !verifiedEmail.equalsIgnoreCase(email.trim())) {
+            redirectAttributes.addFlashAttribute("error", "OTP verification session expired or invalid. Please request a new OTP.");
+            return "redirect:/forgetpwd";
+        }
+
+        User user = userRepo.findByEmailIgnoreCase(email.trim());
+        if (user == null) {
+            user = userRepo.findByEmail(email.trim());
+        }
         if (user == null) {
             redirectAttributes.addFlashAttribute("error", "User not found!");
             return "redirect:/forgetpwd";
         }
 
-        if (!newPassword.equals(confirmPassword)) {
+        if (newPassword == null || newPassword.isBlank() || !newPassword.equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute("error", "Passwords do not match!");
-            return "redirect:/newpass?email=" + email;
+            return "redirect:/newpass?email=" + user.getEmail();
         }
 
-        user.setPassword(passwordEncoder.encode(newPassword)); // Encrypt password before storing
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepo.save(user);
+        session.removeAttribute("verifiedResetEmail");
 
-        redirectAttributes.addFlashAttribute("success", "Password updated successfully!");
-        return "redirect:/login"; // Redirect to login page
+        redirectAttributes.addFlashAttribute("message", "Password updated successfully! Please sign in.");
+        return "redirect:/login";
     }
 
     @GetMapping("/search")
-    public String searchBooks(@RequestParam(value = "title", required = false) String title,
+    public String searchBooks(
+            @RequestParam(value = "title", required = false) String title,
             @RequestParam(value = "author", required = false) String author,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
+            HttpSession session,
             Model model) {
 
         List<Book> books = new ArrayList<>();
 
-        if (title != null && !title.isEmpty()) {
-            books = bookRepo.findByTitleContainingIgnoreCaseAndIsDeletedFalse(title);
-        } else if (author != null && !author.isEmpty()) {
-            books = bookRepo.findByAuthorContainingIgnoreCaseAndIsDeletedFalse(author);
+        if (title != null && !title.trim().isEmpty()) {
+            books = bookRepo.findByTitleContainingIgnoreCaseAndIsDeletedFalse(title.trim());
+        } else if (author != null && !author.trim().isEmpty()) {
+            books = bookRepo.findByAuthorContainingIgnoreCaseAndIsDeletedFalse(author.trim());
         } else if (categoryId != null) {
             Optional<Category> categoryOpt = categoryRepo.findById(categoryId);
             if (categoryOpt.isPresent()) {
-                Category category = categoryOpt.get();
-                books = bookRepo.findByCategoryAndIsDeletedFalse(category);
+                books = bookRepo.findByCategoryAndIsDeletedFalse(categoryOpt.get());
             } else {
-                // Optional: Handle case where category ID is invalid
                 model.addAttribute("error", "Category not found.");
             }
         } else {
-            // Fetch all non-deleted books when no search criteria are provided
             books = bookRepo.findByIsDeletedFalse();
         }
 
-        // Process book images
-        Map<Long, String> bookImages = new HashMap<>();
-        for (Book book : books) {
-            if (book.getCoverImage() != null) {
-                String base64Image = Base64.getEncoder().encodeToString(book.getCoverImage());
-                bookImages.put(book.getId(), "data:image/jpeg;base64," + base64Image);
-            }
-        }
-
-        // Always add categories to the model
         List<Category> categories = categoryRepo.findAll();
+        model.addAttribute("isLoggedIn", authHelper.isAuthenticated(session));
         model.addAttribute("categories", categories);
         model.addAttribute("books", books);
-        model.addAttribute("bookImages", bookImages);
+        model.addAttribute("bookImages", buildBookImagesMap(books));
 
         if (books.isEmpty()) {
             model.addAttribute("error", "No books found for your search.");
         }
 
-        return "index"; // Return to the index page with search results
+        return "index";
     }
 
     @GetMapping("/contact")
@@ -437,12 +445,12 @@ public class Logincontroller {
     }
 
     @PostMapping("/contact")
-    public String handleContactForm(@RequestParam("name") String name,
+    public String handleContactForm(
+            @RequestParam("name") String name,
             @RequestParam("email") String email,
             @RequestParam("subject") String subject,
             @RequestParam("message") String message,
             Model model) {
-
         try {
             Inquiry inquiry = new Inquiry(name, email, subject, message);
             inquiryRepo.save(inquiry);
@@ -451,21 +459,19 @@ public class Logincontroller {
         }
 
         try {
-            // Send emails to admin & user
             emailService.sendContactEmail(name, email, subject, message);
         } catch (Exception e) {
             System.err.println("Notice: Could not send contact email: " + e.getMessage());
         }
 
-        // Show success message
         model.addAttribute("success",
                 "Your message has been received! Our concierge team will review your inquiry shortly.");
-        return "contact"; // Redirect back to the contact page
+        return "contact";
     }
 
     @GetMapping("/about")
     public String about(Model model) {
-        model.addAttribute("pageTitle", "About Us - Book Haven");
+        model.addAttribute("pageTitle", "About Us - Quickread Bookstore");
         return "about";
     }
 }

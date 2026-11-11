@@ -73,15 +73,22 @@
                             By <span th:text="${book.author}">Author Name</span>
                         </div>
 
-                        <!-- Pricing Badge -->
+                        <!-- Pricing Badge & Stock -->
                         <div class="details-price-badge">
                             <div th:if="${book.price == 0}">
                                 <span class="badge bg-success py-2 px-3 fs-6">Complimentary Edition</span>
                             </div>
-                            <div th:unless="${book.price == 0}" class="d-flex align-items-baseline gap-2">
-                                <span class="text-muted" style="font-size: 1.1rem;">Price:</span>
-                                <span class="details-price-num">₹<span th:text="${book.price}">499</span></span>
-                                <span class="text-muted small">Inclusive of all digital rights</span>
+                            <div th:unless="${book.price == 0}" class="d-flex flex-wrap align-items-baseline gap-3">
+                                <div>
+                                    <span class="text-muted" style="font-size: 1.1rem;">Price:</span>
+                                    <span class="details-price-num">₹<span th:text="${book.price}">499</span></span>
+                                </div>
+                                <span th:if="${book.stock == null or book.stock > 0}" class="badge bg-success-subtle text-success border border-success-subtle">
+                                    In Stock (<span th:text="${book.stock != null ? book.stock : 'Available'}">100</span>)
+                                </span>
+                                <span th:if="${book.stock != null and book.stock <= 0}" class="badge bg-danger">
+                                    Out of Stock
+                                </span>
                             </div>
                         </div>
 
@@ -115,37 +122,51 @@
 
                         <!-- Action Bar -->
                         <div class="details-action-bar">
-                            <!-- Paid Book: Logged in State -->
-                            <th:block th:if="${book.price > 0 and session.loggedInUser != null}">
-                                <form th:action="@{/add/{bookId}(bookId=${book.id})}" method="post" class="flex-grow-1">
-                                    <button type="submit" class="btn-luxury-primary w-100 py-3">
-                                        <i class="fas fa-shopping-bag me-2"></i> Add to Cart
+                            <!-- Admin Edit Link -->
+                            <th:block th:if="${isAdminSession}">
+                                <a th:href="@{/admin/books/edit/{id}(id=${book.id})}" class="btn-luxury-primary w-100 py-3 text-center">
+                                    <i class="fas fa-pen-to-square me-2"></i> Edit Book in Admin Console
+                                </a>
+                            </th:block>
+
+                            <!-- Reader Actions -->
+                            <th:block th:unless="${isAdminSession}">
+                                <!-- Paid Book: Logged in State -->
+                                <th:block th:if="${book.price > 0 and currentUser != null}">
+                                    <form th:action="@{/add/{bookId}(bookId=${book.id})}" method="post" class="flex-grow-1 d-flex gap-2 align-items-center">
+                                        <input type="number" name="quantity" value="1" min="1"
+                                               th:max="${book.stock != null and book.stock > 0 ? book.stock : 99}"
+                                               class="form-control" style="max-width: 82px; height: 48px;" aria-label="Quantity" />
+                                        <button type="submit" class="btn-luxury-primary flex-grow-1 py-3" th:disabled="${book.stock != null and book.stock <= 0}">
+                                            <i class="fas fa-shopping-bag me-2"></i>
+                                            <span th:text="${book.stock != null and book.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}">Add to Cart</span>
+                                        </button>
+                                    </form>
+
+                                    <a th:if="${book.stock == null or book.stock > 0}" th:href="@{/checkout/{bookId}(bookId=${book.id})}" class="btn-luxury-dark py-3 px-4">
+                                        <i class="fas fa-bolt me-2"></i> Instant Buy
+                                    </a>
+                                </th:block>
+
+                                <!-- Paid Book: Logged Out State (Require Login to Purchase) -->
+                                <th:block th:if="${book.price > 0 and currentUser == null}">
+                                    <a th:href="@{/login(targetBookId=${book.id})}" class="btn-luxury-primary w-100 py-3 text-center">
+                                        <i class="fas fa-sign-in-alt me-2"></i> Sign In to Purchase Edition
+                                    </a>
+                                </th:block>
+
+                                <!-- Free Book: Instant Download if logged in -->
+                                <form th:if="${book.price == 0 and currentUser != null}" th:action="@{/download/{id}(id=${book.id})}" method="get" class="w-100">
+                                    <button type="submit" class="btn btn-success btn-lg w-100 py-3" style="background-color: var(--success-accent); border: none;">
+                                        <i class="fas fa-download me-2"></i> Download Full Book (PDF)
                                     </button>
                                 </form>
 
-                                <a th:href="@{/checkout/{bookId}(bookId=${book.id})}" class="btn-luxury-dark py-3 px-4">
-                                    <i class="fas fa-bolt me-2"></i> Instant Buy
+                                <!-- Free Book: Sign in prompt if logged out -->
+                                <a th:if="${book.price == 0 and currentUser == null}" href="/login" class="btn-luxury-primary w-100 py-3 text-center">
+                                    <i class="fas fa-sign-in-alt me-2"></i> Sign In to Download Free Book
                                 </a>
                             </th:block>
-
-                            <!-- Paid Book: Logged Out State (Require Login to Purchase) -->
-                            <th:block th:if="${book.price > 0 and session.loggedInUser == null}">
-                                <a th:href="@{/login(targetBookId=${book.id})}" class="btn-luxury-primary w-100 py-3 text-center">
-                                    <i class="fas fa-sign-in-alt me-2"></i> Sign In to Purchase Edition
-                                </a>
-                            </th:block>
-
-                            <!-- Free Book: Instant Download if logged in -->
-                            <form th:if="${book.price == 0 and session.loggedInUser != null}" th:action="@{/download/{id}(id=${book.id})}" method="get" class="w-100">
-                                <button type="submit" class="btn btn-success btn-lg w-100 py-3" style="background-color: var(--success-accent); border: none;">
-                                    <i class="fas fa-download me-2"></i> Download Full Book (PDF)
-                                </button>
-                            </form>
-
-                            <!-- Free Book: Sign in prompt if logged out -->
-                            <a th:if="${book.price == 0 and session.loggedInUser == null}" href="/login" class="btn-luxury-primary w-100 py-3 text-center">
-                                <i class="fas fa-sign-in-alt me-2"></i> Sign In to Download Free Book
-                            </a>
                         </div>
                     </div>
                 </div>

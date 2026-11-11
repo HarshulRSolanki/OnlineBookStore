@@ -21,6 +21,10 @@ public interface BookRepo extends JpaRepository<Book, Long>
 
 	List<Book> findByAuthorContainingIgnoreCaseAndIsDeletedFalse(String author);
 
+	boolean existsByCategoryId(Long categoryId);
+
+	long countByIsDeletedFalse();
+
 	List<Book> findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCaseOrCategory_NameContainingIgnoreCase(
 			String query, String query2, String query3);
 	

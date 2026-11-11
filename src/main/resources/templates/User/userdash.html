@@ -26,7 +26,7 @@
                 <div class="position-relative" style="z-index: 2;">
                     <span class="promo-tag">Reader Sanctuary</span>
                     <h1 class="promo-heading mb-2">
-                        Welcome, <span th:text="${session.loggedInUser != null and session.loggedInUser != 'Admin' ? session.loggedInUser.username : 'Reader'}">Discerning Reader</span>.
+                        Welcome, <span th:text="${currentUser != null and !isAdminSession ? currentUser.username : 'Reader'}">Discerning Reader</span>.
                     </h1>
                     <p class="promo-description mb-4">
                         Manage your curated digital library, review previous orders, and inspect your reserved book cart.
@@ -38,7 +38,7 @@
                         <a href="/cart" class="btn-luxury-outline py-2 px-4" style="color: #FFFFFF !important; border-color: rgba(255,255,255,0.4);">
                             <i class="fas fa-shopping-bag me-2"></i> View Cart (<span th:text="${cartItems != null ? cartItems.size() : 0}">0</span>)
                         </a>
-                        <a th:if="${session.loggedInUser != null and session.loggedInUser != 'Admin'}" th:href="@{/editProfile(userId=${session.loggedInUser.userid})}" class="btn-luxury-outline py-2 px-3" style="color: #DFC293 !important; border-color: rgba(197, 164, 109, 0.4);">
+                        <a th:if="${currentUser != null and !isAdminSession}" href="/profile" class="btn-luxury-outline py-2 px-3" style="color: #DFC293 !important; border-color: rgba(197, 164, 109, 0.4);">
                             <i class="fas fa-user-gear me-1"></i> Account Settings
                         </a>
                     </div>
@@ -95,10 +95,10 @@
                         </div>
                         <div class="cart-item-info">
                             <h5 class="cart-item-title mb-1" th:text="${item.book.title}">Title</h5>
-                            <span class="small text-secondary" th:text="'By ' + ${item.book.author}">Author</span>
+                            <span class="small text-secondary" th:text="'By ' + ${item.book.author} + ' • Qty: ' + ${item.quantity}">Author</span>
                         </div>
                         <div class="text-end">
-                            <span class="fw-bold fs-6 text-dark" th:if="${item.book.price > 0}">₹<span th:text="${item.book.price}"></span></span>
+                            <span class="fw-bold fs-6 text-dark" th:if="${item.book.price > 0}">₹<span th:text="${item.book.price * item.quantity}"></span></span>
                             <span class="badge bg-success" th:if="${item.book.price == 0}">Free</span>
                         </div>
                     </div>

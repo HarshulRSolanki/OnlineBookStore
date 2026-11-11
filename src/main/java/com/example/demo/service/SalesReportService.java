@@ -8,11 +8,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -27,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.Entity.Order;
+import com.example.demo.Entity.OrderItem;
 import com.example.demo.Repository.OrderRepo;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
@@ -72,11 +74,17 @@ public class SalesReportService {
             if ("SUCCESS".equals(status) || "PAID".equals(status)) {
                 successfulPayments++;
                 totalRevenue += o.getAmount();
-                totalBooksSold += o.getQuantity();
 
-                if (o.getBook() != null) {
-                    String title = o.getBook().getTitle();
-                    bookSalesCount.put(title, bookSalesCount.getOrDefault(title, 0L) + o.getQuantity());
+                List<OrderItem> eff = o.getEffectiveItems();
+                if (!eff.isEmpty()) {
+                    for (OrderItem item : eff) {
+                        int qty = item.getQuantity();
+                        totalBooksSold += qty;
+                        String title = item.getEffectiveTitle();
+                        bookSalesCount.put(title, bookSalesCount.getOrDefault(title, 0L) + qty);
+                    }
+                } else {
+                    totalBooksSold += o.getQuantity();
                 }
             } else if ("PENDING".equals(status)) {
                 pendingOrders++;
@@ -111,11 +119,9 @@ public class SalesReportService {
     public Map<String, Object> getChartAnalytics() {
         Map<String, Object> analytics = new HashMap<>();
 
-        List<Order> paidOrders = orderRepo.findAllByOrderByOrderDateDesc().stream()
-                .filter(o -> {
-                    String s = o.getPaymentStatus() != null ? o.getPaymentStatus().toUpperCase() : "";
-                    return "SUCCESS".equals(s) || "PAID".equals(s);
-                })
+        List<Order> allOrders = orderRepo.findAllByOrderByOrderDateDesc();
+        List<Order> paidOrders = allOrders.stream()
+                .filter(Order::isPaid)
                 .collect(Collectors.toList());
 
         // 1. Daily Sales (Last 7 Days)
@@ -154,12 +160,18 @@ public class SalesReportService {
         analytics.put("monthlyLabels", new ArrayList<>(monthlySales.keySet()));
         analytics.put("monthlyValues", new ArrayList<>(monthlySales.values()));
 
-        // 3. Revenue by Book Category
-        Map<String, Double> categoryRevenue = new HashMap<>();
+        // 3. Revenue by Book Category (aggregated across OrderItems)
+        Map<String, Double> categoryRevenue = new LinkedHashMap<>();
         for (Order o : paidOrders) {
-            if (o.getBook() != null && o.getBook().getCategory() != null) {
-                String cat = o.getBook().getCategory().getName();
-                categoryRevenue.put(cat, categoryRevenue.getOrDefault(cat, 0.0) + o.getAmount());
+            List<OrderItem> eff = o.getEffectiveItems();
+            if (!eff.isEmpty()) {
+                for (OrderItem item : eff) {
+                    String cat = item.getEffectiveCategory();
+                    if (cat == null || cat.isBlank()) {
+                        cat = "Uncategorized";
+                    }
+                    categoryRevenue.put(cat, categoryRevenue.getOrDefault(cat, 0.0) + item.getSubtotal());
+                }
             } else {
                 categoryRevenue.put("Uncategorized", categoryRevenue.getOrDefault("Uncategorized", 0.0) + o.getAmount());
             }
@@ -168,12 +180,9 @@ public class SalesReportService {
         analytics.put("categoryValues", new ArrayList<>(categoryRevenue.values()));
 
         // 4. Order Status Breakdown
-        long success = orderRepo.findAll().stream().filter(o -> {
-            String s = o.getPaymentStatus() != null ? o.getPaymentStatus().toUpperCase() : "";
-            return "SUCCESS".equals(s) || "PAID".equals(s);
-        }).count();
-        long pending = orderRepo.findAll().stream().filter(o -> "PENDING".equalsIgnoreCase(o.getPaymentStatus())).count();
-        long cancelled = orderRepo.findAll().stream().filter(o -> {
+        long success = allOrders.stream().filter(Order::isPaid).count();
+        long pending = allOrders.stream().filter(o -> "PENDING".equalsIgnoreCase(o.getPaymentStatus())).count();
+        long cancelled = allOrders.stream().filter(o -> {
             String s = o.getPaymentStatus() != null ? o.getPaymentStatus().toUpperCase() : "";
             return "CANCELLED".equals(s) || "FAILED".equals(s);
         }).count();
@@ -204,13 +213,21 @@ public class SalesReportService {
                     }
                 } catch (Exception ignored) {}
             }
+            List<OrderItem> eff = o.getEffectiveItems();
             if (categoryId != null && categoryId > 0) {
-                if (o.getBook() == null || o.getBook().getCategory() == null || !o.getBook().getCategory().getId().equals(categoryId)) {
+                boolean matchesCategory = eff.stream().anyMatch(item ->
+                        item.getBook() != null
+                                && item.getBook().getCategory() != null
+                                && item.getBook().getCategory().getId().equals(categoryId));
+                if (!matchesCategory) {
                     return false;
                 }
             }
             if (bookName != null && !bookName.trim().isEmpty()) {
-                if (o.getBook() == null || !o.getBook().getTitle().toLowerCase().contains(bookName.trim().toLowerCase())) {
+                String needle = bookName.trim().toLowerCase();
+                boolean matchesTitle = eff.stream()
+                        .anyMatch(item -> item.getEffectiveTitle().toLowerCase().contains(needle));
+                if (!matchesTitle) {
                     return false;
                 }
             }
@@ -223,16 +240,41 @@ public class SalesReportService {
         }).collect(Collectors.toList());
     }
 
+    private String formatOrderBooksSummary(Order o) {
+        List<OrderItem> eff = o.getEffectiveItems();
+        if (eff.isEmpty()) {
+            return o.getBook() != null ? o.getBook().getTitle() : "Edition";
+        }
+        return eff.stream()
+                .map(i -> i.getEffectiveTitle() + (i.getQuantity() > 1 ? " (x" + i.getQuantity() + ")" : ""))
+                .collect(Collectors.joining(", "));
+    }
+
+    private String formatOrderCategories(Order o) {
+        List<OrderItem> eff = o.getEffectiveItems();
+        if (eff.isEmpty()) {
+            return o.getBook() != null && o.getBook().getCategory() != null
+                    ? o.getBook().getCategory().getName()
+                    : "-";
+        }
+        Set<String> cats = new LinkedHashSet<>();
+        for (OrderItem item : eff) {
+            if (item.getEffectiveCategory() != null && !item.getEffectiveCategory().isBlank()) {
+                cats.add(item.getEffectiveCategory());
+            }
+        }
+        return cats.isEmpty() ? "-" : String.join(", ", cats);
+    }
+
     public byte[] exportSalesPdf(List<Order> orders, String filterDescription) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             PdfWriter writer = new PdfWriter(baos);
             PdfDocument pdfDoc = new PdfDocument(writer);
-            pdfDoc.setDefaultPageSize(PageSize.A4.rotate()); // Landscape for tabular analytics
+            pdfDoc.setDefaultPageSize(PageSize.A4.rotate());
 
             Document document = new Document(pdfDoc);
             document.setMargins(28, 28, 28, 28);
 
-            // 1. Header
             Table headerTable = new Table(UnitValue.createPercentArray(new float[]{65, 35}));
             headerTable.setWidth(UnitValue.createPercentValue(100));
 
@@ -251,31 +293,29 @@ public class SalesReportService {
             document.add(headerTable);
             document.add(new Paragraph("\n").setFontSize(6));
 
-            // Summary Metrics Row
-            double totalRev = orders.stream().filter(o -> "SUCCESS".equalsIgnoreCase(o.getPaymentStatus()) || "PAID".equalsIgnoreCase(o.getPaymentStatus())).mapToDouble(Order::getAmount).sum();
-            long totalSold = orders.stream().filter(o -> "SUCCESS".equalsIgnoreCase(o.getPaymentStatus()) || "PAID".equalsIgnoreCase(o.getPaymentStatus())).mapToLong(Order::getQuantity).sum();
+            double totalRev = orders.stream().filter(Order::isPaid).mapToDouble(Order::getAmount).sum();
+            long totalSold = orders.stream().filter(Order::isPaid).mapToLong(Order::getTotalItemQuantity).sum();
 
             Table summaryMetrics = new Table(UnitValue.createPercentArray(new float[]{25, 25, 25, 25}));
             summaryMetrics.setWidth(UnitValue.createPercentValue(100));
             summaryMetrics.setBackgroundColor(COLOR_BG_LIGHT);
 
-            addStatBox(summaryMetrics, "TOTAL REVENUE", String.format("₹%.2f", totalRev));
+            addStatBox(summaryMetrics, "TOTAL REVENUE", String.format("INR %.2f", totalRev));
             addStatBox(summaryMetrics, "TOTAL VOLUMES SOLD", String.valueOf(totalSold));
             addStatBox(summaryMetrics, "RECORDED ORDERS", String.valueOf(orders.size()));
-            addStatBox(summaryMetrics, "AVERAGE BASKET", String.format("₹%.2f", orders.size() > 0 ? (totalRev / orders.size()) : 0.0));
+            addStatBox(summaryMetrics, "AVERAGE BASKET", String.format("INR %.2f", !orders.isEmpty() ? (totalRev / orders.size()) : 0.0));
 
             document.add(summaryMetrics);
             document.add(new Paragraph("\n").setFontSize(8));
 
-            // Table of Orders
-            Table dataTable = new Table(UnitValue.createPercentArray(new float[]{12, 16, 22, 12, 6, 10, 10, 12}));
+            Table dataTable = new Table(UnitValue.createPercentArray(new float[]{12, 14, 28, 12, 6, 8, 10, 10}));
             dataTable.setWidth(UnitValue.createPercentValue(100));
 
-            String[] tableHeaders = {"Order #", "Customer", "Book Title", "Category", "Qty", "Unit Price", "Total (₹)", "Date"};
+            String[] tableHeaders = {"Order #", "Customer", "Book(s)", "Category", "Qty", "Status", "Total (INR)", "Date"};
             for (String th : tableHeaders) {
                 Cell thCell = new Cell().setBackgroundColor(COLOR_PRIMARY).setPadding(6);
                 thCell.add(new Paragraph(th).setFontSize(8).setBold().setFontColor(ColorConstants.WHITE));
-                if (th.equals("Qty") || th.contains("Price") || th.contains("Total")) {
+                if (th.equals("Qty") || th.contains("Total")) {
                     thCell.setTextAlignment(TextAlignment.RIGHT);
                 }
                 dataTable.addHeaderCell(thCell);
@@ -284,19 +324,18 @@ public class SalesReportService {
             for (Order o : orders) {
                 dataTable.addCell(createCell(o.getOrderNumber() != null ? o.getOrderNumber() : "ORD-" + o.getId()));
                 dataTable.addCell(createCell(o.getUser() != null ? o.getUser().getUsername() : "Reader"));
-                dataTable.addCell(createCell(o.getBook() != null ? o.getBook().getTitle() : "Edition"));
-                dataTable.addCell(createCell(o.getBook() != null && o.getBook().getCategory() != null ? o.getBook().getCategory().getName() : "-"));
-                dataTable.addCell(createCell(String.valueOf(o.getQuantity()), TextAlignment.RIGHT));
-                dataTable.addCell(createCell(String.format("₹%.2f", o.getUnitPrice()), TextAlignment.RIGHT));
-                dataTable.addCell(createCell(String.format("₹%.2f", o.getAmount()), TextAlignment.RIGHT));
+                dataTable.addCell(createCell(formatOrderBooksSummary(o)));
+                dataTable.addCell(createCell(formatOrderCategories(o)));
+                dataTable.addCell(createCell(String.valueOf(o.getTotalItemQuantity()), TextAlignment.RIGHT));
+                dataTable.addCell(createCell(o.getPaymentStatus() != null ? o.getPaymentStatus() : "PAID"));
+                dataTable.addCell(createCell(String.format("INR %.2f", o.getAmount()), TextAlignment.RIGHT));
                 dataTable.addCell(createCell(o.getOrderDate() != null ? o.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yy")) : "-"));
             }
 
             document.add(dataTable);
 
-            // Footer
             document.add(new Paragraph("\n").setFontSize(6));
-            Paragraph footer = new Paragraph("Quickread Curatorial Intelligence System • Confidential Administrative Document • Page 1")
+            Paragraph footer = new Paragraph("Quickread Curatorial Intelligence System - Confidential Administrative Document")
                     .setFontSize(7).setFontColor(COLOR_ACCENT).setTextAlignment(TextAlignment.CENTER);
             document.add(footer);
 
@@ -328,7 +367,6 @@ public class SalesReportService {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Sales Report");
 
-            // Header Style
             XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
             XSSFFont headerFont = (XSSFFont) workbook.createFont();
             headerFont.setBold(true);
@@ -339,17 +377,15 @@ public class SalesReportService {
             headerStyle.setAlignment(HorizontalAlignment.CENTER);
             headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
-            // Title Row
             Row titleRow = sheet.createRow(0);
             titleRow.createCell(0).setCellValue("QUICKREAD BOOKSTORE - SALES & FINANCIAL REPORT");
 
             Row filterRow = sheet.createRow(1);
             filterRow.createCell(0).setCellValue("Generated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) + " | Scope: " + (filterDescription != null ? filterDescription : "All Records"));
 
-            sheet.createRow(2); // Empty spacer
+            sheet.createRow(2);
 
-            // Table Column Headers
-            String[] cols = {"Order ID", "Receipt #", "Customer Name", "Customer Email", "Book Title", "Category", "Quantity", "Unit Price (INR)", "Total Amount (INR)", "Payment Status", "Order Date"};
+            String[] cols = {"Order ID", "Receipt #", "Customer Name", "Customer Email", "Books Ordered", "Category", "Total Qty", "Subtotal (INR)", "Total Amount (INR)", "Payment Status", "Order Date"};
             Row headerRow = sheet.createRow(3);
             for (int i = 0; i < cols.length; i++) {
                 org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
@@ -367,21 +403,23 @@ public class SalesReportService {
                 row.createCell(1).setCellValue(o.getReceiptNumber() != null ? o.getReceiptNumber() : ("REC-" + o.getId()));
                 row.createCell(2).setCellValue(o.getUser() != null ? o.getUser().getUsername() : "Reader");
                 row.createCell(3).setCellValue(o.getUser() != null ? o.getUser().getEmail() : "");
-                row.createCell(4).setCellValue(o.getBook() != null ? o.getBook().getTitle() : "");
-                row.createCell(5).setCellValue(o.getBook() != null && o.getBook().getCategory() != null ? o.getBook().getCategory().getName() : "");
-                row.createCell(6).setCellValue(o.getQuantity());
-                row.createCell(7).setCellValue(o.getUnitPrice());
+                row.createCell(4).setCellValue(formatOrderBooksSummary(o));
+                row.createCell(5).setCellValue(formatOrderCategories(o));
+                int qty = o.getTotalItemQuantity();
+                row.createCell(6).setCellValue(qty);
+                row.createCell(7).setCellValue(o.getSubtotal());
                 row.createCell(8).setCellValue(o.getAmount());
                 row.createCell(9).setCellValue(o.getPaymentStatus() != null ? o.getPaymentStatus() : "PAID");
                 row.createCell(10).setCellValue(o.getOrderDate() != null ? o.getOrderDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : "");
 
-                totalRevenue += o.getAmount();
-                totalBooks += o.getQuantity();
+                if (o.isPaid()) {
+                    totalRevenue += o.getAmount();
+                    totalBooks += qty;
+                }
             }
 
-            // Total Summary Row
             Row summaryRow = sheet.createRow(rowIdx + 1);
-            summaryRow.createCell(0).setCellValue("TOTAL SUMMARY");
+            summaryRow.createCell(0).setCellValue("TOTAL PAID SUMMARY");
             summaryRow.createCell(6).setCellValue(totalBooks);
             summaryRow.createCell(8).setCellValue(totalRevenue);
 
@@ -398,22 +436,22 @@ public class SalesReportService {
 
     public byte[] exportSalesCsv(List<Order> orders) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); PrintWriter pw = new PrintWriter(baos)) {
-            pw.println("Order Number,Receipt Number,Customer Name,Customer Email,Book Title,Category,Quantity,Unit Price,Total Amount,Payment Status,Order Date");
+            pw.println("Order Number,Receipt Number,Customer Name,Customer Email,Books Ordered,Category,Quantity,Subtotal,Total Amount,Payment Status,Order Date");
 
             for (Order o : orders) {
                 String ordNo = escapeCsv(o.getOrderNumber() != null ? o.getOrderNumber() : ("ORD-" + o.getId()));
                 String recNo = escapeCsv(o.getReceiptNumber() != null ? o.getReceiptNumber() : ("REC-" + o.getId()));
                 String cName = escapeCsv(o.getUser() != null ? o.getUser().getUsername() : "Reader");
                 String cEmail = escapeCsv(o.getUser() != null ? o.getUser().getEmail() : "");
-                String bTitle = escapeCsv(o.getBook() != null ? o.getBook().getTitle() : "Edition");
-                String bCat = escapeCsv(o.getBook() != null && o.getBook().getCategory() != null ? o.getBook().getCategory().getName() : "");
-                int qty = o.getQuantity();
-                double unitPrice = o.getUnitPrice();
+                String bTitle = escapeCsv(formatOrderBooksSummary(o));
+                String bCat = escapeCsv(formatOrderCategories(o));
+                int qty = o.getTotalItemQuantity();
+                double subtotal = o.getSubtotal();
                 double total = o.getAmount();
                 String status = escapeCsv(o.getPaymentStatus() != null ? o.getPaymentStatus() : "PAID");
                 String date = escapeCsv(o.getOrderDate() != null ? o.getOrderDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : "");
 
-                pw.printf("%s,%s,%s,%s,%s,%s,%d,%.2f,%.2f,%s,%s%n", ordNo, recNo, cName, cEmail, bTitle, bCat, qty, unitPrice, total, status, date);
+                pw.printf("%s,%s,%s,%s,%s,%s,%d,%.2f,%.2f,%s,%s%n", ordNo, recNo, cName, cEmail, bTitle, bCat, qty, subtotal, total, status, date);
             }
 
             pw.flush();
@@ -431,4 +469,3 @@ public class SalesReportService {
         return val;
     }
 }
-

@@ -208,76 +208,77 @@
             color: #817568;
             line-height: 1.6;
         }
-        .footer-bar a {
-            color: #8B6B45;
-            text-decoration: none;
-        }
     </style>
 </head>
 <body>
 <div class="email-wrapper">
     <div class="email-container">
-        <!-- Header -->
         <div class="header-bar">
             <div class="brand-monogram">Q</div>
             <h1 class="brand-title">Quickread</h1>
-            <div class="brand-subtitle">Curated Literary Editions &bull; Official Tax Invoice</div>
+            <div class="brand-subtitle">Curated Literary Editions &bull; Combined Tax Invoice</div>
         </div>
 
-        <!-- Body -->
         <div class="content-body">
             <div class="intro-box">
                 <p class="intro-greeting">Dear <span th:text="${customerName}">Reader</span>,</p>
                 <p class="intro-desc">
-                    Thank you for your acquisition. We are delighted to confirm that your payment has been successfully verified, and your edition is now unlocked in your digital bookshelf.
+                    Thank you for your acquisition. Your Stripe payment has been verified and all books included in this order are now unlocked in your digital bookshelf.
                 </p>
             </div>
 
-            <!-- Receipt Metadata Grid -->
             <div class="invoice-card">
                 <table class="invoice-grid">
                     <tr>
                         <td class="invoice-label">Receipt Number</td>
-                        <td class="invoice-val" style="font-family: monospace;" th:text="${receiptNumber}">REC-20261106-0001</td>
+                        <td class="invoice-val" style="font-family: monospace;" th:text="${receiptNumber}">REC-0001</td>
                     </tr>
                     <tr>
-                        <td class="invoice-label">Order Number</td>
-                        <td class="invoice-val" style="font-family: monospace;" th:text="${orderNumber}">ORD-20261106-0001</td>
+                        <td class="invoice-label">Order ID</td>
+                        <td class="invoice-val" style="font-family: monospace;" th:text="${orderNumber}">ORD-0001</td>
                     </tr>
                     <tr>
                         <td class="invoice-label">Date &amp; Time</td>
-                        <td class="invoice-val" th:text="${orderDate}">06 Nov 2026, 09:45 IST</td>
+                        <td class="invoice-val" th:text="${orderDate}">06 Nov 2026</td>
                     </tr>
                     <tr>
                         <td class="invoice-label">Payment Status</td>
-                        <td class="invoice-val"><span class="status-badge" th:text="${paymentStatus}">PAID - VERIFIED</span></td>
-                    </tr>
-                    <tr>
-                        <td class="invoice-label">Payment Method</td>
-                        <td class="invoice-val">Stripe Card / Online Checkout</td>
+                        <td class="invoice-val"><span class="status-badge" th:text="${paymentStatus}">PAID</span></td>
                     </tr>
                     <tr th:if="${stripePaymentReference != null}">
                         <td class="invoice-label">Stripe Reference</td>
-                        <td class="invoice-val" style="font-family: monospace; font-size: 11px;" th:text="${stripePaymentReference}">ch_stripe_ref</td>
+                        <td class="invoice-val" style="font-family: monospace; font-size: 11px;" th:text="${stripePaymentReference}">pi_stripe_ref</td>
                     </tr>
                 </table>
             </div>
 
-            <!-- Itemized Products Table -->
+            <!-- Itemized Multi-Book Table -->
             <table class="table-items">
                 <thead>
                     <tr>
-                        <th>Edition / Work</th>
+                        <th>Book Description</th>
                         <th style="text-align: center;">Qty</th>
                         <th style="text-align: right;">Unit Price</th>
-                        <th style="text-align: right;">Amount</th>
+                        <th style="text-align: right;">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
+                    <tr th:if="${items != null and not #lists.isEmpty(items)}" th:each="item : ${items}">
                         <td>
-                            <div class="book-title" th:text="${bookTitle}">The Art of War</div>
-                            <div class="book-meta">Author: <span th:text="${bookAuthor}">Sun Tzu</span> &bull; <span th:text="${bookCategory}">Philosophy</span></div>
+                            <div class="book-title" th:text="${item.effectiveTitle}">The Art of War</div>
+                            <div class="book-meta">
+                                By <span th:text="${item.effectiveAuthor}">Author</span>
+                                &bull; <span th:text="${item.effectiveCategory}">Category</span>
+                            </div>
+                        </td>
+                        <td style="text-align: center; font-weight: 600;" th:text="${item.quantity}">1</td>
+                        <td style="text-align: right;" th:text="'₹' + ${#numbers.formatDecimal(item.unitPrice, 1, 2)}">₹499.00</td>
+                        <td style="text-align: right; font-weight: 700;" th:text="'₹' + ${#numbers.formatDecimal(item.subtotal, 1, 2)}">₹499.00</td>
+                    </tr>
+                    <tr th:if="${items == null or #lists.isEmpty(items)}">
+                        <td>
+                            <div class="book-title" th:text="${bookTitle}">Selected Work</div>
+                            <div class="book-meta">By <span th:text="${bookAuthor}">Author</span> &bull; <span th:text="${bookCategory}">Category</span></div>
                         </td>
                         <td style="text-align: center; font-weight: 600;" th:text="${quantity}">1</td>
                         <td style="text-align: right;" th:text="'₹' + ${unitPrice}">₹499.00</td>
@@ -293,44 +294,38 @@
                     <td class="summary-val" th:text="'₹' + ${subtotal}">₹499.00</td>
                 </tr>
                 <tr>
-                    <td class="summary-label">Digital Delivery Fee</td>
-                    <td class="summary-val" style="color: #2E7D32;">FREE (Instant Access)</td>
+                    <td class="summary-label">Delivery Charges</td>
+                    <td class="summary-val" th:text="${deliveryCharge != null and deliveryCharge != '0.00' ? '₹' + deliveryCharge : 'FREE (₹0.00)'}">FREE</td>
                 </tr>
                 <tr>
-                    <td class="summary-label">Taxes &amp; Curatorial Handling</td>
-                    <td class="summary-val">Included</td>
+                    <td class="summary-label">Applicable Taxes</td>
+                    <td class="summary-val" th:text="'₹' + ${tax != null ? tax : '0.00'}">₹0.00</td>
+                </tr>
+                <tr th:if="${discount != null and discount != '0.00'}">
+                    <td class="summary-label">Discount</td>
+                    <td class="summary-val" style="color: #2E7D32;" th:text="'-₹' + ${discount}">-₹0.00</td>
                 </tr>
                 <tr class="total-row">
-                    <td>Total Amount Paid</td>
+                    <td>Final Order Amount Paid</td>
                     <td class="summary-val" style="font-size: 17px; color: #2C211B;" th:text="'₹' + ${amount}">₹499.00</td>
                 </tr>
             </table>
 
-            <!-- Call to Action -->
             <div class="cta-box">
                 <a th:href="${libraryUrl}" href="/order" class="btn-access">
-                    Open Your Library &amp; Download PDF
+                    Open Your Library &amp; Orders
                 </a>
             </div>
 
-            <!-- Notice -->
             <div class="notice-box">
-                <strong>Attached Document:</strong> An official, print-ready PDF Tax Invoice and Receipt (<code>Receipt-<span th:text="${receiptNumber}">REC-001</span>.pdf</code>) has been attached to this email for your accounting and permanent records.
+                <strong>Attached PDF Invoice:</strong> Your official combined PDF receipt (<code>Quickread-Receipt-<span th:text="${receiptNumber}">REC-001</span>.pdf</code>) is attached to this email.
             </div>
-
-            <p style="font-size: 13px; color: #6E6259; line-height: 1.5; margin: 0;">
-                If you have questions or require any curatorial support, please reply to this email or contact our concierges at <a href="mailto:itechperson985@gmail.com" style="color: #8B6B45;">itechperson985@gmail.com</a>.
-            </p>
         </div>
 
-        <!-- Footer -->
         <div class="footer-bar">
-            &copy; <span th:text="${currentYear}">2026</span> Quickread Bookstore Atelier. All Rights Reserved.<br>
-            Designed for discerning readers and literary collectors worldwide.<br>
-            This is an automated transaction confirmation issued upon verified Stripe payment.
+            &copy; <span th:text="${currentYear}">2026</span> Quickread Bookstore Atelier. All Rights Reserved.
         </div>
     </div>
 </div>
 </body>
 </html>
-

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Orders – Quickread Admin</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Dedicated Admin Header -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
+                <div>
+                    <span class="section-subtitle-tag mb-1">Order &amp; Fulfillment Ledger</span>
+                    <h1 class="font-heading fs-2 mb-0">Manage Customer Orders</h1>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <form th:action="@{/admin/orders}" method="get" class="d-flex align-items-center gap-2">
+                        <select name="paymentStatus" class="form-select form-select-sm" style="min-width: 150px;">
+                            <option value="ALL" th:selected="${filterPaymentStatus == 'ALL'}">All Payments</option>
+                            <option value="PAID" th:selected="${filterPaymentStatus == 'PAID'}">Paid</option>
+                            <option value="PENDING" th:selected="${filterPaymentStatus == 'PENDING'}">Pending</option>
+                            <option value="FAILED" th:selected="${filterPaymentStatus == 'FAILED'}">Failed</option>
+                        </select>
+                        <button type="submit" class="btn-luxury-outline btn-sm py-2 px-3">Filter</button>
+                    </form>
+                    <a th:href="@{/admin/dashboard}" class="btn-luxury-primary py-2 px-3">
+                        <i class="fas fa-gauge me-1"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${error != null or message != null}" class="mb-4">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Success</span>
+                </div>
+            </div>
+
+            <div class="orders-table-wrapper">
+                <div class="table-responsive">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>Order &amp; Receipt #</th>
+                                <th>Customer</th>
+                                <th>Ordered Books</th>
+                                <th>Amount</th>
+                                <th>Payment Status</th>
+                                <th>Order Status</th>
+                                <th>Order Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="order : ${orders}">
+                                <td>
+                                    <div class="fw-bold font-monospace" th:text="${order.orderNumber}">ORD-1</div>
+                                    <small class="text-muted font-monospace" th:text="${order.receiptNumber}">REC-1</small>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${order.user != null ? order.user.username : 'Guest'}">User</div>
+                                    <small class="text-muted" th:text="${order.user != null ? order.user.email : ''}">email</small>
+                                </td>
+                                <td>
+                                    <div th:each="item : ${order.effectiveItems}" class="small mb-1">
+                                        <strong th:text="${item.effectiveTitle}">Title</strong>
+                                        <span class="text-muted" th:text="' (' + ${item.quantity} + '×₹' + ${item.unitPrice} + ')'">(1×₹499)</span>
+                                    </div>
+                                </td>
+                                <td class="fw-bold font-monospace">₹<span th:text="${#numbers.formatDecimal(order.amount, 1, 2)}">0.00</span></td>
+                                <td>
+                                    <span th:if="${order.paid}" class="status-badge-paid" th:text="${order.paymentStatus}">PAID</span>
+                                    <span th:unless="${order.paid}" class="badge bg-danger-subtle text-danger border border-danger-subtle"
+                                          th:text="${order.paymentStatus != null ? order.paymentStatus : 'FAILED'}">FAILED</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border" th:text="${order.orderStatus != null ? order.orderStatus : 'CONFIRMED'}">CONFIRMED</span>
+                                </td>
+                                <td class="small text-muted" th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMM yyyy, HH:mm') : '-'}">-</td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-outline-primary btn-sm">Manage</a>
+                                        <a th:if="${order.paid}" th:href="@{/orders/{id}/receipt(id=${order.id})}" class="btn btn-outline-secondary btn-sm">Receipt</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${orders == null or #lists.isEmpty(orders)}">
+                                <td colspan="8" class="text-center py-4 text-muted">No orders match this filter.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>
+

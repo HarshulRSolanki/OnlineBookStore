@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reader Inquiries – Quickread Admin</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Dedicated Admin Header -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
+                <div>
+                    <span class="section-subtitle-tag mb-1">Concierge Dispatch</span>
+                    <h1 class="font-heading fs-2 mb-0">Reader Inquiries</h1>
+                </div>
+                <a th:href="@{/admin/dashboard}" class="btn-luxury-outline py-2 px-3">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${error != null or message != null}" class="mb-4">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Success</span>
+                </div>
+            </div>
+
+            <div class="orders-table-wrapper">
+                <div class="table-responsive">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>Reader &amp; Contact</th>
+                                <th>Subject</th>
+                                <th>Message Overview</th>
+                                <th>Received Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="inq : ${inquiries}">
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${inq.name}">Sender</div>
+                                    <a th:href="'mailto:' + ${inq.email}" class="small text-decoration-none" style="color: var(--primary-accent);" th:text="${inq.email}">email</a>
+                                </td>
+                                <td>
+                                    <span class="badge" style="background: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);" th:text="${inq.subject}">Subject</span>
+                                </td>
+                                <td>
+                                    <div style="max-width: 480px; font-size: 0.9rem; line-height: 1.5;" th:text="${inq.message}">Message</div>
+                                </td>
+                                <td class="small text-muted" th:text="${inq.submittedAt != null ? #temporals.format(inq.submittedAt, 'dd MMM yyyy, HH:mm') : 'Recent'}">-</td>
+                                <td class="text-end">
+                                    <form th:action="@{/admin/inquiries/delete}" method="post" class="m-0 d-inline"
+                                          onsubmit="return confirm('Remove this inquiry record?');">
+                                        <input type="hidden" name="inquiryId" th:value="${inq.id}" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove inquiry">
+                                            <i class="fas fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr th:if="${inquiries == null or #lists.isEmpty(inquiries)}">
+                                <td colspan="5" class="text-center py-4 text-muted">No inquiries received yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>
+

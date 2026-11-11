@@ -2,10 +2,13 @@ package com.example.demo.service;
 
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.example.demo.Entity.Order;
+import com.example.demo.Entity.OrderItem;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.geom.PageSize;
@@ -15,11 +18,12 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+import com.itextpdf.layout.properties.VerticalAlignment;
 
 @Service
 public class InvoiceService {
@@ -41,10 +45,9 @@ public class InvoiceService {
             document.setMargins(36, 40, 36, 40);
 
             // 1. HEADER TABLE (Brand on Left, Invoice Details on Right)
-            Table headerTable = new Table(UnitValue.createPercentArray(new float[]{60, 40}));
+            Table headerTable = new Table(UnitValue.createPercentArray(new float[]{58, 42}));
             headerTable.setWidth(UnitValue.createPercentValue(100));
 
-            // Brand cell
             Cell brandCell = new Cell().setBorder(Border.NO_BORDER);
             brandCell.add(new Paragraph("QUICKREAD")
                     .setFontSize(22)
@@ -55,12 +58,11 @@ public class InvoiceService {
                     .setFontSize(9)
                     .setFontColor(COLOR_ACCENT)
                     .setMarginBottom(4));
-            brandCell.add(new Paragraph("Official Digital Receipt & Proof of Purchase")
+            brandCell.add(new Paragraph("Official Combined Digital Receipt & Tax Invoice")
                     .setFontSize(8)
                     .setFontColor(COLOR_MUTED));
             headerTable.addCell(brandCell);
 
-            // Invoice details cell
             Cell invoiceMetaCell = new Cell().setBorder(Border.NO_BORDER).setTextAlignment(TextAlignment.RIGHT);
             invoiceMetaCell.add(new Paragraph("TAX INVOICE")
                     .setFontSize(16)
@@ -69,15 +71,16 @@ public class InvoiceService {
                     .setMarginBottom(4));
             invoiceMetaCell.add(new Paragraph("Receipt #: " + order.getReceiptNumber())
                     .setFontSize(9).setBold().setFontColor(COLOR_PRIMARY));
-            invoiceMetaCell.add(new Paragraph("Order Ref: " + order.getOrderNumber())
+            invoiceMetaCell.add(new Paragraph("Order ID: " + order.getOrderNumber())
                     .setFontSize(8).setFontColor(COLOR_MUTED));
             String dateFormatted = order.getOrderDate() != null
                     ? order.getOrderDate().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm"))
                     : "N/A";
             invoiceMetaCell.add(new Paragraph("Date: " + dateFormatted)
                     .setFontSize(8).setFontColor(COLOR_MUTED));
-            invoiceMetaCell.add(new Paragraph("Status: PAID - VERIFIED")
-                    .setFontSize(9).setBold().setFontColor(COLOR_SUCCESS));
+            String statusText = order.isPaid() ? "Status: PAID - VERIFIED" : ("Status: " + order.getPaymentStatus());
+            invoiceMetaCell.add(new Paragraph(statusText)
+                    .setFontSize(9).setBold().setFontColor(order.isPaid() ? COLOR_SUCCESS : COLOR_PRIMARY));
             headerTable.addCell(invoiceMetaCell);
 
             document.add(headerTable);
@@ -104,91 +107,123 @@ public class InvoiceService {
                     .setFontSize(8).setBold().setFontColor(COLOR_ACCENT).setMarginBottom(4));
             paymentInfo.add(new Paragraph("Stripe Secure Payment Gateway").setFontSize(10).setBold().setFontColor(COLOR_PRIMARY));
             String stripeId = order.getStripeSessionId() != null ? order.getStripeSessionId() : "Stripe-Verified";
-            if (stripeId.length() > 28) {
-                stripeId = stripeId.substring(0, 28) + "...";
+            if (stripeId.length() > 30) {
+                stripeId = stripeId.substring(0, 30) + "...";
             }
             paymentInfo.add(new Paragraph("Ref: " + stripeId).setFontSize(8).setFontColor(COLOR_MUTED));
-            paymentInfo.add(new Paragraph("Delivery: Instant Digital Library Download (PDF)").setFontSize(8).setFontColor(COLOR_MUTED));
+            paymentInfo.add(new Paragraph("Items in Order: " + order.getDistinctBookCount()
+                    + " title(s), " + order.getTotalItemQuantity() + " copy/copies").setFontSize(8).setFontColor(COLOR_MUTED));
             detailsTable.addCell(paymentInfo);
 
             document.add(detailsTable);
             document.add(new Paragraph("\n").setFontSize(8));
 
-            // 3. ITEM TABLE
-            Table itemTable = new Table(UnitValue.createPercentArray(new float[]{10, 45, 15, 15, 15}));
+            // 3. COMBINED MULTI-BOOK ITEM TABLE
+            Table itemTable = new Table(UnitValue.createPercentArray(new float[]{6, 12, 42, 10, 15, 15}));
             itemTable.setWidth(UnitValue.createPercentValue(100));
 
-            // Table Header
-            String[] headers = {"#", "Book Description", "Qty", "Unit Price", "Total (INR)"};
+            String[] headers = {"#", "Cover", "Book Description", "Qty", "Unit Price", "Subtotal"};
             for (String h : headers) {
-                Cell hCell = new Cell().setBackgroundColor(COLOR_PRIMARY).setPadding(8);
+                Cell hCell = new Cell().setBackgroundColor(COLOR_PRIMARY).setPadding(7);
                 hCell.add(new Paragraph(h).setFontSize(9).setBold().setFontColor(ColorConstants.WHITE));
-                if (h.contains("Price") || h.contains("Total") || h.equals("Qty")) {
+                if (h.equals("Unit Price") || h.equals("Subtotal") || h.equals("Qty")) {
                     hCell.setTextAlignment(TextAlignment.RIGHT);
+                } else if (h.equals("Cover") || h.equals("#")) {
+                    hCell.setTextAlignment(TextAlignment.CENTER);
                 }
                 itemTable.addHeaderCell(hCell);
             }
 
-            // Book Row
-            String bookTitle = order.getBook() != null ? order.getBook().getTitle() : "Curated Literary Edition";
-            String bookAuthor = order.getBook() != null ? order.getBook().getAuthor() : "Unknown Author";
-            String bookCategory = order.getBook() != null && order.getBook().getCategory() != null ? order.getBook().getCategory().getName() : "General";
+            List<OrderItem> effectiveItems = order.getEffectiveItems();
+            int index = 1;
+            if (effectiveItems.isEmpty()) {
+                Cell emptyCell = new Cell(1, 6).setPadding(10).setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
+                emptyCell.add(new Paragraph("Curated Literary Edition").setFontSize(9).setFontColor(COLOR_PRIMARY));
+                itemTable.addCell(emptyCell);
+            } else {
+                for (OrderItem item : effectiveItems) {
+                    Cell colIdx = new Cell().setPadding(7).setTextAlignment(TextAlignment.CENTER)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
+                    colIdx.add(new Paragraph(String.valueOf(index++)).setFontSize(9).setFontColor(COLOR_PRIMARY));
+                    itemTable.addCell(colIdx);
 
-            Cell col1 = new Cell().setPadding(8).setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
-            col1.add(new Paragraph("1").setFontSize(9).setFontColor(COLOR_PRIMARY));
-            itemTable.addCell(col1);
+                    Cell colCover = new Cell().setPadding(5).setTextAlignment(TextAlignment.CENTER)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
+                    boolean imageAdded = false;
+                    if (item.getBook() != null && item.getBook().getCoverImage() != null && item.getBook().getCoverImage().length > 0) {
+                        try {
+                            Image img = new Image(ImageDataFactory.create(item.getBook().getCoverImage()));
+                            img.setWidth(28).setAutoScaleHeight(true);
+                            colCover.add(img);
+                            imageAdded = true;
+                        } catch (Exception ignored) {
+                            imageAdded = false;
+                        }
+                    }
+                    if (!imageAdded) {
+                        colCover.add(new Paragraph("BOOK").setFontSize(7).setBold().setFontColor(COLOR_ACCENT));
+                    }
+                    itemTable.addCell(colCover);
 
-            Cell col2 = new Cell().setPadding(8).setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
-            col2.add(new Paragraph(bookTitle).setFontSize(10).setBold().setFontColor(COLOR_PRIMARY));
-            col2.add(new Paragraph("By " + bookAuthor + " • Category: " + bookCategory).setFontSize(8).setFontColor(COLOR_MUTED));
-            itemTable.addCell(col2);
+                    Cell colDesc = new Cell().setPadding(7).setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
+                    colDesc.add(new Paragraph(item.getEffectiveTitle()).setFontSize(10).setBold().setFontColor(COLOR_PRIMARY));
+                    colDesc.add(new Paragraph("By " + item.getEffectiveAuthor() + " | Category: " + item.getEffectiveCategory())
+                            .setFontSize(8).setFontColor(COLOR_MUTED));
+                    itemTable.addCell(colDesc);
 
-            Cell col3 = new Cell().setPadding(8).setTextAlignment(TextAlignment.RIGHT).setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
-            col3.add(new Paragraph(String.valueOf(order.getQuantity())).setFontSize(9).setFontColor(COLOR_PRIMARY));
-            itemTable.addCell(col3);
+                    Cell colQty = new Cell().setPadding(7).setTextAlignment(TextAlignment.RIGHT)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
+                    colQty.add(new Paragraph(String.valueOf(item.getQuantity())).setFontSize(9).setFontColor(COLOR_PRIMARY));
+                    itemTable.addCell(colQty);
 
-            Cell col4 = new Cell().setPadding(8).setTextAlignment(TextAlignment.RIGHT).setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
-            col4.add(new Paragraph(String.format("₹%.2f", order.getUnitPrice())).setFontSize(9).setFontColor(COLOR_PRIMARY));
-            itemTable.addCell(col4);
+                    Cell colUnit = new Cell().setPadding(7).setTextAlignment(TextAlignment.RIGHT)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
+                    colUnit.add(new Paragraph(String.format("INR %.2f", item.getUnitPrice())).setFontSize(9).setFontColor(COLOR_PRIMARY));
+                    itemTable.addCell(colUnit);
 
-            Cell col5 = new Cell().setPadding(8).setTextAlignment(TextAlignment.RIGHT).setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
-            col5.add(new Paragraph(String.format("₹%.2f", order.getAmount())).setFontSize(9).setBold().setFontColor(COLOR_PRIMARY));
-            itemTable.addCell(col5);
+                    Cell colSub = new Cell().setPadding(7).setTextAlignment(TextAlignment.RIGHT)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .setBorder(new SolidBorder(COLOR_BORDER, 0.5f));
+                    colSub.add(new Paragraph(String.format("INR %.2f", item.getSubtotal())).setFontSize(9).setBold().setFontColor(COLOR_PRIMARY));
+                    itemTable.addCell(colSub);
+                }
+            }
 
             document.add(itemTable);
             document.add(new Paragraph("\n").setFontSize(6));
 
             // 4. SUMMARY CALCULATION TABLE
-            Table summaryTable = new Table(UnitValue.createPercentArray(new float[]{60, 40}));
+            Table summaryTable = new Table(UnitValue.createPercentArray(new float[]{55, 45}));
             summaryTable.setWidth(UnitValue.createPercentValue(100));
 
-            // Left note
             Cell noteCell = new Cell().setBorder(Border.NO_BORDER).setPadding(8);
             noteCell.add(new Paragraph("Digital Rights & License:").setFontSize(8).setBold().setFontColor(COLOR_ACCENT));
-            noteCell.add(new Paragraph("This eBook is registered to your reader account with lifetime personal reading access. You can download and read across any e-reader, tablet, or desktop.")
+            noteCell.add(new Paragraph("All acquired digital editions listed in this receipt are registered to your reader account with lifetime personal reading access across e-reader, tablet, and desktop.")
                     .setFontSize(8).setFontColor(COLOR_MUTED));
             summaryTable.addCell(noteCell);
 
-            // Right calculations
             Cell calcCell = new Cell().setBorder(Border.NO_BORDER).setPadding(4);
-            Table innerCalc = new Table(UnitValue.createPercentArray(new float[]{60, 40}));
+            Table innerCalc = new Table(UnitValue.createPercentArray(new float[]{58, 42}));
             innerCalc.setWidth(UnitValue.createPercentValue(100));
 
-            addCalcRow(innerCalc, "Subtotal:", String.format("₹%.2f", order.getSubtotal()), false);
-            addCalcRow(innerCalc, "Digital Delivery:", "FREE (0.00)", false);
-            if (order.getTax() > 0) {
-                addCalcRow(innerCalc, "Taxes:", String.format("₹%.2f", order.getTax()), false);
-            }
-            if (order.getDiscount() > 0) {
-                addCalcRow(innerCalc, "Discount:", String.format("-₹%.2f", order.getDiscount()), false);
-            }
-            addCalcRow(innerCalc, "Total Paid:", String.format("₹%.2f", order.getAmount()), true);
+            addCalcRow(innerCalc, "Subtotal:", String.format("INR %.2f", order.getSubtotal()), false);
+            addCalcRow(innerCalc, "Delivery Charges:",
+                    order.getDeliveryCharge() > 0 ? String.format("INR %.2f", order.getDeliveryCharge()) : "FREE (INR 0.00)", false);
+            addCalcRow(innerCalc, "Taxes:", String.format("INR %.2f", order.getTax()), false);
+            addCalcRow(innerCalc, "Discount:",
+                    order.getDiscount() > 0 ? String.format("-INR %.2f", order.getDiscount()) : "INR 0.00", false);
+            addCalcRow(innerCalc, "Total Paid:", String.format("INR %.2f", order.getAmount()), true);
 
             calcCell.add(innerCalc);
             summaryTable.addCell(calcCell);
 
             document.add(summaryTable);
-            document.add(new Paragraph("\n").setFontSize(12));
+            document.add(new Paragraph("\n").setFontSize(10));
 
             // 5. FOOTER & SUPPORT
             Table footerTable = new Table(UnitValue.createPercentArray(new float[]{100}));
@@ -201,9 +236,9 @@ public class InvoiceService {
                     .setTextAlignment(TextAlignment.CENTER);
             footerCell.add(new Paragraph("Thank you for supporting authors and literature at Quickread.")
                     .setFontSize(9).setBold().setFontColor(COLOR_PRIMARY));
-            footerCell.add(new Paragraph("Questions or concierge support? Contact us at concierge@quickread.com • http://localhost:8525")
+            footerCell.add(new Paragraph("Questions or concierge support? Contact us at concierge@quickread.com")
                     .setFontSize(8).setFontColor(COLOR_MUTED));
-            footerCell.add(new Paragraph("© " + java.time.Year.now().getValue() + " Quickread Bookstore. All Rights Reserved. Computer Generated Invoice.")
+            footerCell.add(new Paragraph("(c) " + java.time.Year.now().getValue() + " Quickread Bookstore. All Rights Reserved. Computer Generated Invoice.")
                     .setFontSize(7).setFontColor(COLOR_MUTED));
             footerTable.addCell(footerCell);
 
@@ -221,7 +256,7 @@ public class InvoiceService {
         Cell valCell = new Cell().setBorder(Border.NO_BORDER).setPadding(3).setTextAlignment(TextAlignment.RIGHT);
 
         Paragraph p1 = new Paragraph(label).setFontSize(isTotal ? 11 : 9);
-        Paragraph p2 = new Paragraph(value).setFontSize(isTotal ? 12 : 9);
+        Paragraph p2 = new Paragraph(value).setFontSize(isTotal ? 11 : 9);
 
         if (isTotal) {
             p1.setBold().setFontColor(COLOR_PRIMARY);
@@ -239,4 +274,3 @@ public class InvoiceService {
         table.addCell(valCell);
     }
 }
-

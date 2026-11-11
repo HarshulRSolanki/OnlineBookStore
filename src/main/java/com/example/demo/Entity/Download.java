@@ -31,7 +31,9 @@ public class Download
 	    }
 
 		public Download(User user2, Book book2) {
-			// TODO Auto-generated constructor stub
+			this();
+			this.user = user2;
+			this.book = book2;
 		}
 
 		public Long getId() {

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Access Denied – Quickread</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5">
+        <div class="empty-state-card">
+            <div class="empty-state-icon" style="color: var(--danger-accent); background: #FDF2F2; border-color: #E8B5B5;">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+            <span class="section-subtitle-tag text-danger mb-1">403 &bull; Restricted Archive</span>
+            <h1 class="font-heading fs-1 mb-3">Access Denied</h1>
+            <p class="text-secondary mb-4" style="max-width: 480px; margin: 0 auto;"
+               th:text="${errorMessage != null ? errorMessage : 'You do not have permission to view or perform actions in this area.'}">
+                You do not have administrator permissions to access this resource.
+            </p>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <a href="/" class="btn-luxury-primary py-3 px-4">
+                    <i class="fas fa-home me-2"></i> Return to Storefront
+                </a>
+                <a th:if="${currentUserRole == 'USER'}" href="/userdash" class="btn-luxury-outline py-3 px-4">
+                    <i class="fas fa-user me-2"></i> Reader Dashboard
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>
+

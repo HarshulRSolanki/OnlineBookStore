@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Editions – Quickread Admin</title>
+    <title>Manage Books – Quickread Admin</title>
 
     <!-- Bootstrap 5 & Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
@@ -14,7 +14,7 @@
 </head>
 <body>
 
-    <!-- Header Navigation -->
+    <!-- Dedicated Admin Header -->
     <div th:replace="~{common/header :: navbar}"></div>
 
     <main class="flex-grow-1 py-5">
@@ -23,15 +23,30 @@
             <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
                 <div>
                     <span class="section-subtitle-tag mb-1">Catalog Registry</span>
-                    <h1 class="font-heading fs-2 mb-0">Book Inventory &amp; Engagement</h1>
+                    <h1 class="font-heading fs-2 mb-0">Manage Books &amp; Stock Inventory</h1>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
+                    <a th:href="@{/admin/books/add}" class="btn-luxury-primary py-2 px-3">
+                        <i class="fas fa-plus me-1"></i> Add New Book
+                    </a>
                     <a th:href="@{/books/report/pdf}" class="btn-luxury-outline py-2 px-3">
                         <i class="fas fa-file-pdf text-danger me-1"></i> Export PDF Report
                     </a>
-                    <a href="/admindash" class="btn-luxury-primary py-2 px-3">
-                        <i class="fas fa-gauge me-1"></i> Admin Dashboard
+                    <a th:href="@{/admin/dashboard}" class="btn-luxury-outline py-2 px-3">
+                        <i class="fas fa-gauge me-1"></i> Dashboard
                     </a>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${error != null or message != null}" class="mb-4">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Success</span>
                 </div>
             </div>
 
@@ -40,20 +55,22 @@
                     <table class="luxury-table">
                         <thead>
                             <tr>
-                                <th>Book Title</th>
-                                <th>Author</th>
+                                <th>Book Title &amp; Author</th>
                                 <th>Category</th>
                                 <th>ISBN</th>
                                 <th>Price</th>
-                                <th>In Carts</th>
-                                <th>Downloads</th>
+                                <th>Stock Inventory</th>
+                                <th>Status</th>
+                                <th>Carts / Downloads</th>
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="book : ${books}">
-                                <td class="fw-bold text-dark" th:text="${book.title}">Title</td>
-                                <td th:text="${book.author}">Author</td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${book.title}">Title</div>
+                                    <small class="text-muted" th:text="'By ' + ${book.author}">Author</small>
+                                </td>
                                 <td>
                                     <span class="badge" style="background: #FAF6EF; color: var(--primary-accent); border: 1px solid var(--border-color);"
                                           th:text="${book.category != null ? book.category.name : 'N/A'}">Category</span>
@@ -64,26 +81,38 @@
                                     <span class="badge bg-success" th:if="${book.price == 0}">Free</span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border" th:text="${book.cartCount}">0</span>
+                                    <form th:action="@{/admin/books/{id}/stock(id=${book.id})}" method="post" class="d-inline-flex align-items-center gap-1">
+                                        <input type="number" name="stock" th:value="${book.stock != null ? book.stock : 0}" min="0"
+                                               class="form-control form-control-sm text-center" style="width: 72px;" />
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm" title="Update stock">Save</button>
+                                    </form>
                                 </td>
                                 <td>
-                                    <span class="badge bg-success" th:text="${book.downloadCount}">0</span>
+                                    <span th:if="${book.deleted}" class="badge bg-secondary">Archived</span>
+                                    <span th:unless="${book.deleted}" class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border me-1" th:text="'Cart: ' + ${book.cartCount}">0</span>
+                                    <span class="badge bg-success" th:text="'DL: ' + ${book.downloadCount}">0</span>
                                 </td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-2">
-                                        <form th:action="@{/updateBooks/{bookId}(bookId=${book.id})}" method="post">
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Edit Edition">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                        </form>
-                                        <form th:action="@{/deleteBooks}" method="post">
-                                            <input type="hidden" name="bookId" th:value="${book.id}">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Edition" onclick="return confirm('Remove book from store?')">
+                                        <a th:href="@{/admin/books/edit/{bookId}(bookId=${book.id})}"
+                                           class="btn btn-outline-secondary btn-sm" title="Edit Edition">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form th:action="@{/admin/books/delete}" method="post" class="m-0">
+                                            <input type="hidden" name="bookId" th:value="${book.id}" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Edition"
+                                                    onclick="return confirm('Delete or archive this book from the catalog?')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
                                     </div>
                                 </td>
+                            </tr>
+                            <tr th:if="${books == null or #lists.isEmpty(books)}">
+                                <td colspan="8" class="text-center py-4 text-muted">No books in the catalog yet.</td>
                             </tr>
                         </tbody>
                     </table>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Order ' + ${order.orderNumber} + ' – Quickread Admin'">Order Detail – Quickread Admin</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Dedicated Admin Header -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
+                <div>
+                    <span class="section-subtitle-tag mb-1">Order Inspection</span>
+                    <h1 class="font-heading fs-2 mb-0" th:text="${order.orderNumber}">ORD-1</h1>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:if="${order.paid}" th:href="@{/orders/{id}/receipt(id=${order.id})}" class="btn-luxury-outline py-2 px-3">
+                        <i class="fas fa-receipt me-1"></i> View Combined Receipt
+                    </a>
+                    <a th:href="@{/admin/orders}" class="btn-luxury-primary py-2 px-3">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Orders
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${error != null or message != null}" class="mb-4">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Success</span>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <!-- Customer & Payment Metadata -->
+                <div class="col-lg-7">
+                    <div class="card p-4 border-0 shadow-sm h-100" style="background: var(--card-bg); border: 1px solid var(--border-color) !important;">
+                        <h4 class="font-heading fs-5 mb-3">Order &amp; Payment Summary</h4>
+                        <div class="row g-3 small">
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Receipt Number</span>
+                                <strong class="font-monospace" th:text="${order.receiptNumber}">REC-1</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Order Date</span>
+                                <strong th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMM yyyy, HH:mm') : '-'}">-</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Customer</span>
+                                <strong th:text="${order.user != null ? order.user.username : 'Guest'}">Customer</strong>
+                                <div class="text-muted" th:text="${order.user != null ? order.user.email : ''}">email</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Payment Status</span>
+                                <span th:if="${order.paid}" class="status-badge-paid" th:text="${order.paymentStatus}">PAID</span>
+                                <span th:unless="${order.paid}" class="badge bg-danger" th:text="${order.paymentStatus}">FAILED</span>
+                            </div>
+                            <div class="col-12" th:if="${order.stripeSessionId != null}">
+                                <span class="text-muted d-block">Stripe Session ID</span>
+                                <code th:text="${order.stripeSessionId}">cs_...</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Fulfillment Status Update Form -->
+                <div class="col-lg-5">
+                    <div class="card p-4 border-0 shadow-sm h-100" style="background: #FAF7F2; border: 1px solid var(--border-color) !important;">
+                        <h4 class="font-heading fs-5 mb-3">Update Fulfillment Status</h4>
+                        <p class="small text-secondary mb-3">
+                            Current Status: <span class="badge bg-dark" th:text="${order.orderStatus != null ? order.orderStatus : 'CONFIRMED'}">CONFIRMED</span>
+                        </p>
+                        <form th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post" class="d-grid gap-3">
+                            <select name="orderStatus" class="form-select">
+                                <option th:each="st : ${allowedStatuses}"
+                                        th:value="${st}"
+                                        th:text="${st}"
+                                        th:selected="${st == order.orderStatus}"></option>
+                            </select>
+                            <button type="submit" class="btn-luxury-primary py-2">
+                                <i class="fas fa-check me-1"></i> Save Order Status
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ordered Books Table -->
+            <div class="orders-table-wrapper">
+                <div class="p-3 border-bottom" style="background: #FAF7F2;">
+                    <h4 class="font-heading fs-5 mb-0">Ordered Books (<span th:text="${items.size()}">1</span>)</h4>
+                </div>
+                <div class="table-responsive">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Author</th>
+                                <th>Category</th>
+                                <th class="text-center">Quantity</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${items}">
+                                <td class="fw-bold text-dark" th:text="${item.effectiveTitle}">Title</td>
+                                <td th:text="${item.effectiveAuthor}">Author</td>
+                                <td th:text="${item.effectiveCategory}">Category</td>
+                                <td class="text-center" th:text="${item.quantity}">1</td>
+                                <td class="text-end font-monospace">₹<span th:text="${#numbers.formatDecimal(item.unitPrice, 1, 2)}">499.00</span></td>
+                                <td class="text-end fw-bold font-monospace">₹<span th:text="${#numbers.formatDecimal(item.subtotal, 1, 2)}">499.00</span></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" class="text-end fw-bold">Total Order Amount</td>
+                                <td class="text-end fw-bold fs-5 font-monospace">₹<span th:text="${#numbers.formatDecimal(order.amount, 1, 2)}">499.00</span></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>
+

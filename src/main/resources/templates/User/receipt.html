@@ -46,6 +46,14 @@
             border-radius: 6px;
             padding: 1.25rem 1.5rem;
         }
+        .receipt-item-thumb {
+            width: 48px;
+            height: 68px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: #FAF7F2;
+        }
     </style>
 </head>
 <body>
@@ -54,7 +62,19 @@
     <div th:replace="~{common/header :: navbar}" class="no-print"></div>
 
     <main class="flex-grow-1 py-5">
-        <div class="container" style="max-width: 820px;">
+        <div class="container" style="max-width: 880px;">
+
+            <!-- Flash Messages -->
+            <div th:if="${error != null or message != null}" class="mb-4 no-print">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Success</span>
+                </div>
+            </div>
 
             <!-- Back Navigation & Top Actions -->
             <div class="d-flex align-items-center justify-content-between mb-4 no-print">
@@ -66,13 +86,13 @@
                         <i class="fas fa-print me-1"></i> Print
                     </button>
                     <a th:href="@{/orders/{id}/receipt/download(id=${order.id})}" class="btn-luxury-primary py-2 px-3">
-                        <i class="fas fa-file-pdf me-1"></i> Download PDF
+                        <i class="fas fa-file-pdf me-1"></i> Download Combined PDF
                     </a>
                 </div>
             </div>
 
             <!-- Receipt Container -->
-            <div class="receipt-card">
+            <div class="receipt-card" th:with="lineItems=${items != null ? items : order.effectiveItems}">
                 <!-- Header Banner -->
                 <div class="receipt-header-banner">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
@@ -82,13 +102,16 @@
                             </div>
                             <div>
                                 <h2 class="font-heading fs-3 mb-0 text-white">Quickread</h2>
-                                <span class="small" style="color: var(--gold-accent); letter-spacing: 1px; text-transform: uppercase;">Curated Literary Editions &bull; Official Tax Invoice</span>
+                                <span class="small" style="color: var(--gold-accent); letter-spacing: 1px; text-transform: uppercase;">
+                                    Curated Literary Editions &bull; Official Combined Receipt
+                                </span>
                             </div>
                         </div>
                         <div class="text-md-end">
                             <span class="badge" style="background: rgba(197, 164, 109, 0.2); color: #E9DDCB; border: 1px solid #C5A46D; font-size: 0.85rem; padding: 6px 12px; letter-spacing: 0.5px;">
                                 <i class="fas fa-check-circle me-1 text-success"></i> VERIFIED PAYMENT
                             </span>
+                            <div class="small mt-1" style="color: #DFC293;" th:text="${lineItems.size()} + ' Book(s) &bull; ' + ${order.totalItemQuantity} + ' Total Copy(s)'">1 Book</div>
                         </div>
                     </div>
                 </div>
@@ -122,44 +145,58 @@
                     <div class="row g-4 mb-4 pb-3 border-bottom">
                         <div class="col-md-6">
                             <h6 class="font-heading text-dark mb-2 text-uppercase fs-7" style="letter-spacing: 1px; color: var(--primary-accent) !important;">Customer Dossier</h6>
-                            <div class="fw-bold text-dark fs-6" th:text="${order.user != null ? order.user.username : 'Distinguished Reader'}">Harshul Solanki</div>
+                            <div class="fw-bold text-dark fs-6" th:text="${order.user != null ? order.user.username : 'Distinguished Reader'}">Reader</div>
                             <div class="text-muted small" th:text="${order.user != null ? order.user.email : 'N/A'}">reader@example.com</div>
-                            <div class="text-muted small" th:if="${order.user != null and order.user.mobileno != null}" th:text="'Phone: ' + ${order.user.mobileno}">Phone: +91 9400000000</div>
+                            <div class="text-muted small" th:if="${order.user != null and order.user.mobileno != null}" th:text="'Phone: ' + ${order.user.mobileno}">Phone</div>
                         </div>
                         <div class="col-md-6">
                             <h6 class="font-heading text-dark mb-2 text-uppercase fs-7" style="letter-spacing: 1px; color: var(--primary-accent) !important;">Transaction Details</h6>
                             <div class="small text-muted mb-1">
-                                Stripe Session: <code th:text="${order.stripeSessionId != null ? order.stripeSessionId : 'Stripe-Direct'}">cs_live_...</code>
+                                Stripe Session: <code th:text="${order.stripeSessionId != null ? order.stripeSessionId : 'Stripe-Direct'}">cs_test_...</code>
                             </div>
                             <div class="small text-muted mb-1" th:if="${order.stripePaymentIntentId != null}">
-                                Payment Intent: <code th:text="${order.stripePaymentIntentId}">pi_live_...</code>
+                                Payment Intent: <code th:text="${order.stripePaymentIntentId}">pi_test_...</code>
                             </div>
                             <div class="small text-muted">
-                                Digital Access: <span class="badge bg-success">Permanent Instant Delivery</span>
+                                Order Status: <span class="badge bg-success" th:text="${order.orderStatus != null ? order.orderStatus : 'CONFIRMED'}">CONFIRMED</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Itemized Purchases Table -->
+                    <!-- Itemized Purchases Table (All Books in Single Combined Order) -->
                     <div class="table-responsive mb-4">
                         <table class="luxury-table w-100">
                             <thead>
                                 <tr>
-                                    <th>Volume / Description</th>
+                                    <th>Book &amp; Edition</th>
                                     <th class="text-center">Quantity</th>
                                     <th class="text-end">Unit Price</th>
-                                    <th class="text-end">Total Amount</th>
+                                    <th class="text-end">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
+                                <tr th:each="item : ${lineItems}">
                                     <td>
-                                        <div class="fw-bold text-dark fs-6" th:text="${order.book != null ? order.book.title : 'Acquired Edition'}">Book Title</div>
-                                        <small class="text-muted" th:text="'Author: ' + (${order.book != null ? order.book.author : 'Curated Works'}) + ' • Category: ' + (${order.book != null and order.book.category != null ? order.book.category.name : 'Literature'})">Author &bull; Category</small>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img th:if="${itemImages != null and item.effectiveBookId != null and itemImages.containsKey(item.effectiveBookId)}"
+                                                 th:src="${itemImages.get(item.effectiveBookId)}"
+                                                 class="receipt-item-thumb" alt="Book cover"
+                                                 onerror="this.onerror=null; this.src='/img/free book.jpg';" />
+                                            <img th:unless="${itemImages != null and item.effectiveBookId != null and itemImages.containsKey(item.effectiveBookId)}"
+                                                 src="/img/free book.jpg"
+                                                 class="receipt-item-thumb" alt="Default book cover" />
+                                            <div>
+                                                <div class="fw-bold text-dark fs-6" th:text="${item.effectiveTitle}">Book Title</div>
+                                                <small class="text-muted">
+                                                    Author: <span th:text="${item.effectiveAuthor}">Author</span>
+                                                    &bull; Category: <span th:text="${item.effectiveCategory}">Category</span>
+                                                </small>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td class="text-center fw-medium" th:text="${order.quantity > 0 ? order.quantity : 1}">1</td>
-                                    <td class="text-end font-monospace" th:text="'₹' + ${order.unitPrice > 0 ? order.unitPrice : order.amount}">₹499.00</td>
-                                    <td class="text-end fw-bold font-monospace" th:text="'₹' + ${order.amount}">₹499.00</td>
+                                    <td class="text-center fw-medium" th:text="${item.quantity}">1</td>
+                                    <td class="text-end font-monospace">₹<span th:text="${#numbers.formatDecimal(item.unitPrice, 1, 2)}">499.00</span></td>
+                                    <td class="text-end fw-bold font-monospace">₹<span th:text="${#numbers.formatDecimal(item.subtotal, 1, 2)}">499.00</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -170,34 +207,52 @@
                         <div class="col-md-6">
                             <table class="table table-borderless small mb-0">
                                 <tr>
-                                    <td class="text-muted">Subtotal</td>
-                                    <td class="text-end fw-medium" th:text="'₹' + ${order.amount}">₹499.00</td>
+                                    <td class="text-muted">Items Subtotal</td>
+                                    <td class="text-end fw-medium">
+                                        ₹<span th:text="${#numbers.formatDecimal(order.subtotal > 0 ? order.subtotal : order.amount, 1, 2)}">499.00</span>
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">Digital Access &amp; Delivery</td>
-                                    <td class="text-end text-success fw-medium">FREE</td>
+                                    <td class="text-muted">Delivery &amp; Digital Access</td>
+                                    <td class="text-end fw-medium">
+                                        <span th:if="${order.deliveryCharge > 0}">₹<span th:text="${#numbers.formatDecimal(order.deliveryCharge, 1, 2)}">0.00</span></span>
+                                        <span th:unless="${order.deliveryCharge > 0}" class="text-success">FREE</span>
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">Curatorial Taxes (GST/HST)</td>
-                                    <td class="text-end text-muted">Included</td>
+                                    <td class="text-muted">Applicable Taxes (GST/HST)</td>
+                                    <td class="text-end fw-medium">
+                                        <span th:if="${order.tax > 0}">₹<span th:text="${#numbers.formatDecimal(order.tax, 1, 2)}">0.00</span></span>
+                                        <span th:unless="${order.tax > 0}" class="text-muted">Included</span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${order.discount > 0}">
+                                    <td class="text-muted">Discount Applied</td>
+                                    <td class="text-end text-success fw-medium">-₹<span th:text="${#numbers.formatDecimal(order.discount, 1, 2)}">0.00</span></td>
                                 </tr>
                                 <tr class="border-top">
                                     <td class="fs-6 fw-bold text-dark pt-3">Final Amount Paid</td>
-                                    <td class="fs-5 fw-bold text-dark text-end pt-3 font-heading" th:text="'₹' + ${order.amount}">₹499.00</td>
+                                    <td class="fs-5 fw-bold text-dark text-end pt-3 font-heading">
+                                        ₹<span th:text="${#numbers.formatDecimal(order.amount, 1, 2)}">499.00</span>
+                                    </td>
                                 </tr>
                             </table>
                         </div>
                     </div>
 
-                    <!-- Digital Actions Box -->
+                    <!-- Digital Actions Box (Download All Ordered Books + Resend Email) -->
                     <div class="p-3 rounded-3 d-flex flex-wrap align-items-center justify-content-between gap-3 no-print" style="background: var(--light-section); border: 1px solid var(--border-color);">
                         <div>
                             <span class="fw-bold text-dark d-block">Ready to Read?</span>
-                            <small class="text-secondary">Your high-resolution PDF edition is prepared for direct download.</small>
+                            <small class="text-secondary">Download your purchased editions directly below or resend this combined receipt to your inbox.</small>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a th:if="${order.book != null}" th:href="@{/download/{id}(id=${order.book.id})}" class="btn-luxury-primary py-2 px-3">
-                                <i class="fas fa-book-open me-1"></i> Download Book PDF
+                        <div class="d-flex flex-wrap gap-2">
+                            <a th:each="item : ${lineItems}"
+                               th:if="${item.book != null}"
+                               th:href="@{/download/{id}(id=${item.book.id})}"
+                               class="btn-luxury-primary py-2 px-3">
+                                <i class="fas fa-book-open me-1"></i>
+                                <span th:text="${lineItems.size() > 1 ? ('Download: ' + item.effectiveTitle) : 'Download Book PDF'}">Download Book PDF</span>
                             </a>
                             <form th:action="@{/orders/{id}/receipt/resend(id=${order.id})}" method="post" class="d-inline">
                                 <button type="submit" class="btn-luxury-outline py-2 px-3" title="Resend copy to your email">
@@ -211,7 +266,7 @@
 
                 <!-- Receipt Footer -->
                 <div class="p-4 border-top text-center text-muted small" style="background: #FAF7F2;">
-                    Quickread Bookstore Atelier &bull; Confidential Proof of Purchase &bull; Support: <a href="mailto:itechperson985@gmail.com" class="text-dark">itechperson985@gmail.com</a>
+                    Quickread Bookstore Atelier &bull; Official Combined Tax Receipt &bull; Support: <a href="/contact" class="text-dark">Reader Concierge</a>
                 </div>
             </div>
 
@@ -226,4 +281,3 @@
     <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
 </body>
 </html>
-

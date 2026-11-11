@@ -45,6 +45,14 @@ public interface CartRepo extends JpaRepository<Cart,Long>
 	@Query("SELECT COUNT(c) FROM Cart c WHERE c.book = :book")
 	    Long countCartsByBook(@Param("book") Book book);
 
+	@Transactional
+	@Modifying
+	@Query("DELETE FROM Cart c WHERE c.user.userid = :userId")
+	int deleteAllByUserId(@Param("userId") Long userId);
 
+	@Transactional
+	@Modifying
+	@Query("UPDATE Cart c SET c.order = NULL WHERE c.user = :user")
+	int clearOrderReferenceForUser(@Param("user") User user);
 	
 }

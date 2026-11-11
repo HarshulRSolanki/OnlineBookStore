@@ -1,6 +1,5 @@
 package com.example.demo.Controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +43,7 @@ public class StripeWebhookController {
     private OrderReceiptService orderReceiptService;
 
     /**
-     * MODULE 1 & 5: Backend Stripe Webhook Handler with Idempotency Protection
+     * Backend Stripe Webhook Handler with Idempotency & Multi-Book Support
      */
     @PostMapping("/api/webhook/stripe")
     public ResponseEntity<String> handleStripeWebhook(
@@ -52,12 +51,10 @@ public class StripeWebhookController {
             @RequestHeader(value = "Stripe-Signature", required = false) String sigHeader) {
 
         Event event;
-
         try {
             if (webhookSecret != null && !webhookSecret.trim().isEmpty() && sigHeader != null) {
                 event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
             } else {
-                // Parse directly if secret is not configured in local development
                 event = Event.GSON.fromJson(payload, Event.class);
             }
         } catch (Exception e) {
@@ -69,7 +66,6 @@ public class StripeWebhookController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid event payload");
         }
 
-        // Handle successful checkout session
         if ("checkout.session.completed".equals(event.getType())) {
             EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
             Session session = null;
@@ -78,16 +74,18 @@ public class StripeWebhookController {
             }
 
             if (session != null) {
+                if (!OrderReceiptService.isStripePaid(session.getPaymentStatus())) {
+                    return ResponseEntity.ok("Session not paid; no receipt issued");
+                }
+
                 String sessionId = session.getId();
                 String paymentIntentId = session.getPaymentIntent();
 
-                // Idempotency check: Have we already processed an order for this session?
-                if (orderRepo.findByStripeSessionId(sessionId).isPresent()) {
-                    System.out.println("ℹ️ Webhook received for already processed session: " + sessionId + ". Skipping.");
+                List<Order> existing = orderRepo.findAllByStripeSessionId(sessionId);
+                if (!existing.isEmpty()) {
                     return ResponseEntity.ok("Already processed");
                 }
 
-                // Retrieve user
                 User user = null;
                 if (session.getMetadata() != null && session.getMetadata().containsKey("userId")) {
                     try {
@@ -96,34 +94,40 @@ public class StripeWebhookController {
                     } catch (Exception ignored) {}
                 }
                 if (user == null && session.getCustomerDetails() != null && session.getCustomerDetails().getEmail() != null) {
-                    user = userRepo.findByEmail(session.getCustomerDetails().getEmail());
+                    user = userRepo.findByEmailIgnoreCase(session.getCustomerDetails().getEmail());
                 }
 
-                // Retrieve book if direct purchase
-                Book book = null;
-                if (session.getMetadata() != null && session.getMetadata().containsKey("bookId")) {
+                if (user == null) {
+                    return ResponseEntity.ok("User not resolved");
+                }
+
+                String checkoutType = session.getMetadata() != null ? session.getMetadata().get("checkoutType") : null;
+                String cartItemsMeta = session.getMetadata() != null ? session.getMetadata().get("cartItems") : null;
+
+                if ("CART".equalsIgnoreCase(checkoutType) || (cartItemsMeta != null && !cartItemsMeta.isBlank())) {
+                    orderReceiptService.finalizeMultiBookCheckout(
+                            user,
+                            null,
+                            cartItemsMeta,
+                            sessionId,
+                            paymentIntentId,
+                            session.getPaymentStatus());
+                    return ResponseEntity.ok("Processed multi-book cart order");
+                } else if (session.getMetadata() != null && session.getMetadata().containsKey("bookId")) {
                     try {
                         Long bid = Long.parseLong(session.getMetadata().get("bookId"));
-                        book = bookRepo.findById(bid).orElse(null);
+                        Optional<Book> bookOpt = bookRepo.findById(bid);
+                        if (bookOpt.isPresent()) {
+                            orderReceiptService.finalizeSingleBookCheckout(
+                                    user,
+                                    bookOpt.get(),
+                                    1,
+                                    sessionId,
+                                    paymentIntentId,
+                                    session.getPaymentStatus());
+                            return ResponseEntity.ok("Processed single-book order");
+                        }
                     } catch (Exception ignored) {}
-                }
-
-                if (user != null && book != null) {
-                    Order order = new Order();
-                    order.setUser(user);
-                    order.setBook(book);
-                    order.setQuantity(1);
-                    double price = (double) book.getPrice();
-                    order.setUnitPrice(price);
-                    order.setAmount(price);
-                    order.setPaymentStatus("PAID");
-                    order.setCheckedout(true);
-                    order.setOrderDate(LocalDateTime.now());
-                    order.setStripeSessionId(sessionId);
-                    order.setStripePaymentIntentId(paymentIntentId);
-
-                    orderReceiptService.processAndSendReceipt(order, sessionId, paymentIntentId);
-                    System.out.println("✅ Webhook created and dispatched order receipt for: " + order.getOrderNumber());
                 }
             }
         }

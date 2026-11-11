@@ -50,14 +50,14 @@
                     <div class="cart-table-card">
                         <div class="cart-item-row" th:each="cartItem : ${cartItems}">
                             <!-- Thumbnail -->
-                            <img th:if="${bookImages != null and bookImages.containsKey(cartItem.book.id)}" 
-                                 th:src="${bookImages.get(cartItem.book.id)}" 
-                                 class="cart-item-thumb" 
+                            <img th:if="${bookImages != null and bookImages.containsKey(cartItem.book.id)}"
+                                 th:src="${bookImages.get(cartItem.book.id)}"
+                                 class="cart-item-thumb"
                                  alt="Book cover"
                                  onerror="this.onerror=null; this.src='/img/free book.jpg';" />
                             <img th:unless="${bookImages != null and bookImages.containsKey(cartItem.book.id)}"
-                                 src="/img/free book.jpg" 
-                                 class="cart-item-thumb" 
+                                 src="/img/free book.jpg"
+                                 class="cart-item-thumb"
                                  alt="Default cover" />
 
                             <!-- Info -->
@@ -69,20 +69,37 @@
                                 </h3>
                                 <div class="cart-item-author" th:text="${cartItem.book.author}">Author Name</div>
 
-                                <!-- Status & Price -->
+                                <!-- Price, Quantity & Line Subtotal -->
                                 <div class="mt-2">
-                                    <span th:if="${cartItem.book.isDeleted}" class="badge bg-danger">Currently Unavailable</span>
-                                    <div th:unless="${cartItem.book.isDeleted}">
-                                        <span class="cart-item-price" th:if="${cartItem.book.price > 0}">
-                                            ₹<span th:text="${#numbers.formatDecimal(cartItem.book.price, 1, 2)}">299.00</span>
-                                        </span>
+                                    <span th:if="${cartItem.book.deleted}" class="badge bg-danger">Currently Unavailable</span>
+                                    <div th:unless="${cartItem.book.deleted}">
+                                        <div th:if="${cartItem.book.price > 0}" class="d-flex flex-wrap align-items-center gap-3">
+                                            <span class="text-muted small">
+                                                Unit: ₹<span th:text="${#numbers.formatDecimal(cartItem.book.price, 1, 2)}">299.00</span>
+                                            </span>
+                                            <span class="cart-item-price fw-bold">
+                                                Subtotal: ₹<span th:text="${#numbers.formatDecimal(cartItem.book.price * cartItem.quantity, 1, 2)}">299.00</span>
+                                            </span>
+                                        </div>
                                         <span class="badge bg-success" th:if="${cartItem.book.price == 0}">Free Edition</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Actions -->
-                            <div class="cart-item-actions">
+                            <!-- Quantity & Actions -->
+                            <div class="cart-item-actions d-flex flex-wrap align-items-center gap-2">
+                                <!-- Quantity Updater for Paid Editions -->
+                                <form th:if="${cartItem.book.price > 0 and !cartItem.book.deleted}"
+                                      th:action="@{/cart/update/{cartId}(cartId=${cartItem.id})}" method="post"
+                                      class="d-inline-flex align-items-center gap-1">
+                                    <input type="number" name="quantity" th:value="${cartItem.quantity}" min="1"
+                                           th:max="${cartItem.book.stock != null and cartItem.book.stock > 0 ? cartItem.book.stock : 99}"
+                                           class="form-control form-control-sm text-center" style="width: 64px;" aria-label="Quantity" />
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Update Quantity">
+                                        Qty
+                                    </button>
+                                </form>
+
                                 <!-- Remove from Cart -->
                                 <form th:action="@{/delete/{cartId}(cartId=${cartItem.id})}" method="post" class="d-inline">
                                     <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove Volume" onclick="return confirm('Remove this volume from your cart?')">
@@ -98,25 +115,16 @@
                                         </button>
                                     </form>
                                 </div>
-
-                                <!-- Paid: Individual Stripe Checkout -->
-                                <div th:if="${cartItem.book.price > 0}">
-                                    <form th:action="@{/checkout/{bookId}(bookId=${cartItem.book.id})}" method="get">
-                                        <button type="submit" class="btn-luxury-primary py-2 px-3" style="font-size: 0.85rem;" th:disabled="${cartItem.book.isDeleted}">
-                                            <i class="fas fa-credit-card me-1"></i> Pay
-                                        </button>
-                                    </form>
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Security & Format Note -->
-                    <div class="p-4 rounded-3 d-flex align-items-center gap-3" style="background: #FAF7F2; border: 1px solid var(--border-color);">
+                    <!-- Security & Combined Order Note -->
+                    <div class="p-4 rounded-3 d-flex align-items-center gap-3 mt-3" style="background: #FAF7F2; border: 1px solid var(--border-color);">
                         <i class="fas fa-shield-alt fa-2x" style="color: var(--gold-accent);"></i>
                         <div>
-                            <strong class="d-block text-dark">Verified Stripe Checkout</strong>
-                            <span class="small text-secondary">Your payment details are processed with 256-bit SSL encryption. We never store card credentials on our servers.</span>
+                            <strong class="d-block text-dark">Single Combined Stripe Checkout &amp; One Official Receipt</strong>
+                            <span class="small text-secondary">All books in your cart are processed under one combined order ID with a single itemized tax receipt and downloadable PDF for every edition.</span>
                         </div>
                     </div>
                 </div>
@@ -127,7 +135,7 @@
                         <h2 class="summary-heading">Order Summary</h2>
 
                         <div class="summary-row">
-                            <span>Selected Volumes</span>
+                            <span>Selected Titles</span>
                             <span class="fw-bold" th:text="${cartItems.size()}">1</span>
                         </div>
                         <div class="summary-row">
@@ -140,7 +148,7 @@
                         </div>
 
                         <div class="summary-row total-row">
-                            <span>Total Due</span>
+                            <span>Combined Total</span>
                             <span class="total-amount">
                                 ₹<span th:text="${cartTotal != null ? #numbers.formatDecimal(cartTotal, 1, 2) : '0.00'}">0.00</span>
                             </span>
@@ -148,10 +156,10 @@
 
                         <!-- Checkout Button -->
                         <div class="d-grid gap-2">
-                            <!-- Multi-Book Stripe Checkout Form -->
+                            <!-- Multi-Book Single-Order Stripe Checkout Form -->
                             <form th:action="@{/checkout-all}" method="post">
-                                <button type="submit" class="btn-luxury-primary w-100 py-3" th:disabled="${cartTotal == 0}">
-                                    <i class="fas fa-lock me-2"></i> Proceed to Stripe Checkout
+                                <button type="submit" class="btn-luxury-primary w-100 py-3" th:disabled="${cartTotal == null or cartTotal == 0}">
+                                    <i class="fas fa-lock me-2"></i> Checkout All Books Together
                                 </button>
                             </form>
                             <a href="/" class="btn-luxury-outline py-2 text-center mt-2">

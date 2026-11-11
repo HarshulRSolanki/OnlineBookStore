@@ -21,12 +21,107 @@
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
+                    <!-- Flash Alert Messages -->
+                    <div th:if="${error != null or message != null or success != null}" class="mb-4">
+                        <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span th:text="${error}">An error occurred</span>
+                        </div>
+                        <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                            <i class="fas fa-check-circle"></i>
+                            <span th:text="${message}">Notification</span>
+                        </div>
+                        <div class="editorial-alert editorial-alert-success" th:if="${success}">
+                            <i class="fas fa-check-circle"></i>
+                            <span th:text="${success}">Success</span>
+                        </div>
+                    </div>
+
+                    <!-- Pending OTP Verification Card (Shown only when OTP verification is active) -->
+                    <div th:if="${pendingUpdate != null}" class="card border-0 shadow-md p-4 p-md-5 mb-4"
+                         style="background: #FFFBF2; border: 2px solid var(--gold-accent) !important; border-radius: var(--radius-lg);">
+                        <div class="d-flex align-items-start gap-3 mb-3">
+                            <div class="brand-monogram flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                                <i class="fas fa-shield-halved"></i>
+                            </div>
+                            <div>
+                                <span class="section-subtitle-tag mb-1">Two-Step Security Verification</span>
+                                <h2 class="font-heading fs-4 mb-1">Verify Profile Update via OTP</h2>
+                                <p class="small text-secondary mb-0">
+                                    A 6-digit verification code has been dispatched to
+                                    <strong class="text-dark" th:text="${pendingUpdate.targetEmail}">user@domain.com</strong>.
+                                    Enter the code below to apply your changes to your account.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Pending Changes Summary -->
+                        <div class="p-3 rounded-3 mb-4 small" style="background: #FFFFFF; border: 1px solid var(--border-color);">
+                            <div class="fw-bold text-dark mb-2">Pending Changes Awaiting Verification:</div>
+                            <div class="row g-2">
+                                <div class="col-sm-4">
+                                    <span class="text-muted">Username:</span>
+                                    <strong th:text="${pendingUpdate.newUsername}">username</strong>
+                                </div>
+                                <div class="col-sm-4">
+                                    <span class="text-muted">Email:</span>
+                                    <strong th:text="${pendingUpdate.newEmail}">email</strong>
+                                </div>
+                                <div class="col-sm-4">
+                                    <span class="text-muted">Mobile:</span>
+                                    <strong th:text="${pendingUpdate.newMobile != null and !#strings.isEmpty(pendingUpdate.newMobile) ? pendingUpdate.newMobile : 'Unchanged'}">mobile</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Verify OTP Form -->
+                        <form th:action="@{/profile/verify-otp}" method="post" class="row g-3 align-items-end">
+                            <input type="hidden" name="token" th:value="${pendingUpdate.token}" />
+                            <div class="col-md-7 auth-form-group mb-0">
+                                <label for="profileOtpInput" class="auth-form-label">Verification Code (6-Digit OTP)</label>
+                                <div class="auth-input-wrapper">
+                                    <i class="fas fa-key auth-input-icon"></i>
+                                    <input type="text" class="auth-input-field fw-bold letter-spacing-2"
+                                           id="profileOtpInput" name="otp" required maxlength="8"
+                                           placeholder="Enter 6-digit OTP" autocomplete="one-time-code" />
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <button type="submit" class="btn-luxury-primary w-100 py-3">
+                                    <i class="fas fa-check-circle me-2"></i> Verify OTP &amp; Save
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Secondary OTP Controls -->
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 pt-3 border-top">
+                            <small class="text-muted">
+                                <span th:if="${remainingAttempts != null}">
+                                    Attempts remaining: <strong th:text="${remainingAttempts}">5</strong> &bull;
+                                </span>
+                                Code expires after 5 minutes.
+                            </small>
+                            <div class="d-flex gap-2">
+                                <form th:action="@{/profile/resend-otp}" method="post" class="m-0">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-rotate-right me-1"></i> Resend OTP
+                                    </button>
+                                </form>
+                                <form th:action="@{/profile/cancel-otp}" method="post" class="m-0">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-times me-1"></i> Cancel Update
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Profile Card -->
                     <div class="card border-0 shadow-md p-4 p-md-5" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-lg);">
                         <!-- Header -->
                         <div class="d-flex align-items-center gap-4 mb-4 pb-4 border-bottom">
                             <div class="brand-monogram" style="width: 64px; height: 64px; font-size: 1.8rem;">
-                                <span th:text="${user != null and user.username != null ? #strings.substring(user.username, 0, 1).toUpperCase() : 'U'}">U</span>
+                                <span th:text="${user != null and user.username != null and !#strings.isEmpty(user.username) ? #strings.substring(user.username, 0, 1).toUpperCase() : 'U'}">U</span>
                             </div>
                             <div>
                                 <span class="section-subtitle-tag mb-1">Reader Dossier</span>
@@ -35,15 +130,25 @@
                             </div>
                         </div>
 
+                        <!-- Security Notice -->
+                        <div class="p-3 rounded-3 mb-4 small d-flex align-items-center gap-2"
+                             style="background: #FAF7F2; border: 1px solid var(--border-color);">
+                            <i class="fas fa-lock text-warning"></i>
+                            <span class="text-secondary">
+                                All profile updates require email OTP verification. If you change your email address, the verification code is sent to your new email before saving.
+                            </span>
+                        </div>
+
                         <!-- Update Profile Form -->
-                        <form th:action="@{/updateProfile/{userId}(userId=${user.userid})}" method="post">
+                        <form th:action="@{/profile/request-otp}" method="post">
                             <div class="row g-4">
                                 <!-- Username -->
                                 <div class="col-md-6 auth-form-group">
                                     <label for="username" class="auth-form-label">Username</label>
                                     <div class="auth-input-wrapper">
                                         <i class="fas fa-user auth-input-icon"></i>
-                                        <input type="text" class="auth-input-field" id="username" name="username" th:value="${user.username}" required />
+                                        <input type="text" class="auth-input-field" id="username" name="username"
+                                               th:value="${pendingUpdate != null ? pendingUpdate.newUsername : user.username}" required />
                                     </div>
                                 </div>
 
@@ -52,7 +157,8 @@
                                     <label for="email" class="auth-form-label">Email Address</label>
                                     <div class="auth-input-wrapper">
                                         <i class="fas fa-envelope auth-input-icon"></i>
-                                        <input type="email" class="auth-input-field" id="email" name="email" th:value="${user.email}" required />
+                                        <input type="email" class="auth-input-field" id="email" name="email"
+                                               th:value="${pendingUpdate != null ? pendingUpdate.newEmail : user.email}" required />
                                     </div>
                                 </div>
 
@@ -61,7 +167,9 @@
                                     <label for="mobile" class="auth-form-label">Contact Number</label>
                                     <div class="auth-input-wrapper">
                                         <i class="fas fa-phone auth-input-icon"></i>
-                                        <input type="tel" class="auth-input-field" id="mobile" name="mobile" th:value="${user.mobileno}" pattern="[0-9]{10}" maxlength="10" />
+                                        <input type="tel" class="auth-input-field" id="mobile" name="mobile"
+                                               th:value="${pendingUpdate != null ? pendingUpdate.newMobile : user.mobileno}"
+                                               pattern="[0-9]{10}" maxlength="10" />
                                     </div>
                                     <small class="text-muted">10-digit mobile number for order notifications.</small>
                                 </div>
@@ -82,7 +190,7 @@
                                     <i class="fas fa-arrow-left me-1"></i> Return Home
                                 </a>
                                 <button type="submit" class="btn-luxury-primary py-2 px-4">
-                                    <i class="fas fa-save me-2"></i> Save Profile Changes
+                                    <i class="fas fa-paper-plane me-2"></i> Request OTP &amp; Save Profile
                                 </button>
                             </div>
                         </form>

@@ -9,12 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.example.demo.AuthHelper;
 import com.example.demo.Entity.Order;
 import com.example.demo.Repository.CategoryRepo;
 import com.example.demo.service.SalesReportService;
@@ -22,6 +24,7 @@ import com.example.demo.service.SalesReportService;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminReportController {
 
     @Autowired
@@ -30,14 +33,13 @@ public class AdminReportController {
     @Autowired
     private CategoryRepo categoryRepo;
 
+    @Autowired
+    private AuthHelper authHelper;
+
     private boolean isAdmin(HttpSession session) {
-        Object user = session.getAttribute("loggedInUser");
-        return user != null && "Admin".equalsIgnoreCase(user.toString());
+        return authHelper.isAdmin(session);
     }
 
-    /**
-     * MODULE 2: Dedicated Admin Book Sales Report Dashboard
-     */
     @GetMapping("/admin/reports")
     public String showSalesReport(
             @RequestParam(required = false) String startDate,
@@ -49,21 +51,17 @@ public class AdminReportController {
             Model model) {
 
         if (!isAdmin(session)) {
-            return "redirect:/login";
+            return "redirect:/access-denied";
         }
 
-        // 1. Dashboard summary cards statistics calculated from database
         Map<String, Object> stats = salesReportService.getDashboardStats();
         model.addAttribute("stats", stats);
 
-        // 2. Filtered orders table
         List<Order> filteredOrders = salesReportService.getFilteredOrders(startDate, endDate, categoryId, bookName, paymentStatus);
         model.addAttribute("orders", filteredOrders);
 
-        // 3. Categories for filter dropdown
         model.addAttribute("categories", categoryRepo.findAll());
 
-        // 4. Retain active filter values
         model.addAttribute("filterStartDate", startDate != null ? startDate : "");
         model.addAttribute("filterEndDate", endDate != null ? endDate : "");
         model.addAttribute("filterCategoryId", categoryId != null ? categoryId : 0L);
@@ -73,9 +71,6 @@ public class AdminReportController {
         return "Admin/reports";
     }
 
-    /**
-     * Interactive Chart.js endpoint delivering dynamic chart data
-     */
     @GetMapping("/admin/reports/analytics")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getChartAnalytics(HttpSession session) {
@@ -85,9 +80,6 @@ public class AdminReportController {
         return ResponseEntity.ok(salesReportService.getChartAnalytics());
     }
 
-    /**
-     * Export sales report as PDF
-     */
     @GetMapping("/admin/reports/export/pdf")
     public ResponseEntity<byte[]> exportPdf(
             @RequestParam(required = false) String startDate,
@@ -113,9 +105,6 @@ public class AdminReportController {
                 .body(pdfBytes);
     }
 
-    /**
-     * Export sales report as Excel (.xlsx)
-     */
     @GetMapping("/admin/reports/export/excel")
     public ResponseEntity<byte[]> exportExcel(
             @RequestParam(required = false) String startDate,
@@ -141,9 +130,6 @@ public class AdminReportController {
                 .body(xlsxBytes);
     }
 
-    /**
-     * Export sales report as CSV
-     */
     @GetMapping("/admin/reports/export/csv")
     public ResponseEntity<byte[]> exportCsv(
             @RequestParam(required = false) String startDate,
@@ -177,4 +163,3 @@ public class AdminReportController {
         return sb.toString().trim();
     }
 }
-

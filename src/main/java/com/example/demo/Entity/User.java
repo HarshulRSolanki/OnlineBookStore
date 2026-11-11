@@ -20,8 +20,8 @@ public class User
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long userid;
 	
-	@Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
-	@Column(unique = true)
+	@Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+	@Column(unique = true, length = 50)
 	private String username;
 	
 	@Column(unique = true)
@@ -35,6 +35,12 @@ public class User
 	
 	private boolean isregistered;
 
+	@Column(name = "role", length = 30)
+	private String role = "USER";
+
+	@Column(name = "enabled")
+	private Boolean enabled = Boolean.TRUE;
+
 	
 	public boolean isIsregistered() {
 		return isregistered;
@@ -42,6 +48,26 @@ public class User
 
 	public void setIsregistered(boolean isregistered) {
 		this.isregistered = isregistered;
+	}
+
+	public String getRole() {
+		return (role == null || role.trim().isEmpty()) ? "USER" : role.trim().toUpperCase();
+	}
+
+	public void setRole(String role) {
+		this.role = (role == null || role.trim().isEmpty()) ? "USER" : role.trim().toUpperCase();
+	}
+
+	public boolean isAdmin() {
+		return "ADMIN".equalsIgnoreCase(getRole());
+	}
+
+	public boolean isEnabled() {
+		return enabled == null || enabled;
+	}
+
+	public void setEnabled(Boolean enabled) {
+		this.enabled = enabled != null ? enabled : Boolean.TRUE;
 	}
 
 	public Long getUserid() {

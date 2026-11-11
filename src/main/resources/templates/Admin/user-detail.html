@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dossier – Quickread Admin</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Dedicated Admin Header -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
+                <div>
+                    <span class="section-subtitle-tag mb-1">Account Inspection</span>
+                    <h1 class="font-heading fs-2 mb-0" th:text="${targetUser.username}">User Name</h1>
+                </div>
+                <div class="d-flex gap-2">
+                    <form th:action="@{/admin/users/{id}/toggle-status(id=${targetUser.userid})}" method="post" class="m-0">
+                        <button type="submit" class="btn-luxury-outline py-2 px-3"
+                                th:text="${targetUser.enabled ? 'Disable Account' : 'Enable Account'}">Toggle Status</button>
+                    </form>
+                    <a th:href="@{/admin/users}" class="btn-luxury-primary py-2 px-3">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Users
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${error != null or message != null}" class="mb-4">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Success</span>
+                </div>
+            </div>
+
+            <!-- User Profile Summary -->
+            <div class="card p-4 border-0 shadow-sm mb-4" style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-md);">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <small class="text-muted text-uppercase d-block">Email</small>
+                        <strong th:text="${targetUser.email}">email@domain.com</strong>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted text-uppercase d-block">Mobile</small>
+                        <strong th:text="${targetUser.mobileno != null ? targetUser.mobileno : 'N/A'}">N/A</strong>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted text-uppercase d-block">Role</small>
+                        <span class="badge bg-secondary" th:text="${targetUser.role}">USER</span>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted text-uppercase d-block">Status</small>
+                        <span th:if="${targetUser.enabled}" class="badge bg-success">Active</span>
+                        <span th:unless="${targetUser.enabled}" class="badge bg-danger">Disabled</span>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted text-uppercase d-block">Engagement</small>
+                        <span th:text="'Orders: ' + ${userOrders.size()} + ' • Cart: ' + ${cartItems.size()} + ' • Downloads: ' + ${downloads.size()}">Stats</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order History -->
+            <div class="orders-table-wrapper">
+                <div class="p-3 border-bottom" style="background: #FAF7F2;">
+                    <h3 class="font-heading fs-5 mb-0">Customer Order History</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Books</th>
+                                <th>Amount</th>
+                                <th>Payment</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-end">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="o : ${userOrders}">
+                                <td><code th:text="${o.orderNumber}">ORD-1</code></td>
+                                <td th:text="${o.summaryTitle}">Books</td>
+                                <td class="fw-bold font-monospace">₹<span th:text="${#numbers.formatDecimal(o.amount, 1, 2)}">0.00</span></td>
+                                <td><span class="badge bg-light text-dark border" th:text="${o.paymentStatus}">PAID</span></td>
+                                <td><span class="badge bg-info-subtle text-dark" th:text="${o.orderStatus}">CONFIRMED</span></td>
+                                <td class="small text-muted" th:text="${o.orderDate != null ? #temporals.format(o.orderDate, 'dd MMM yyyy, HH:mm') : '-'}">-</td>
+                                <td class="text-end">
+                                    <a th:href="@{/admin/orders/{id}(id=${o.id})}" class="btn btn-outline-secondary btn-sm">Inspect</a>
+                                </td>
+                            </tr>
+                            <tr th:if="${userOrders == null or #lists.isEmpty(userOrders)}">
+                                <td colspan="7" class="text-center py-4 text-muted">No orders for this user.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>
+

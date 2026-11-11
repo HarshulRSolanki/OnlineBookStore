@@ -21,7 +21,7 @@ public interface DownloadRepo extends JpaRepository<Download,Long>
 
 	@Modifying
 	@Transactional
-	@Query("DELETE FROM Download d WHERE d.book.id = :id")
+	@Query("DELETE FROM Download d WHERE d.book.id = :bookId")
 	void deleteDownloadsByBookId(@Param("bookId") Long bookId);
 	
 	boolean existsByUserAndBook(User user, Book book);

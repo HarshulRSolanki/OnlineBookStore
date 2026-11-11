@@ -29,6 +29,12 @@ public interface UserRepo extends JpaRepository<User, Long> {
 
     Optional<User> findById(Long userId);
 
+    List<User> findByRoleIgnoreCase(String role);
+
+    long countByRoleIgnoreCase(String role);
+
+    Optional<User> findFirstByRoleIgnoreCase(String role);
+
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.orders LEFT JOIN FETCH u.downloadedBooks LEFT JOIN FETCH u.cartItems")
     List<User> fetchUserReportData();
 }

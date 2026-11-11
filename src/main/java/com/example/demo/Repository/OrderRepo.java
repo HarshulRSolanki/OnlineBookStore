@@ -33,7 +33,15 @@ public interface OrderRepo extends JpaRepository<Order, Long> {
 
     Optional<Order> findByReceiptNumber(String receiptNumber);
 
-    Optional<Order> findByStripeSessionId(String stripeSessionId);
+    List<Order> findAllByStripeSessionId(String stripeSessionId);
+
+    Optional<Order> findFirstByStripeSessionIdOrderByIdAsc(String stripeSessionId);
+
+    boolean existsByStripeSessionId(String stripeSessionId);
+
+    boolean existsByBookId(Long bookId);
+
+    long countByUser(User user);
 
     boolean existsByStripeSessionIdAndPaymentStatus(String stripeSessionId, String paymentStatus);
 
@@ -49,9 +57,9 @@ public interface OrderRepo extends JpaRepository<Order, Long> {
     @Query("SELECT COALESCE(SUM(o.quantity), 0) FROM Order o WHERE o.paymentStatus = 'SUCCESS' OR o.paymentStatus = 'PAID'")
     Long sumTotalBooksSold();
 
-    @Query("SELECT o.book.title, COUNT(o), COALESCE(SUM(o.amount), 0.0) FROM Order o WHERE o.paymentStatus = 'SUCCESS' OR o.paymentStatus = 'PAID' GROUP BY o.book.title ORDER BY COUNT(o) DESC")
+    @Query("SELECT o.book.title, COUNT(o), COALESCE(SUM(o.amount), 0.0) FROM Order o WHERE (o.paymentStatus = 'SUCCESS' OR o.paymentStatus = 'PAID') AND o.book IS NOT NULL GROUP BY o.book.title ORDER BY COUNT(o) DESC")
     List<Object[]> findTopSellingBooks();
 
-    @Query("SELECT o.book.category.name, COALESCE(SUM(o.amount), 0.0) FROM Order o WHERE (o.paymentStatus = 'SUCCESS' OR o.paymentStatus = 'PAID') AND o.book.category IS NOT NULL GROUP BY o.book.category.name ORDER BY SUM(o.amount) DESC")
+    @Query("SELECT o.book.category.name, COALESCE(SUM(o.amount), 0.0) FROM Order o WHERE (o.paymentStatus = 'SUCCESS' OR o.paymentStatus = 'PAID') AND o.book IS NOT NULL AND o.book.category IS NOT NULL GROUP BY o.book.category.name ORDER BY SUM(o.amount) DESC")
     List<Object[]> findRevenueByCategory();
 }

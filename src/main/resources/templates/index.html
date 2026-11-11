@@ -258,29 +258,38 @@
 
                                 <!-- Action Buttons -->
                                 <div class="book-card-actions">
-                                    <!-- Paid Book: Add to Cart (Logged In) -->
-                                    <form th:if="${book.price > 0 and session.loggedInUser != null}" th:action="@{/add/{bookId}(bookId=${book.id})}" method="post">
-                                        <button type="submit" class="btn-card-cart" title="Add to Cart">
+                                    <!-- Admin Quick Edit -->
+                                    <a th:if="${isAdminSession}" th:href="@{/admin/books/edit/{id}(id=${book.id})}" class="btn-card-cart text-decoration-none" title="Manage in Admin">
+                                        <i class="fas fa-pen-to-square"></i> Edit Book
+                                    </a>
+
+                                    <!-- Reader / Customer Actions -->
+                                    <th:block th:unless="${isAdminSession}">
+                                        <!-- Paid Book: Add to Cart (Logged In) -->
+                                        <form th:if="${book.price > 0 and currentUser != null}" th:action="@{/add/{bookId}(bookId=${book.id})}" method="post">
+                                            <button type="submit" class="btn-card-cart" title="Add to Cart" th:disabled="${book.stock != null and book.stock <= 0}">
+                                                <i class="fas fa-shopping-bag"></i>
+                                                <span th:text="${book.stock != null and book.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}">Add to Cart</span>
+                                            </button>
+                                        </form>
+
+                                        <!-- Paid Book: Sign In to Purchase (Logged Out) -->
+                                        <a th:if="${book.price > 0 and currentUser == null}" th:href="@{/login(targetBookId=${book.id})}" class="btn-card-cart text-decoration-none" title="Sign In to Purchase">
                                             <i class="fas fa-shopping-bag"></i> Add to Cart
-                                        </button>
-                                    </form>
+                                        </a>
 
-                                    <!-- Paid Book: Sign In to Purchase (Logged Out) -->
-                                    <a th:if="${book.price > 0 and session.loggedInUser == null}" th:href="@{/login(targetBookId=${book.id})}" class="btn-card-cart text-decoration-none" title="Sign In to Purchase">
-                                        <i class="fas fa-shopping-bag"></i> Add to Cart
-                                    </a>
+                                        <!-- Free Book: Instant Download if Logged In -->
+                                        <form th:if="${book.price == 0 and currentUser != null}" th:action="@{/download/{id}(id=${book.id})}" method="get">
+                                            <button type="submit" class="btn-card-download" title="Download Free PDF">
+                                                <i class="fas fa-download"></i> Download
+                                            </button>
+                                        </form>
 
-                                    <!-- Free Book: Instant Download if Logged In -->
-                                    <form th:if="${book.price == 0 and session.loggedInUser != null}" th:action="@{/download/{id}(id=${book.id})}" method="get">
-                                        <button type="submit" class="btn-card-download" title="Download Free PDF">
-                                            <i class="fas fa-download"></i> Download
-                                        </button>
-                                    </form>
-
-                                    <!-- Free Book: Prompt login if not logged in -->
-                                    <a th:if="${book.price == 0 and session.loggedInUser == null}" href="/login" class="btn-card-download text-decoration-none" title="Log in to download">
-                                        <i class="fas fa-download"></i> Free PDF
-                                    </a>
+                                        <!-- Free Book: Prompt login if not logged in -->
+                                        <a th:if="${book.price == 0 and currentUser == null}" href="/login" class="btn-card-download text-decoration-none" title="Log in to download">
+                                            <i class="fas fa-download"></i> Free PDF
+                                        </a>
+                                    </th:block>
 
                                     <!-- View Details Button -->
                                     <a th:href="@{/books/view/{id}(id=${book.id})}" class="btn-card-view" title="Inspect Edition">

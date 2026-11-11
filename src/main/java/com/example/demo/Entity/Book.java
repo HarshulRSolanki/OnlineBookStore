@@ -39,7 +39,7 @@ public class Book
     
     private int price;
     
-     @Lob 
+    @Lob 
     private byte[] coverImage;
 
     private LocalDate publishDate; // Store the publishing date
@@ -53,6 +53,9 @@ public class Book
     
     @Column(nullable = false)
     private boolean isDeleted = false; 
+
+    @Column(name = "stock")
+    private Integer stock = 100;
     
     @Transient
     private Long downloadCount;
@@ -199,6 +202,25 @@ public class Book
 
     @OneToMany(mappedBy = "book")
     private List<Order> orders;
+
+    @OneToMany(mappedBy = "book")
+    private List<OrderItem> orderItems;
+
+	public Integer getStock() {
+		return stock != null ? stock : 100;
+	}
+
+	public void setStock(Integer stock) {
+		this.stock = stock;
+	}
+
+	public List<OrderItem> getOrderItems() {
+		return orderItems;
+	}
+
+	public void setOrderItems(List<OrderItem> orderItems) {
+		this.orderItems = orderItems;
+	}
 	
 
 	public byte[] getFileData() {

@@ -14,7 +14,7 @@
 </head>
 <body>
 
-    <!-- Header Navigation -->
+    <!-- Dedicated Admin Header -->
     <div th:replace="~{common/header :: navbar}"></div>
 
     <main class="flex-grow-1 py-5">
@@ -27,84 +27,88 @@
                                 <span class="section-subtitle-tag mb-1">Catalog Curation</span>
                                 <h1 class="font-heading fs-2 mb-0">Modify Book Edition</h1>
                             </div>
-                            <a href="/admindash" class="btn-luxury-outline py-2 px-3">
-                                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                            <a th:href="@{/admin/books}" class="btn-luxury-outline py-2 px-3">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Manage Books
                             </a>
                         </div>
 
-                        <!-- Update Form -->
-                        <form th:action="@{/update/{bookId}(bookId=${book.id})}" method="post" enctype="multipart/form-data">
-                            <input type="hidden" th:value="${book.id}" name="bookId" />
+                        <!-- Alerts -->
+                        <div th:if="${error != null or message != null}" class="mb-4">
+                            <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span th:text="${error}">Error</span>
+                            </div>
+                            <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                                <i class="fas fa-check-circle"></i>
+                                <span th:text="${message}">Success</span>
+                            </div>
+                        </div>
 
+                        <!-- Update Form -->
+                        <form th:action="@{/admin/books/edit/{bookId}(bookId=${book.id})}" method="post" enctype="multipart/form-data">
                             <div class="row g-4">
-                                <!-- Title -->
                                 <div class="col-md-6 auth-form-group">
                                     <label for="title" class="auth-form-label">Title</label>
                                     <input type="text" id="title" name="title" class="auth-input-field" th:value="${book.title}" required />
                                 </div>
 
-                                <!-- Author -->
                                 <div class="col-md-6 auth-form-group">
                                     <label for="author" class="auth-form-label">Author</label>
                                     <input type="text" id="author" name="author" class="auth-input-field" th:value="${book.author}" required />
                                 </div>
 
-                                <!-- Category -->
                                 <div class="col-md-6 auth-form-group">
                                     <label for="category" class="auth-form-label">Category</label>
                                     <select id="category" name="category" class="editorial-select" required style="padding-left: 1rem;">
-                                        <option th:each="cat : ${categories}" 
-                                                th:value="${cat.id}" 
-                                                th:text="${cat.name}" 
-                                                th:selected="${cat.id == book.category.id}"></option>
+                                        <option th:each="cat : ${categories}"
+                                                th:value="${cat.id}"
+                                                th:text="${cat.name}"
+                                                th:selected="${book.category != null and cat.id == book.category.id}"></option>
                                     </select>
                                 </div>
 
-                                <!-- ISBN -->
                                 <div class="col-md-6 auth-form-group">
                                     <label for="isbn" class="auth-form-label">ISBN Reference</label>
                                     <input type="text" id="isbn" name="isbn" class="auth-input-field" th:value="${book.isbn}" required />
                                 </div>
 
-                                <!-- Price -->
-                                <div class="col-md-6 auth-form-group">
+                                <div class="col-md-4 auth-form-group">
                                     <label for="price" class="auth-form-label">Price (INR)</label>
                                     <input type="number" id="price" name="price" class="auth-input-field" th:value="${book.price}" required min="0" />
                                 </div>
 
-                                <!-- Language -->
-                                <div class="col-md-6 auth-form-group">
+                                <div class="col-md-4 auth-form-group">
+                                    <label for="stock" class="auth-form-label">Stock Quantity</label>
+                                    <input type="number" id="stock" name="stock" class="auth-input-field" th:value="${book.stock != null ? book.stock : 0}" required min="0" />
+                                </div>
+
+                                <div class="col-md-4 auth-form-group">
                                     <label for="language" class="auth-form-label">Language</label>
                                     <input type="text" id="language" name="language" class="auth-input-field" th:value="${book.language}" />
                                 </div>
 
-                                <!-- Publisher Name -->
                                 <div class="col-md-6 auth-form-group">
                                     <label for="publishername" class="auth-form-label">Publisher Name</label>
                                     <input type="text" id="publishername" name="publishername" class="auth-input-field" th:value="${book.publishername}" />
                                 </div>
 
-                                <!-- Publish Date -->
                                 <div class="col-md-6 auth-form-group">
-                                    <label for="publishDate" class="auth-form-label">Publish Date (dd-MM-yyyy)</label>
+                                    <label for="publishDate" class="auth-form-label">Publish Date</label>
                                     <input type="date" id="publishDate" name="publishDate" class="auth-input-field" th:value="${book.publishDate}" />
                                 </div>
 
-                                <!-- Optional New Cover Image -->
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Replace Cover Artwork (Optional)</label>
                                     <input type="file" name="coverImage" accept="image/*" class="form-control" />
                                     <small class="text-muted">Leave blank to retain current cover.</small>
                                 </div>
 
-                                <!-- Optional New PDF -->
                                 <div class="col-md-6 auth-form-group">
                                     <label class="auth-form-label">Replace PDF File (Optional)</label>
                                     <input type="file" name="file" accept="application/pdf" class="form-control" />
                                     <small class="text-muted">Leave blank to retain current digital file.</small>
                                 </div>
 
-                                <!-- Description -->
                                 <div class="col-12 auth-form-group">
                                     <label for="description" class="auth-form-label">Synopsis &amp; Description</label>
                                     <textarea id="description" name="description" rows="5" class="auth-input-field" th:text="${book.description}" style="padding-left: 1rem;"></textarea>
@@ -112,7 +116,7 @@
                             </div>
 
                             <div class="d-flex align-items-center justify-content-between mt-5 pt-3 border-top">
-                                <a href="/admindash" class="btn-luxury-outline py-2 px-3">
+                                <a th:href="@{/admin/books}" class="btn-luxury-outline py-2 px-3">
                                     <i class="fas fa-times me-1"></i> Cancel
                                 </a>
                                 <button type="submit" class="btn-luxury-primary py-2 px-4">

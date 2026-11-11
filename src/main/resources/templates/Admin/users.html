@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users – Quickread Admin</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+</head>
+<body>
+
+    <!-- Dedicated Admin Header -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
+                <div>
+                    <span class="section-subtitle-tag mb-1">Account Governance</span>
+                    <h1 class="font-heading fs-2 mb-0">Manage Registered Users</h1>
+                </div>
+                <a th:href="@{/admin/dashboard}" class="btn-luxury-outline py-2 px-3">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Protected Admin Notice -->
+            <div class="p-3 rounded-3 mb-4 small d-flex align-items-center gap-2"
+                 style="background: #FAF7F2; border: 1px solid var(--border-color);">
+                <i class="fas fa-user-shield text-warning"></i>
+                <span class="text-secondary">Only customer (Reader) accounts are listed here. Administrator accounts are protected against unauthorized inspection, deactivation, or deletion.</span>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${error != null or message != null}" class="mb-4">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Success</span>
+                </div>
+            </div>
+
+            <div class="orders-table-wrapper">
+                <div class="table-responsive">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>Reader</th>
+                                <th>Email &amp; Mobile</th>
+                                <th>Account Status</th>
+                                <th>Orders</th>
+                                <th>Cart</th>
+                                <th>Downloads</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="u : ${users}">
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${u.username}">Username</div>
+                                    <small class="text-muted">ID #<span th:text="${u.userid}">1</span></small>
+                                </td>
+                                <td>
+                                    <div th:text="${u.email}">user@example.com</div>
+                                    <small class="text-muted" th:text="${u.mobileno != null ? u.mobileno : 'No phone'}">Phone</small>
+                                </td>
+                                <td>
+                                    <span th:if="${u.enabled}" class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                                    <span th:unless="${u.enabled}" class="badge bg-danger-subtle text-danger border border-danger-subtle">Disabled</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary"
+                                          th:text="${orderCounts != null and orderCounts.containsKey(u.userid) ? orderCounts.get(u.userid) : 0}">0</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border"
+                                          th:text="${cartCounts != null and cartCounts.containsKey(u.userid) ? cartCounts.get(u.userid) : 0}">0</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success"
+                                          th:text="${downloadCounts != null and downloadCounts.containsKey(u.userid) ? downloadCounts.get(u.userid) : 0}">0</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
+                                        <a th:href="@{/admin/users/{id}(id=${u.userid})}" class="btn btn-outline-primary btn-sm" title="View details">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <form th:action="@{/admin/users/{id}/toggle-status(id=${u.userid})}" method="post" class="m-0">
+                                            <button type="submit"
+                                                    th:class="${u.enabled ? 'btn btn-outline-warning btn-sm' : 'btn btn-outline-success btn-sm'}"
+                                                    th:text="${u.enabled ? 'Disable' : 'Enable'}">Toggle</button>
+                                        </form>
+                                        <form th:action="@{/admin/users/delete}" method="post" class="m-0"
+                                              onsubmit="return confirm('Permanently delete this user and all associated cart/order records?');">
+                                            <input type="hidden" name="userId" th:value="${u.userid}" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete User">
+                                                <i class="fas fa-trash-can"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${users == null or #lists.isEmpty(users)}">
+                                <td colspan="7" class="text-center py-4 text-muted">No customer accounts registered.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+</body>
+</html>
+

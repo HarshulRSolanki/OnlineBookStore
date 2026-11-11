@@ -1,5 +1,7 @@
 package com.example.demo.Repository;
 
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,4 +14,6 @@ public interface CategoryRepo extends JpaRepository<Category,Long>
 {
 	@Query("SELECT COUNT(d) FROM Download d WHERE d.book.category = :category")
     Long countByCategory(@Param("category") Category category);
+
+    Optional<Category> findByNameIgnoreCase(String name);
 }
