@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <title>Quickread – Luxury Bookstore</title>
 </head>
+
 <body>
 
     <!-- ROLE-BASED HEADER DISPATCHER (NEVER RENDERS BOTH SIMULTANEOUSLY) -->
@@ -17,11 +19,11 @@
     </th:block>
 
     <!-- ====================================================================
-         DEDICATED USER & STOREFRONT HEADER
+         DEDICATED USER & STOREFRONT HEADER (MATCHING ADMIN HEADER THEME)
          ==================================================================== -->
     <th:block th:fragment="userHeader">
         <header class="luxury-navbar user-role-header">
-            <div class="container">
+            <div class="container-fluid px-lg-4">
                 <div class="d-flex align-items-center justify-content-between gap-2">
                     <!-- Brand Logo & Monogram -->
                     <a class="brand-wrapper" href="/">
@@ -35,53 +37,74 @@
                     <!-- Search Bar (Desktop) -->
                     <form class="nav-search-form d-none d-xl-block" method="get" action="/search">
                         <i class="fas fa-search nav-search-icon"></i>
-                        <input type="text" name="title" class="nav-search-input" placeholder="Search curated titles, authors..." />
+                        <input type="text" name="title" class="nav-search-input"
+                            placeholder="Search books..." />
                     </form>
+                    <a href="/books" class="nav-action-btn header-compact-search-btn" title="Search Books">
+                        <i class="fas fa-search"></i>
+                    </a>
 
-                    <!-- User Navigation Links -->
-                    <nav class="d-none d-lg-flex align-items-center gap-1" aria-label="User Navigation">
-                        <a class="luxury-nav-link" href="/">Home</a>
-                        <a class="luxury-nav-link" href="/books">Browse Books</a>
-                        <a class="luxury-nav-link" href="/categories">Categories</a>
+                    <!-- User & Public Navigation Links -->
+                    <nav class="d-none d-xl-flex align-items-center gap-1" aria-label="User Navigation">
+                        <a class="luxury-nav-link" href="/">
+                            <i class="fas fa-home me-1"></i> Home
+                        </a>
+                        <a class="luxury-nav-link" href="/books">
+                            <i class="fas fa-book-open me-1"></i> Browse Books
+                        </a>
+                        <a class="luxury-nav-link" href="/categories">
+                            <i class="fas fa-tags me-1"></i> Categories
+                        </a>
                         <th:block th:if="${currentUserRole == 'USER'}">
                             <a class="luxury-nav-link position-relative" href="/cart">
-                                <i class="fas fa-shopping-bag me-1"></i>My Cart
+                                <i class="fas fa-shopping-bag me-1"></i> My Cart
                                 <span class="badge rounded-pill ms-1"
-                                      style="background: var(--gold-accent); color: #fff; font-size: 0.7rem;"
-                                      th:if="${currentCartCount != null and currentCartCount > 0}"
-                                      th:text="${currentCartCount}">1</span>
+                                    style="background: #C5A46D; color: #2C211B; font-weight: 700; font-size: 0.7rem;"
+                                    th:if="${currentCartCount != null and currentCartCount > 0}"
+                                    th:text="${currentCartCount}">1</span>
                             </a>
-                            <a class="luxury-nav-link" href="/order">My Orders</a>
-                            <a class="luxury-nav-link" href="/profile">My Profile</a>
+                            <a class="luxury-nav-link" href="/order">
+                                <i class="fas fa-receipt me-1"></i> My Orders
+                            </a>
+                            <a class="luxury-nav-link" href="/profile">
+                                <i class="fas fa-user-circle me-1"></i> My Profile
+                            </a>
                         </th:block>
                         <th:block th:if="${currentUserRole == 'GUEST'}">
-                            <a class="luxury-nav-link" href="/about">About</a>
-                            <a class="luxury-nav-link" href="/contact">Contact</a>
+                            <a class="luxury-nav-link" href="/about">
+                                <i class="fas fa-feather-pointed me-1"></i> About
+                            </a>
+                            <a class="luxury-nav-link" href="/contact">
+                                <i class="fas fa-envelope me-1"></i> Contact
+                            </a>
                         </th:block>
                     </nav>
 
                     <!-- Right Side: Auth Actions -->
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
                         <!-- Guest State -->
                         <div class="d-flex align-items-center gap-2" th:if="${currentUserRole == 'GUEST'}">
                             <a href="/cart" class="nav-action-btn d-none d-sm-inline-flex" title="View Cart">
                                 <i class="fas fa-shopping-bag"></i>
                             </a>
-                            <a href="/login" class="btn-luxury-outline py-2 px-3">
+                            <a href="/login" class="header-auth-outline py-2 px-3">
                                 <i class="fas fa-sign-in-alt me-1"></i> Sign In
                             </a>
-                            <a href="/userreg" class="btn-luxury-primary py-2 px-3 d-none d-sm-inline-flex">
-                                Join
+                            <a href="/userreg" class="btn-luxury-primary header-auth-primary py-2 px-3 d-none d-sm-inline-flex">
+                                <i class="fas fa-user-plus me-1"></i> Join
                             </a>
                         </div>
 
                         <!-- Authenticated Reader Account & Logout -->
-                        <div class="d-flex align-items-center gap-2" th:if="${currentUserRole == 'USER' and currentUser != null}">
+                        <div class="d-flex align-items-center gap-2"
+                            th:if="${currentUserRole == 'USER' and currentUser != null}">
                             <div class="dropdown">
-                                <a class="user-dropdown-toggle dropdown-toggle text-decoration-none" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <a class="user-dropdown-toggle dropdown-toggle text-decoration-none" href="#"
+                                    role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span class="user-avatar-circle"
-                                          th:text="${currentUser.username != null and !#strings.isEmpty(currentUser.username) ? #strings.substring(currentUser.username, 0, 1).toUpperCase() : 'U'}">U</span>
-                                    <span class="d-none d-sm-inline" th:text="${currentUser.username != null ? currentUser.username : 'Reader'}">Reader</span>
+                                        th:text="${currentUser.username != null and !#strings.isEmpty(currentUser.username) ? #strings.substring(currentUser.username, 0, 1).toUpperCase() : 'U'}">U</span>
+                                    <span class="d-none d-sm-inline user-username-text"
+                                        th:text="${currentUser.username != null ? currentUser.username : 'Reader'}">Reader</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end luxury-dropdown-menu">
                                     <li>
@@ -104,10 +127,13 @@
                                             <i class="fas fa-shopping-bag"></i> My Cart
                                         </a>
                                     </li>
-                                    <li><hr class="dropdown-divider my-2"></li>
+                                    <li>
+                                        <hr class="dropdown-divider my-2">
+                                    </li>
                                     <li>
                                         <form th:action="@{/logout}" method="post" class="m-0">
-                                            <button type="submit" class="dropdown-item luxury-dropdown-item danger-item border-0 bg-transparent w-100 text-start">
+                                            <button type="submit"
+                                                class="dropdown-item luxury-dropdown-item danger-item border-0 bg-transparent w-100 text-start">
                                                 <i class="fas fa-sign-out-alt"></i> Logout
                                             </button>
                                         </form>
@@ -115,45 +141,76 @@
                                 </ul>
                             </div>
 
-                            <form th:action="@{/logout}" method="post" class="d-none d-lg-inline m-0">
-                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Logout">
+                            <form th:action="@{/logout}" method="post" class="d-none d-xl-inline m-0">
+                                <button type="submit" class="btn btn-sm px-3 py-2 rounded-pill header-logout-btn"
+                                    title="Logout">
                                     <i class="fas fa-sign-out-alt me-1"></i> Logout
                                 </button>
                             </form>
                         </div>
 
                         <!-- Mobile Menu Button -->
-                        <button class="nav-action-btn d-lg-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mobileUserNavMenu" aria-expanded="false" aria-label="Toggle navigation">
+                        <button class="nav-action-btn d-xl-none" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#mobileUserNavMenu" aria-expanded="false" aria-label="Toggle navigation">
                             <i class="fas fa-bars"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Mobile Collapse Menu (User) -->
-                <div class="collapse d-lg-none mt-3 pt-3 border-top" id="mobileUserNavMenu">
+                <!-- Mobile Collapse Menu (User & Public) -->
+                <div class="collapse d-xl-none mt-3 pt-3 header-mobile-collapse" id="mobileUserNavMenu">
                     <form class="mb-3" method="get" action="/search">
                         <div class="input-group">
-                            <input type="text" name="title" class="form-control" placeholder="Search book title..." />
-                            <button class="btn btn-luxury-primary" type="submit"><i class="fas fa-search"></i></button>
+                            <input type="text" name="title" class="form-control header-mobile-search-input"
+                                placeholder="Search book title..." />
+                            <button class="btn btn-luxury-primary" type="submit" aria-label="Search">
+                                <i class="fas fa-search"></i>
+                            </button>
                         </div>
                     </form>
                     <div class="d-flex flex-column gap-2">
-                        <a class="luxury-nav-link" href="/">Home</a>
-                        <a class="luxury-nav-link" href="/books">Browse Books</a>
-                        <a class="luxury-nav-link" href="/categories">Categories</a>
+                        <a class="luxury-nav-link" href="/">
+                            <i class="fas fa-home me-2"></i> Home
+                        </a>
+                        <a class="luxury-nav-link" href="/books">
+                            <i class="fas fa-book-open me-2"></i> Browse Books
+                        </a>
+                        <a class="luxury-nav-link" href="/categories">
+                            <i class="fas fa-tags me-2"></i> Categories
+                        </a>
                         <th:block th:if="${currentUserRole == 'USER'}">
-                            <a class="luxury-nav-link" href="/cart">My Cart (<span th:text="${currentCartCount != null ? currentCartCount : 0}">0</span>)</a>
-                            <a class="luxury-nav-link" href="/order">My Orders</a>
-                            <a class="luxury-nav-link" href="/profile">My Profile</a>
+                            <a class="luxury-nav-link" href="/cart">
+                                <i class="fas fa-shopping-bag me-2"></i> My Cart (<span
+                                    th:text="${currentCartCount != null ? currentCartCount : 0}">0</span>)
+                            </a>
+                            <a class="luxury-nav-link" href="/order">
+                                <i class="fas fa-receipt me-2"></i> My Orders
+                            </a>
+                            <a class="luxury-nav-link" href="/profile">
+                                <i class="fas fa-user-circle me-2"></i> My Profile
+                            </a>
                             <form th:action="@{/logout}" method="post" class="m-0 pt-2">
-                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <button type="submit" class="btn btn-sm w-100 rounded-pill py-2 header-logout-btn">
                                     <i class="fas fa-sign-out-alt me-1"></i> Logout
                                 </button>
                             </form>
                         </th:block>
                         <th:block th:if="${currentUserRole == 'GUEST'}">
-                            <a class="luxury-nav-link" href="/about">About</a>
-                            <a class="luxury-nav-link" href="/contact">Contact</a>
+                            <a class="luxury-nav-link" href="/about">
+                                <i class="fas fa-feather-pointed me-2"></i> About
+                            </a>
+                            <a class="luxury-nav-link" href="/contact">
+                                <i class="fas fa-envelope me-2"></i> Contact
+                            </a>
+                            <div class="d-flex gap-2 pt-2 d-sm-none">
+                                <a href="/cart" class="header-auth-outline py-2 px-3 flex-fill text-center">
+                                    <i class="fas fa-shopping-bag me-1"></i> Cart
+                                </a>
+                                <a href="/userreg" class="btn-luxury-primary header-auth-primary py-2 px-3 flex-fill text-center">
+                                    <i class="fas fa-user-plus me-1"></i> Join
+                                </a>
+                            </div>
+
                         </th:block>
                     </div>
                 </div>
@@ -165,12 +222,14 @@
          DEDICATED ADMIN HEADER (COMPLETELY SEPARATE FROM USER HEADER)
          ==================================================================== -->
     <th:block th:fragment="adminHeader">
-        <header class="luxury-navbar admin-role-header" style="background: #2C211B; border-bottom: 2px solid #C5A46D; color: #FAF7F2;">
+        <header class="luxury-navbar admin-role-header"
+            style="background: #2C211B; border-bottom: 2px solid #C5A46D; color: #FAF7F2;">
             <div class="container-fluid px-lg-4">
                 <div class="d-flex align-items-center justify-content-between gap-2">
                     <!-- Brand -->
                     <a class="brand-wrapper" href="/admin/dashboard">
-                        <div class="brand-monogram" style="background: linear-gradient(135deg, #8B6B45, #C5A46D); color: #FFFFFF;">
+                        <div class="brand-monogram"
+                            style="background: linear-gradient(135deg, #8B6B45, #C5A46D); color: #FFFFFF;">
                             <i class="fas fa-shield-alt" style="font-size: 1rem;"></i>
                         </div>
                         <div class="brand-text-block">
@@ -196,6 +255,9 @@
                         <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/orders">
                             <i class="fas fa-receipt me-1" style="color: #C5A46D;"></i> Manage Orders
                         </a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/stores">
+                            <i class="fas fa-store me-1" style="color: #C5A46D;"></i> Store Locations
+                        </a>
                         <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/reports">
                             <i class="fas fa-chart-line me-1" style="color: #C5A46D;"></i> Reports / Sales
                         </a>
@@ -207,37 +269,50 @@
                     <!-- Right Side: Admin Badge & Logout -->
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge d-none d-md-inline-flex align-items-center gap-1 px-3 py-2"
-                              style="background: rgba(197, 164, 109, 0.18); color: #DFC293; border: 1px solid #C5A46D;">
+                            style="background: rgba(197, 164, 109, 0.18); color: #DFC293; border: 1px solid #C5A46D;">
                             <i class="fas fa-crown"></i>
-                            <span th:text="${currentUser != null ? currentUser.username : 'Administrator'}">Administrator</span>
+                            <span
+                                th:text="${currentUser != null ? currentUser.username : 'Administrator'}">Administrator</span>
                         </span>
 
                         <form th:action="@{/logout}" method="post" class="m-0 d-none d-xl-inline">
                             <button type="submit" class="btn btn-sm px-3 py-2 rounded-pill"
-                                    style="background: #9A3838; color: #FFFFFF; border: 1px solid #C96B6B;">
+                                style="background: #9A3838; color: #FFFFFF; border: 1px solid #C96B6B;">
                                 <i class="fas fa-sign-out-alt me-1"></i> Logout
                             </button>
                         </form>
 
                         <!-- Mobile Menu Button -->
                         <button class="nav-action-btn d-xl-none border-0" style="color: #FAF7F2;" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#mobileAdminNavMenu" aria-expanded="false" aria-label="Toggle admin navigation">
+                            data-bs-toggle="collapse" data-bs-target="#mobileAdminNavMenu" aria-expanded="false"
+                            aria-label="Toggle admin navigation">
                             <i class="fas fa-bars"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Mobile Admin Collapse Menu -->
-                <div class="collapse d-xl-none mt-3 pt-3" style="border-top: 1px solid rgba(197, 164, 109, 0.25);" id="mobileAdminNavMenu">
+                <div class="collapse d-xl-none mt-3 pt-3" style="border-top: 1px solid rgba(197, 164, 109, 0.25);"
+                    id="mobileAdminNavMenu">
                     <div class="d-flex flex-column gap-2">
-                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/dashboard">Admin Dashboard</a>
-                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/books">Manage Books</a>
-                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/categories">Manage Categories</a>
-                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/users">Manage Users</a>
-                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/orders">Manage Orders</a>
-                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/reports">Reports / Sales</a>
-                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/profile">Admin Profile</a>
-                        <a class="luxury-nav-link" style="color: #DFC293 !important;" href="/admin/inquiries">Reader Inquiries</a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/dashboard">Admin
+                            Dashboard</a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/books">Manage
+                            Books</a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/categories">Manage
+                            Categories</a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/users">Manage
+                            Users</a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/orders">Manage
+                            Orders</a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/stores">Store
+                            Locations</a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/reports">Reports /
+                            Sales</a>
+                        <a class="luxury-nav-link" style="color: #FAF7F2 !important;" href="/admin/profile">Admin
+                            Profile</a>
+                        <a class="luxury-nav-link" style="color: #DFC293 !important;" href="/admin/inquiries">Reader
+                            Inquiries</a>
                         <form th:action="@{/logout}" method="post" class="m-0 pt-2">
                             <button type="submit" class="btn btn-danger btn-sm w-100">
                                 <i class="fas fa-sign-out-alt me-1"></i> Logout
@@ -250,4 +325,5 @@
     </th:block>
 
 </body>
+
 </html>

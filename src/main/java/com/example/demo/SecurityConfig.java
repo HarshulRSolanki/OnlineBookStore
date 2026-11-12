@@ -36,7 +36,7 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(
                     "/", "/index", "/books", "/books/view/**", "/categories", "/search",
-                    "/about", "/contact", "/viewpdf/**"
+                    "/about", "/contact", "/viewpdf/**", "/api/locations/**"
                 ).permitAll()
                 .requestMatchers(
                     "/login", "/logout", "/userreg", "/forgetpwd",

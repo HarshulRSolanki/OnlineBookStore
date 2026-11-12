@@ -31,19 +31,29 @@ import org.springframework.web.servlet.view.RedirectView;
 import com.example.demo.AuthHelper;
 import com.example.demo.Entity.Book;
 import com.example.demo.Entity.Cart;
+import com.example.demo.Entity.DeliveryConfig;
+import com.example.demo.Entity.DeliveryMethod;
 import com.example.demo.Entity.Download;
 import com.example.demo.Entity.Order;
 import com.example.demo.Entity.OrderItem;
+import com.example.demo.Entity.PendingCheckout;
+import com.example.demo.Entity.StoreLocation;
 import com.example.demo.Entity.User;
+import com.example.demo.Entity.UserAddress;
 import com.example.demo.Repository.BookRepo;
 import com.example.demo.Repository.CartRepo;
 import com.example.demo.Repository.DownloadRepo;
 import com.example.demo.Repository.OrderRepo;
+import com.example.demo.Repository.PendingCheckoutRepo;
+import com.example.demo.Repository.UserAddressRepo;
 import com.example.demo.Repository.UserRepo;
+import com.example.demo.service.AddressService;
 import com.example.demo.service.BookService;
 import com.example.demo.service.CartService;
+import com.example.demo.service.IndiaLocationService;
 import com.example.demo.service.OTPservice;
 import com.example.demo.service.OrderReceiptService;
+import com.example.demo.service.StoreLocationService;
 import com.example.demo.service.StripeService;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
@@ -119,6 +129,21 @@ public class Usercontroller {
 
     @Autowired
     private OrderReceiptService orderReceiptService;
+
+    @Autowired
+    private AddressService addressService;
+
+    @Autowired
+    private StoreLocationService storeLocationService;
+
+    @Autowired
+    private IndiaLocationService locationService;
+
+    @Autowired
+    private UserAddressRepo userAddressRepo;
+
+    @Autowired
+    private PendingCheckoutRepo pendingCheckoutRepo;
 
     @Autowired
     private AuthHelper authHelper;
@@ -388,6 +413,10 @@ public class Usercontroller {
 
     private void populateProfileModel(User currentUser, HttpSession session, Model model) {
         model.addAttribute("user", currentUser);
+        model.addAttribute("savedAddresses", addressService.getAddressesForUser(currentUser));
+        model.addAttribute("indianStates", locationService.getStates());
+        model.addAttribute("stateCitiesMap", locationService.getStateCitiesMap());
+        model.addAttribute("defaultCountry", IndiaLocationService.DEFAULT_COUNTRY);
         Object pendingObj = session.getAttribute(SESSION_PENDING_PROFILE_UPDATE);
         if (pendingObj instanceof PendingProfileUpdate pending
                 && pending.getUserId() != null
@@ -397,6 +426,25 @@ public class Usercontroller {
             model.addAttribute("cooldownSeconds", otpservice.getCooldownRemainingSeconds(pending.getOtpKey()));
             model.addAttribute("remainingAttempts", otpservice.getRemainingAttempts(pending.getOtpKey()));
         }
+    }
+
+    private void populateCheckoutDeliveryModel(User user, Model model) {
+        List<UserAddress> savedAddresses = addressService.getAddressesForUser(user);
+        Long defaultAddressId = savedAddresses.stream()
+                .filter(UserAddress::isDefaultAddress)
+                .map(UserAddress::getId)
+                .findFirst()
+                .orElse(savedAddresses.isEmpty() ? null : savedAddresses.get(0).getId());
+        List<StoreLocation> activeStores = storeLocationService.getActiveStoresForCheckout();
+        DeliveryConfig deliveryConfig = storeLocationService.getDeliveryConfig();
+
+        model.addAttribute("savedAddresses", savedAddresses);
+        model.addAttribute("defaultAddressId", defaultAddressId);
+        model.addAttribute("activeStores", activeStores);
+        model.addAttribute("deliveryConfig", deliveryConfig);
+        model.addAttribute("indianStates", locationService.getStates());
+        model.addAttribute("stateCitiesMap", locationService.getStateCitiesMap());
+        model.addAttribute("defaultCountry", IndiaLocationService.DEFAULT_COUNTRY);
     }
 
     @PostMapping("/profile/request-otp")
@@ -795,6 +843,7 @@ public class Usercontroller {
         model.addAttribute("cartTotal", cartTotal);
         model.addAttribute("cartItems", cartItems);
         model.addAttribute("bookImages", bookImages);
+        populateCheckoutDeliveryModel(user, model);
         return "User/cart";
     }
 
@@ -874,8 +923,76 @@ public class Usercontroller {
     }
 
     @GetMapping("/checkout/{bookId}")
-    public RedirectView purchase(
+    public String showSingleBookCheckout(
             @PathVariable Long bookId,
+            @RequestParam(value = "quantity", required = false, defaultValue = "1") int quantity,
+            @RequestParam(value = "paymentCancelled", required = false) Boolean paymentCancelled,
+            HttpSession session,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        User user = authHelper.getLoggedInUser(session);
+        if (user == null) {
+            redirectAttributes.addFlashAttribute("error", "Please log in to purchase books.");
+            return "redirect:/login?targetBookId=" + bookId;
+        }
+
+        Optional<Book> bookOptional = bookService.getBookById(bookId);
+        if (bookOptional.isEmpty() || bookOptional.get().isDeleted()) {
+            redirectAttributes.addFlashAttribute("error", "Book not found or unavailable.");
+            return "redirect:/cart";
+        }
+
+        Book book = bookOptional.get();
+        if (book.getStock() != null && book.getStock() <= 0) {
+            redirectAttributes.addFlashAttribute("error", "'" + book.getTitle() + "' is currently out of stock.");
+            return "redirect:/books/view/" + bookId;
+        }
+        if (book.getPrice() <= 0) {
+            return "redirect:/download/" + bookId;
+        }
+
+        if (Boolean.TRUE.equals(paymentCancelled)) {
+            model.addAttribute("error", "Payment was cancelled. Your order has not been placed.");
+        }
+
+        int resolvedQty = Math.max(1, quantity);
+        if (book.getStock() != null && book.getStock() > 0 && resolvedQty > book.getStock()) {
+            resolvedQty = book.getStock();
+        }
+
+        String bookImage = null;
+        if (book.getCoverImage() != null && book.getCoverImage().length > 0) {
+            bookImage = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(book.getCoverImage());
+        }
+
+        model.addAttribute("book", book);
+        model.addAttribute("bookImage", bookImage);
+        model.addAttribute("quantity", resolvedQty);
+        model.addAttribute("itemsSubtotal", (double) book.getPrice() * resolvedQty);
+        populateCheckoutDeliveryModel(user, model);
+        return "User/checkout";
+    }
+
+    @PostMapping("/checkout/{bookId}")
+    public RedirectView purchaseSingleBookWithDelivery(
+            @PathVariable Long bookId,
+            @RequestParam(value = "quantity", required = false, defaultValue = "1") int quantity,
+            @RequestParam(value = "deliveryMethod", required = false) String deliveryMethod,
+            @RequestParam(value = "addressSelectionMode", required = false) String addressSelectionMode,
+            @RequestParam(value = "selectedAddressId", required = false) String selectedAddressId,
+            @RequestParam(value = "fullName", required = false) String fullName,
+            @RequestParam(value = "mobileNumber", required = false) String mobileNumber,
+            @RequestParam(value = "houseNo", required = false) String houseNo,
+            @RequestParam(value = "buildingName", required = false) String buildingName,
+            @RequestParam(value = "streetArea", required = false) String streetArea,
+            @RequestParam(value = "landmark", required = false) String landmark,
+            @RequestParam(value = "country", required = false, defaultValue = IndiaLocationService.DEFAULT_COUNTRY) String country,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "city", required = false) String city,
+            @RequestParam(value = "pinCode", required = false) String pinCode,
+            @RequestParam(value = "addressType", required = false, defaultValue = "HOME") String addressType,
+            @RequestParam(value = "saveAsDefault", required = false, defaultValue = "false") boolean saveAsDefault,
+            @RequestParam(value = "selectedStoreId", required = false) String selectedStoreId,
             HttpSession session,
             RedirectAttributes redirectAttributes) throws StripeException {
         User user = authHelper.getLoggedInUser(session);
@@ -891,27 +1008,60 @@ public class Usercontroller {
         }
 
         Book book = bookOptional.get();
-        if (book.getStock() != null && book.getStock() <= 0) {
-            redirectAttributes.addFlashAttribute("error", "'" + book.getTitle() + "' is currently out of stock.");
-            return new RedirectView("/books/view/" + bookId);
+        int qty = Math.max(1, quantity);
+        if (book.getStock() != null && book.getStock() < qty) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Insufficient stock for '" + book.getTitle() + "' (available: " + book.getStock() + ").");
+            return new RedirectView("/checkout/" + bookId);
         }
         if (book.getPrice() <= 0) {
             return new RedirectView("/download/" + bookId);
+        }
+
+        PendingCheckout pending;
+        try {
+            pending = preparePendingCheckout(
+                    user, "SINGLE", bookId, qty,
+                    deliveryMethod, addressSelectionMode, selectedAddressId,
+                    fullName, mobileNumber, houseNo, buildingName, streetArea, landmark,
+                    country, state, city, pinCode, addressType, saveAsDefault,
+                    selectedStoreId);
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return new RedirectView("/checkout/" + bookId);
         }
 
         String stripeCheckoutUrl = stripeService.createCheckoutSession(
                 bookId,
                 book.getTitle(),
                 book.getPrice(),
+                qty,
                 user.getUserid(),
                 user.getEmail(),
-                resolveCurrentBaseUrl());
+                resolveCurrentBaseUrl(),
+                pending);
 
         return new RedirectView(stripeCheckoutUrl);
     }
 
     @PostMapping("/checkout-all")
     public RedirectView checkoutAll(
+            @RequestParam(value = "deliveryMethod", required = false) String deliveryMethod,
+            @RequestParam(value = "addressSelectionMode", required = false) String addressSelectionMode,
+            @RequestParam(value = "selectedAddressId", required = false) String selectedAddressId,
+            @RequestParam(value = "fullName", required = false) String fullName,
+            @RequestParam(value = "mobileNumber", required = false) String mobileNumber,
+            @RequestParam(value = "houseNo", required = false) String houseNo,
+            @RequestParam(value = "buildingName", required = false) String buildingName,
+            @RequestParam(value = "streetArea", required = false) String streetArea,
+            @RequestParam(value = "landmark", required = false) String landmark,
+            @RequestParam(value = "country", required = false, defaultValue = IndiaLocationService.DEFAULT_COUNTRY) String country,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "city", required = false) String city,
+            @RequestParam(value = "pinCode", required = false) String pinCode,
+            @RequestParam(value = "addressType", required = false, defaultValue = "HOME") String addressType,
+            @RequestParam(value = "saveAsDefault", required = false, defaultValue = "false") boolean saveAsDefault,
+            @RequestParam(value = "selectedStoreId", required = false) String selectedStoreId,
             HttpSession session,
             RedirectAttributes redirectAttributes) throws StripeException {
         User user = authHelper.getLoggedInUser(session);
@@ -941,14 +1091,131 @@ public class Usercontroller {
             return new RedirectView("/cart");
         }
 
+        PendingCheckout pending;
+        try {
+            pending = preparePendingCheckout(
+                    user, "CART", null, 1,
+                    deliveryMethod, addressSelectionMode, selectedAddressId,
+                    fullName, mobileNumber, houseNo, buildingName, streetArea, landmark,
+                    country, state, city, pinCode, addressType, saveAsDefault,
+                    selectedStoreId);
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return new RedirectView("/cart");
+        }
+
+        double finalAmount = totalPrice + pending.getDeliveryCharge();
         String stripeCheckoutUrl = stripeService.createCheckoutSessionForMultipleBooks(
                 cartItems,
-                totalPrice,
+                finalAmount,
                 user.getUserid(),
                 user.getEmail(),
-                resolveCurrentBaseUrl());
+                resolveCurrentBaseUrl(),
+                pending);
 
         return new RedirectView(stripeCheckoutUrl);
+    }
+
+    private PendingCheckout preparePendingCheckout(
+            User user,
+            String checkoutType,
+            Long singleBookId,
+            int quantity,
+            String deliveryMethodRaw,
+            String addressSelectionMode,
+            String selectedAddressIdRaw,
+            String fullName,
+            String mobileNumber,
+            String houseNo,
+            String buildingName,
+            String streetArea,
+            String landmark,
+            String country,
+            String state,
+            String city,
+            String pinCode,
+            String addressType,
+            boolean saveAsDefault,
+            String selectedStoreIdRaw) {
+
+        DeliveryMethod method = DeliveryMethod.fromString(deliveryMethodRaw);
+        if (method == null) {
+            throw new IllegalArgumentException("Please choose a delivery option: Home Delivery or Physical Store Pickup.");
+        }
+
+        PendingCheckout pending = new PendingCheckout();
+        pending.setCheckoutToken(UUID.randomUUID().toString());
+        pending.setUser(user);
+        pending.setCheckoutType(checkoutType);
+        pending.setSingleBookId(singleBookId);
+        pending.setQuantity(Math.max(1, quantity));
+        pending.setDeliveryMethod(method.name());
+        pending.setDeliveryCharge(storeLocationService.calculateDeliveryCharge(method));
+
+        if (method == DeliveryMethod.HOME_DELIVERY) {
+            boolean explicitNewMode = "NEW".equalsIgnoreCase(addressSelectionMode != null ? addressSelectionMode.trim() : "")
+                    || "NEW".equalsIgnoreCase(selectedAddressIdRaw != null ? selectedAddressIdRaw.trim() : "");
+
+            Long parsedAddressId = null;
+            if (!explicitNewMode && selectedAddressIdRaw != null && !selectedAddressIdRaw.isBlank()) {
+                try {
+                    parsedAddressId = Long.parseLong(selectedAddressIdRaw.trim());
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid saved delivery address selected.");
+                }
+            }
+
+            UserAddress chosenAddress;
+            if (parsedAddressId != null && !explicitNewMode) {
+                chosenAddress = addressService.getOwnedAddress(parsedAddressId, user)
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Selected delivery address was not found in your profile."));
+                if (!chosenAddress.isComplete()) {
+                    throw new IllegalArgumentException(
+                            "Selected delivery address is incomplete. Please edit your address details before checkout.");
+                }
+            } else {
+                boolean hasAnyNewField = isNonEmpty(fullName) || isNonEmpty(mobileNumber) || isNonEmpty(houseNo)
+                        || isNonEmpty(buildingName) || isNonEmpty(streetArea) || isNonEmpty(state)
+                        || isNonEmpty(city) || isNonEmpty(pinCode);
+                if (!hasAnyNewField && !explicitNewMode) {
+                    throw new IllegalArgumentException(
+                            "A valid Indian delivery address is mandatory for Home Delivery. Please select a saved address or add a new address.");
+                }
+                // Validates all mandatory Indian address fields & persists new address to user profile
+                chosenAddress = addressService.saveOrUpdateAddress(
+                        user, null,
+                        fullName, mobileNumber, houseNo, buildingName, streetArea, landmark,
+                        country, state, city, pinCode, addressType, saveAsDefault);
+            }
+            pending.copyFromAddress(chosenAddress);
+        } else {
+            List<StoreLocation> activeStores = storeLocationService.getActiveStoresForCheckout();
+            if (activeStores.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "No active physical pickup stores are currently available. Please select Home Delivery instead.");
+            }
+            if (selectedStoreIdRaw == null || selectedStoreIdRaw.isBlank()) {
+                throw new IllegalArgumentException("Please select an active physical bookstore for Store Pickup.");
+            }
+            Long parsedStoreId;
+            try {
+                parsedStoreId = Long.parseLong(selectedStoreIdRaw.trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid pickup store selection.");
+            }
+            StoreLocation selectedStore = storeLocationService.getActiveStoreById(parsedStoreId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "The selected pickup store is inactive or no longer available. Please choose another active store."));
+            DeliveryConfig cfg = storeLocationService.getDeliveryConfig();
+            pending.copyFromStore(selectedStore, cfg.getPickupInstructions());
+        }
+
+        return pendingCheckoutRepo.save(pending);
+    }
+
+    private boolean isNonEmpty(String val) {
+        return val != null && !val.trim().isEmpty();
     }
 
     @GetMapping("/success")
@@ -984,10 +1251,20 @@ public class Usercontroller {
         authHelper.syncSessionAuth(sessionHttp, user);
 
         Long resolvedBookId = bookId;
-        if (resolvedBookId == null && stripeSession.getMetadata() != null && stripeSession.getMetadata().containsKey("bookId")) {
-            try {
-                resolvedBookId = Long.parseLong(stripeSession.getMetadata().get("bookId"));
-            } catch (NumberFormatException ignored) {}
+        int qty = 1;
+        String checkoutToken = null;
+        if (stripeSession.getMetadata() != null) {
+            checkoutToken = stripeSession.getMetadata().get("checkoutToken");
+            if (resolvedBookId == null && stripeSession.getMetadata().containsKey("bookId")) {
+                try {
+                    resolvedBookId = Long.parseLong(stripeSession.getMetadata().get("bookId"));
+                } catch (NumberFormatException ignored) {}
+            }
+            if (stripeSession.getMetadata().containsKey("quantity")) {
+                try {
+                    qty = Math.max(1, Integer.parseInt(stripeSession.getMetadata().get("quantity")));
+                } catch (NumberFormatException ignored) {}
+            }
         }
 
         Optional<Book> bookOpt = resolvedBookId != null ? bookService.getBookById(resolvedBookId) : Optional.empty();
@@ -999,10 +1276,11 @@ public class Usercontroller {
         Order order = orderReceiptService.finalizeSingleBookCheckout(
                 user,
                 bookOpt.get(),
-                1,
+                qty,
                 sessionId,
                 stripeSession.getPaymentIntent(),
-                stripeSession.getPaymentStatus());
+                stripeSession.getPaymentStatus(),
+                checkoutToken);
 
         redirectAttributes.addFlashAttribute("message",
                 "Payment verified! Order " + order.getOrderNumber() + " and receipt " + order.getReceiptNumber() + " have been issued.");
@@ -1042,6 +1320,7 @@ public class Usercontroller {
 
         List<Cart> cartItems = cartService.getActiveCartItems(user);
         String metadataCartItems = stripeSession.getMetadata() != null ? stripeSession.getMetadata().get("cartItems") : null;
+        String checkoutToken = stripeSession.getMetadata() != null ? stripeSession.getMetadata().get("checkoutToken") : null;
 
         try {
             Order order = orderReceiptService.finalizeMultiBookCheckout(
@@ -1050,7 +1329,8 @@ public class Usercontroller {
                     metadataCartItems,
                     sessionId,
                     stripeSession.getPaymentIntent(),
-                    stripeSession.getPaymentStatus());
+                    stripeSession.getPaymentStatus(),
+                    checkoutToken);
 
             sessionHttp.setAttribute("cartTotal", 0.0);
             redirectAttributes.addFlashAttribute("message",
@@ -1096,6 +1376,8 @@ public class Usercontroller {
             cartRepo.clearOrderReferenceForUser(user);
             cartRepo.deleteAll(cartRepo.findByUser(user));
             downloadRepo.deleteAll(downloadRepo.findByUser(user));
+            pendingCheckoutRepo.deleteAllByUser(user);
+            userAddressRepo.deleteAllByUser(user);
             orderRepo.deleteAll(orderRepo.findByUser(user));
             userRepo.delete(user);
             authHelper.clearAuth(session);

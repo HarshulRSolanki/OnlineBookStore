@@ -299,6 +299,331 @@ img {
     border: 2px solid #FFFFFF;
 }
 
+/* Dark Espresso & Antique Gold Theme for User & Main Headers (Matching Admin Header) */
+.luxury-navbar.user-role-header,
+.luxury-navbar.user-role-header.scrolled {
+    background: #2C211B;
+    border-bottom: 2px solid #C5A46D;
+    color: #FAF7F2;
+    box-shadow: 0 4px 20px rgba(44, 33, 27, 0.16);
+}
+
+.user-role-header .brand-wrapper {
+    flex-shrink: 0;
+}
+
+.user-role-header .brand-monogram {
+    background: linear-gradient(135deg, #8B6B45, #C5A46D);
+    color: #FFFFFF;
+    border-color: var(--gold-accent);
+    flex-shrink: 0;
+}
+
+.user-role-header .brand-name {
+    color: #FAF7F2;
+    white-space: nowrap;
+}
+
+.user-role-header .brand-tagline {
+    color: #DFC293;
+    white-space: nowrap;
+}
+
+.user-role-header .luxury-nav-link {
+    color: #FAF7F2 !important;
+    white-space: nowrap;
+    padding: 0.45rem 0.56rem !important;
+    font-size: 0.87rem;
+}
+
+.user-role-header .luxury-nav-link i {
+    color: #C5A46D;
+    transition: color var(--transition-fast);
+}
+
+.user-role-header .luxury-nav-link:hover,
+.user-role-header .luxury-nav-link.active {
+    color: #DFC293 !important;
+}
+
+.user-role-header .luxury-nav-link:hover i,
+.user-role-header .luxury-nav-link.active i {
+    color: #DFC293 !important;
+}
+
+.user-role-header .nav-search-form {
+    min-width: 155px;
+    width: 175px;
+    flex-shrink: 1;
+}
+
+.user-role-header .nav-search-input {
+    padding: 0.4rem 0.85rem 0.4rem 2.15rem;
+    font-size: 0.85rem;
+}
+
+.user-role-header .nav-search-input,
+.user-role-header .header-mobile-search-input {
+    background: #382B23;
+    border: 1px solid rgba(197, 164, 109, 0.45);
+    color: #FAF7F2;
+}
+
+.user-role-header .nav-search-input::placeholder,
+.user-role-header .header-mobile-search-input::placeholder {
+    color: rgba(250, 247, 242, 0.58);
+}
+
+.user-role-header .nav-search-input:focus,
+.user-role-header .header-mobile-search-input:focus {
+    background: #423329;
+    border-color: #C5A46D;
+    color: #FAF7F2;
+    box-shadow: 0 0 0 3px rgba(197, 164, 109, 0.2);
+}
+
+.user-role-header .nav-search-icon {
+    left: 0.8rem;
+    font-size: 0.8rem;
+    color: #C5A46D;
+}
+
+.user-role-header .header-compact-search-btn {
+    display: none !important;
+}
+
+.user-role-header .nav-action-btn {
+    background: rgba(197, 164, 109, 0.14);
+    border: 1px solid rgba(197, 164, 109, 0.5);
+    color: #DFC293;
+    flex-shrink: 0;
+}
+
+.user-role-header .nav-action-btn:hover {
+    background: rgba(197, 164, 109, 0.28);
+    border-color: #DFC293;
+    color: #FAF7F2;
+}
+
+.user-role-header .user-dropdown-toggle {
+    background: rgba(197, 164, 109, 0.18);
+    border: 1px solid #C5A46D;
+    color: #DFC293;
+    white-space: nowrap;
+}
+
+.user-role-header .user-dropdown-toggle:hover,
+.user-role-header .user-dropdown-toggle[aria-expanded="true"] {
+    background: rgba(197, 164, 109, 0.28);
+    border-color: #DFC293;
+    color: #FAF7F2;
+}
+
+.user-role-header .user-username-text {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-role-header .header-auth-outline {
+    background: rgba(197, 164, 109, 0.16);
+    color: #DFC293 !important;
+    border: 1px solid #C5A46D;
+    border-radius: var(--radius-pill);
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+}
+
+.user-role-header .header-auth-outline:hover {
+    background: rgba(197, 164, 109, 0.3);
+    border-color: #DFC293;
+    color: #FAF7F2 !important;
+    transform: translateY(-2px);
+}
+
+.user-role-header .header-auth-primary {
+    border-radius: var(--radius-pill);
+    font-size: 0.875rem;
+    border: 1px solid rgba(223, 194, 147, 0.45);
+    white-space: nowrap;
+}
+
+.user-role-header .header-logout-btn {
+    background: #9A3838;
+    color: #FFFFFF;
+    border: 1px solid #C96B6B;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+}
+
+.user-role-header .header-logout-btn:hover {
+    background: #B04242;
+    color: #FFFFFF;
+    border-color: #DF8A8A;
+    transform: translateY(-1px);
+}
+
+.user-role-header .header-mobile-collapse {
+    border-top: 1px solid rgba(197, 164, 109, 0.25);
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+    .user-role-header .container-fluid {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    .user-role-header .brand-wrapper {
+        gap: 0.6rem;
+    }
+    .user-role-header .brand-monogram {
+        width: 38px;
+        height: 38px;
+        font-size: 1.2rem;
+    }
+    .user-role-header .brand-name {
+        font-size: 1.28rem;
+    }
+    .user-role-header .brand-tagline {
+        font-size: 0.68rem;
+        letter-spacing: 0.1em;
+    }
+    .user-role-header nav[aria-label="User Navigation"] {
+        gap: 0.125rem !important;
+    }
+    .user-role-header .luxury-nav-link {
+        padding: 0.42rem 0.42rem !important;
+        font-size: 0.82rem;
+    }
+    .user-role-header .user-dropdown-toggle {
+        padding: 0.24rem 0.6rem 0.24rem 0.3rem;
+        gap: 0.4rem;
+        font-size: 0.82rem;
+    }
+    .user-role-header .user-avatar-circle {
+        width: 26px;
+        height: 26px;
+        font-size: 0.78rem;
+    }
+    .user-role-header .user-username-text {
+        max-width: 72px;
+    }
+    .user-role-header .header-logout-btn {
+        padding: 0.38rem 0.72rem !important;
+        font-size: 0.82rem;
+    }
+}
+
+@media (min-width: 1200px) and (max-width: 1339.98px) {
+    .user-role-header .nav-search-form {
+        display: none !important;
+    }
+    .user-role-header .header-compact-search-btn {
+        display: inline-flex !important;
+        width: 38px;
+        height: 38px;
+    }
+}
+
+@media (min-width: 1340px) and (max-width: 1399.98px) {
+    .user-role-header .nav-search-form {
+        min-width: 150px;
+        width: 155px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .user-role-header .brand-wrapper {
+        gap: 0.7rem;
+    }
+    .user-role-header .brand-monogram {
+        width: 42px;
+        height: 42px;
+        font-size: 1.3rem;
+    }
+    .user-role-header .brand-name {
+        font-size: 1.38rem;
+    }
+    .user-role-header .brand-tagline {
+        font-size: 0.74rem;
+        letter-spacing: 0.12em;
+    }
+    .user-role-header .nav-search-form {
+        min-width: 165px;
+        width: 175px;
+    }
+    .user-role-header nav[aria-label="User Navigation"] {
+        gap: 0.2rem !important;
+    }
+    .user-role-header .luxury-nav-link {
+        padding: 0.45rem 0.56rem !important;
+        font-size: 0.86rem;
+    }
+    .user-role-header .user-dropdown-toggle {
+        padding: 0.28rem 0.7rem 0.28rem 0.35rem;
+        gap: 0.45rem;
+        font-size: 0.85rem;
+    }
+    .user-role-header .user-avatar-circle {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+    .user-role-header .user-username-text {
+        max-width: 86px;
+    }
+    .user-role-header .header-logout-btn {
+        padding: 0.42rem 0.82rem !important;
+        font-size: 0.85rem;
+    }
+}
+
+@media (min-width: 1600px) {
+    .user-role-header .nav-search-form {
+        min-width: 205px;
+        width: 220px;
+    }
+    .user-role-header .luxury-nav-link {
+        padding: 0.5rem 0.78rem !important;
+        font-size: 0.91rem;
+    }
+    .user-role-header .user-username-text {
+        max-width: 110px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .user-role-header .brand-wrapper {
+        gap: 0.45rem;
+        min-width: 0;
+    }
+    .user-role-header .brand-monogram {
+        width: 34px;
+        height: 34px;
+        font-size: 1.05rem;
+    }
+    .user-role-header .brand-name {
+        font-size: 1.12rem;
+    }
+    .user-role-header .brand-tagline {
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+    }
+    .user-role-header .header-auth-outline {
+        padding: 0.36rem 0.65rem !important;
+        font-size: 0.78rem;
+    }
+    .user-role-header .nav-action-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
 /* Buttons */
 .btn-luxury-primary {
     background: var(--gradient-gold);
@@ -2049,4 +2374,160 @@ img {
         bottom: 1rem;
     }
 }
+
+/* ==========================================================================
+   DELIVERY OPTIONS, INDIA ADDRESS BOOK & ADMIN STORE LOCATIONS
+   ========================================================================== */
+
+@media (min-width: 1200px) and (max-width: 1599.98px) {
+    .admin-role-header nav[aria-label="Admin Navigation"] {
+        gap: 0.1rem !important;
+    }
+    .admin-role-header .luxury-nav-link {
+        padding: 0.42rem 0.5rem !important;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+    .admin-role-header .brand-name {
+        font-size: 1.28rem;
+    }
+    .admin-role-header .brand-tagline {
+        font-size: 0.7rem;
+        letter-spacing: 0.12em;
+    }
+}
+
+@media (min-width: 1600px) {
+    .admin-role-header .luxury-nav-link {
+        padding: 0.48rem 0.72rem !important;
+        font-size: 0.88rem;
+        white-space: nowrap;
+    }
+}
+
+.delivery-section-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.delivery-option-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.delivery-option-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--border-color);
+    background: #FAF7F2;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    user-select: none;
+}
+
+.delivery-option-card:hover {
+    border-color: var(--gold-accent);
+    background: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.delivery-option-card.is-selected {
+    border-color: var(--primary-accent);
+    background: #FFFDF8;
+    box-shadow: 0 6px 20px rgba(139, 107, 69, 0.16), 0 0 0 1px var(--gold-accent);
+}
+
+.delivery-option-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: #EFE7DA;
+    color: var(--primary-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all var(--transition-fast);
+}
+
+.delivery-option-card.is-selected .delivery-option-icon {
+    background: var(--gradient-luxury);
+    color: var(--gold-accent);
+}
+
+.delivery-option-check {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    font-size: 1.15rem;
+    color: var(--border-color);
+    transition: color var(--transition-fast);
+}
+
+.delivery-option-card.is-selected .delivery-option-check {
+    color: var(--success-accent);
+}
+
+.selection-radio-card {
+    display: block;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.15rem;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.selection-radio-card:hover {
+    border-color: var(--gold-accent);
+    background: #FFFDF9;
+}
+
+.selection-radio-card.is-selected {
+    border: 2px solid var(--primary-accent);
+    background: #FFFBF2;
+    box-shadow: 0 4px 14px rgba(139, 107, 69, 0.12);
+}
+
+.address-type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-pill);
+    background: #EFE7DA;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.pickup-instructions-banner {
+    background: #FFFBF2;
+    border: 1px solid var(--gold-accent);
+    border-left: 4px solid var(--primary-accent);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+}
+
+@media (max-width: 767.98px) {
+    .delivery-option-grid {
+        grid-template-columns: 1fr;
+    }
+    .delivery-section-card {
+        padding: 1.25rem;
+    }
+}
+
 

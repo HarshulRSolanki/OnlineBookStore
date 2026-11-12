@@ -113,9 +113,47 @@ public class InvoiceService {
             paymentInfo.add(new Paragraph("Ref: " + stripeId).setFontSize(8).setFontColor(COLOR_MUTED));
             paymentInfo.add(new Paragraph("Items in Order: " + order.getDistinctBookCount()
                     + " title(s), " + order.getTotalItemQuantity() + " copy/copies").setFontSize(8).setFontColor(COLOR_MUTED));
+            paymentInfo.add(new Paragraph("Fulfillment: " + order.getDeliveryMethodDisplayName()
+                    + " (" + order.getDisplayOrderStatus() + ")").setFontSize(8).setBold().setFontColor(COLOR_PRIMARY));
             detailsTable.addCell(paymentInfo);
 
             document.add(detailsTable);
+
+            if (order.hasDeliveryDetails()) {
+                document.add(new Paragraph("\n").setFontSize(4));
+                Table deliveryTable = new Table(UnitValue.createPercentArray(new float[]{100}));
+                deliveryTable.setWidth(UnitValue.createPercentValue(100));
+                deliveryTable.setBackgroundColor(COLOR_BG_LIGHT);
+                deliveryTable.setBorder(new SolidBorder(COLOR_BORDER, 1));
+                Cell dCell = new Cell().setBorder(Border.NO_BORDER).setPadding(10);
+
+                if (order.isHomeDelivery()) {
+                    dCell.add(new Paragraph("HOME DELIVERY ADDRESS (SNAPSHOT)")
+                            .setFontSize(8).setBold().setFontColor(COLOR_ACCENT).setMarginBottom(3));
+                    String recipientLine = (order.getShippingFullName() != null ? order.getShippingFullName() : customerName)
+                            + (order.getShippingAddressType() != null ? " [" + order.getShippingAddressType() + "]" : "")
+                            + (order.getShippingMobile() != null ? " | Mobile: " + order.getShippingMobile() : "");
+                    dCell.add(new Paragraph(recipientLine).setFontSize(9).setBold().setFontColor(COLOR_PRIMARY));
+                    dCell.add(new Paragraph(order.getShippingAddressSnapshot() != null ? order.getShippingAddressSnapshot() : "")
+                            .setFontSize(8).setFontColor(COLOR_MUTED));
+                } else if (order.isStorePickup()) {
+                    dCell.add(new Paragraph("PHYSICAL STORE PICKUP DETAILS")
+                            .setFontSize(8).setBold().setFontColor(COLOR_ACCENT).setMarginBottom(3));
+                    dCell.add(new Paragraph(order.getPickupStoreName() != null ? order.getPickupStoreName() : "Quickread Store")
+                            .setFontSize(10).setBold().setFontColor(COLOR_PRIMARY));
+                    dCell.add(new Paragraph(order.getFormattedStoreLocation()).setFontSize(8).setFontColor(COLOR_MUTED));
+                    dCell.add(new Paragraph("Contact: " + (order.getPickupStoreContact() != null ? order.getPickupStoreContact() : "N/A")
+                            + " | Hours: " + (order.getPickupStoreOpeningHours() != null ? order.getPickupStoreOpeningHours() : "Standard Hours"))
+                            .setFontSize(8).setFontColor(COLOR_MUTED));
+                    if (order.getPickupInstructions() != null && !order.getPickupInstructions().isBlank()) {
+                        dCell.add(new Paragraph("Pickup Instructions: " + order.getPickupInstructions())
+                                .setFontSize(8).setBold().setFontColor(COLOR_PRIMARY).setMarginTop(3));
+                    }
+                }
+                deliveryTable.addCell(dCell);
+                document.add(deliveryTable);
+            }
+
             document.add(new Paragraph("\n").setFontSize(8));
 
             // 3. COMBINED MULTI-BOOK ITEM TABLE

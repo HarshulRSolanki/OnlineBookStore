@@ -2,6 +2,10 @@ package com.example.demo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -42,16 +46,26 @@ import com.example.demo.Controller.Usercontroller;
 import com.example.demo.Entity.Book;
 import com.example.demo.Entity.Cart;
 import com.example.demo.Entity.Category;
+import com.example.demo.Entity.DeliveryConfig;
+import com.example.demo.Entity.DeliveryMethod;
 import com.example.demo.Entity.Order;
 import com.example.demo.Entity.OrderItem;
+import com.example.demo.Entity.PendingCheckout;
+import com.example.demo.Entity.StoreLocation;
 import com.example.demo.Entity.User;
+import com.example.demo.Entity.UserAddress;
 import com.example.demo.Repository.BookRepo;
 import com.example.demo.Repository.CartRepo;
 import com.example.demo.Repository.CategoryRepo;
+import com.example.demo.Repository.DeliveryConfigRepo;
 import com.example.demo.Repository.OrderRepo;
+import com.example.demo.Repository.PendingCheckoutRepo;
+import com.example.demo.Repository.StoreLocationRepo;
+import com.example.demo.Repository.UserAddressRepo;
 import com.example.demo.Repository.UserRepo;
 import com.example.demo.service.EmailService;
 import com.example.demo.service.OTPservice;
+import com.example.demo.service.StoreLocationService;
 import com.example.demo.service.StripeService;
 import com.stripe.model.checkout.Session;
 
@@ -79,6 +93,21 @@ class BookStoreRequirementTests {
 
         @Autowired
         private OrderRepo orderRepo;
+
+        @Autowired
+        private UserAddressRepo userAddressRepo;
+
+        @Autowired
+        private StoreLocationRepo storeLocationRepo;
+
+        @Autowired
+        private DeliveryConfigRepo deliveryConfigRepo;
+
+        @Autowired
+        private PendingCheckoutRepo pendingCheckoutRepo;
+
+        @Autowired
+        private StoreLocationService storeLocationService;
 
         @Autowired
         private PasswordEncoder passwordEncoder;
@@ -729,5 +758,814 @@ class BookStoreRequirementTests {
                                 .andExpect(status().isOk());
                 mockMvc.perform(get("/admin/reports/export/csv").session(adminSession))
                                 .andExpect(status().isOk());
+        }
+
+        // =========================================================================
+        // DELIVERY & PHYSICAL STORE PICKUP HELPERS
+        // =========================================================================
+
+        private UserAddress createSavedAddress(User owner, String fullName, String mobile,
+                        String state, String city, String pinCode, String type, boolean isDefault) {
+                UserAddress addr = new UserAddress();
+                addr.setUser(owner);
+                addr.setFullName(fullName);
+                addr.setMobileNumber(mobile);
+                addr.setHouseNo("A-101");
+                addr.setBuildingName("Patel Chambers");
+                addr.setStreetArea("C.G. Road, Navrangpura");
+                addr.setLandmark("Near Municipal Market");
+                addr.setCountry("India");
+                addr.setState(state);
+                addr.setCity(city);
+                addr.setPinCode(pinCode);
+                addr.setAddressType(type);
+                addr.setDefaultAddress(isDefault);
+                return userAddressRepo.save(addr);
+        }
+
+        private StoreLocation createStore(String name, String state, String city, String pinCode, boolean active) {
+                StoreLocation store = new StoreLocation();
+                store.setStoreName(name);
+                store.setContactNumber("9898012345");
+                store.setCountry("India");
+                store.setState(state);
+                store.setCity(city);
+                store.setAddress("Shop 12, Heritage Book Arcade");
+                store.setPinCode(pinCode);
+                store.setOpeningHours("10:00 AM - 8:30 PM (Mon-Sun)");
+                store.setActive(active);
+                return storeLocationRepo.save(store);
+        }
+
+        // =========================================================================
+        // TEST 15: Home Delivery order with saved address, fee config & immutable snapshot
+        // =========================================================================
+        @Test
+        void test15_homeDeliveryOrderSavedAddressChargesAndImmutableSnapshot() throws Exception {
+                MockHttpSession adminSession = loginAs(adminUser.getUsername(), rawPassword);
+                mockMvc.perform(post("/admin/stores/delivery-config")
+                                .session(adminSession)
+                                .param("homeDeliveryCharge", "60")
+                                .param("storePickupCharge", "0")
+                                .param("pickupInstructions", "Collect at counter A with Order Number."))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/admin/stores"));
+
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+
+                // Save an Indian address to user profile
+                mockMvc.perform(post("/addresses/save")
+                                .session(userSession)
+                                .param("fullName", "Aarav Patel")
+                                .param("mobileNumber", "9876543210")
+                                .param("houseNo", "B-204")
+                                .param("buildingName", "Suryansh Residency")
+                                .param("streetArea", "Satellite Road")
+                                .param("landmark", "Near Iscon Mega Mall")
+                                .param("country", "India")
+                                .param("state", "Gujarat")
+                                .param("city", "Ahmedabad")
+                                .param("pinCode", "380015")
+                                .param("addressType", "HOME")
+                                .param("defaultAddress", "true")
+                                .param("returnTo", "/profile"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/profile#addresses-section"));
+
+                List<UserAddress> savedList = userAddressRepo.findByUserOrderByDefaultAddressDescUpdatedAtDesc(customerUser);
+                assertThat(savedList).hasSize(1);
+                UserAddress savedAddr = savedList.get(0);
+
+                mockMvc.perform(post("/add/" + bookAlpha.getId()).session(userSession))
+                                .andExpect(status().is3xxRedirection());
+
+                String cartHtml = mockMvc.perform(get("/cart").session(userSession))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(cartHtml).contains("Home Delivery", "Physical Store Pickup", "Aarav Patel", "Ahmedabad", "380015");
+
+                ArgumentCaptor<PendingCheckout> pendingCaptor = ArgumentCaptor.forClass(PendingCheckout.class);
+                when(stripeService.createCheckoutSessionForMultipleBooks(
+                                anyList(), anyDouble(), eq(customerUser.getUserid()), anyString(), anyString(),
+                                pendingCaptor.capture()))
+                                .thenReturn("https://checkout.stripe.test/home-delivery-" + uniqueSuffix);
+
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "HOME_DELIVERY")
+                                .param("addressSelectionMode", "SAVED")
+                                .param("selectedAddressId", String.valueOf(savedAddr.getId())))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("https://checkout.stripe.test/home-delivery-" + uniqueSuffix));
+
+                PendingCheckout pending = pendingCaptor.getValue();
+                assertThat(pending.getDeliveryMethod()).isEqualTo("HOME_DELIVERY");
+                assertThat(pending.getDeliveryCharge()).isEqualTo(60.0);
+                assertThat(pending.getShippingCity()).isEqualTo("Ahmedabad");
+
+                // Paid callback creates Order with subtotal (200) + fee (60) = 260
+                String stripeSessId = "cs_hd_" + uniqueSuffix;
+                when(stripeService.retrieveCheckoutSession(stripeSessId))
+                                .thenReturn(mockStripePaidSession(stripeSessId, "pi_hd_" + uniqueSuffix,
+                                                customerUser.getUserid(), "CART",
+                                                Map.of("cartItems", bookAlpha.getId() + ":1",
+                                                       "checkoutToken", pending.getCheckoutToken())));
+
+                MvcResult res = mockMvc.perform(get("/payment-success")
+                                .session(userSession)
+                                .param("session_id", stripeSessId))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrlPattern("/orders/*/receipt"))
+                                .andReturn();
+
+                Order order = orderRepo.findAllByStripeSessionId(stripeSessId).get(0);
+                assertThat(order.getDeliveryMethod()).isEqualTo(DeliveryMethod.HOME_DELIVERY.name());
+                assertThat(order.getDeliveryCharge()).isEqualTo(60.0);
+                assertThat(order.getSubtotal()).isEqualTo(200.0);
+                assertThat(order.getAmount()).isEqualTo(260.0);
+                assertThat(order.getOrderStatus()).isEqualTo("ORDER_PLACED");
+                assertThat(order.getShippingFullName()).isEqualTo("Aarav Patel");
+                assertThat(order.getShippingPinCode()).isEqualTo("380015");
+
+                // Immutability check: later deleting original UserAddress must NOT affect order snapshot
+                userAddressRepo.delete(savedAddr);
+                entityManager.flush();
+
+                String receiptHtml = mockMvc.perform(get(res.getResponse().getRedirectedUrl()).session(userSession))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(receiptHtml).contains("Home Delivery", "Aarav Patel", "Suryansh Residency", "Ahmedabad", "380015", "260.00");
+        }
+
+        // =========================================================================
+        // TEST 16: Physical Store Pickup order (no home address, free pickup, instructions)
+        // =========================================================================
+        @Test
+        void test16_physicalStorePickupNoAddressRequiredFreeAndShowsInstructions() throws Exception {
+                storeLocationService.updateDeliveryConfig(50.0, 0.0,
+                                "Show your Order Number and Government ID at Counter #2.");
+                StoreLocation vadodaraStore = createStore(
+                                "Quickread Vadodara Branch " + uniqueSuffix,
+                                "Gujarat", "Vadodara", "390007", true);
+
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+                assertThat(userAddressRepo.findByUserOrderByDefaultAddressDescUpdatedAtDesc(customerUser)).isEmpty();
+
+                mockMvc.perform(post("/add/" + bookBeta.getId()).session(userSession))
+                                .andExpect(status().is3xxRedirection());
+
+                ArgumentCaptor<PendingCheckout> pendingCaptor = ArgumentCaptor.forClass(PendingCheckout.class);
+                when(stripeService.createCheckoutSessionForMultipleBooks(
+                                anyList(), eq(350.0), eq(customerUser.getUserid()), anyString(), anyString(),
+                                pendingCaptor.capture()))
+                                .thenReturn("https://checkout.stripe.test/pickup-" + uniqueSuffix);
+
+                // Submit STORE_PICKUP without any home address fields
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "STORE_PICKUP")
+                                .param("selectedStoreId", String.valueOf(vadodaraStore.getId())))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("https://checkout.stripe.test/pickup-" + uniqueSuffix));
+
+                PendingCheckout pending = pendingCaptor.getValue();
+                assertThat(pending.getDeliveryMethod()).isEqualTo("STORE_PICKUP");
+                assertThat(pending.getDeliveryCharge()).isEqualTo(0.0);
+                assertThat(pending.getPickupStoreName()).isEqualTo(vadodaraStore.getStoreName());
+
+                String stripeSessId = "cs_pu_" + uniqueSuffix;
+                when(stripeService.retrieveCheckoutSession(stripeSessId))
+                                .thenReturn(mockStripePaidSession(stripeSessId, "pi_pu_" + uniqueSuffix,
+                                                customerUser.getUserid(), "CART",
+                                                Map.of("cartItems", bookBeta.getId() + ":1",
+                                                       "checkoutToken", pending.getCheckoutToken())));
+
+                MvcResult res = mockMvc.perform(get("/payment-success")
+                                .session(userSession)
+                                .param("session_id", stripeSessId))
+                                .andExpect(status().is3xxRedirection())
+                                .andReturn();
+
+                Order order = orderRepo.findAllByStripeSessionId(stripeSessId).get(0);
+                assertThat(order.isStorePickup()).isTrue();
+                assertThat(order.getDeliveryCharge()).isEqualTo(0.0);
+                assertThat(order.getAmount()).isEqualTo(350.0);
+                assertThat(order.getOrderStatus()).isEqualTo("ORDER_PLACED");
+                assertThat(order.getPickupStoreName()).isEqualTo(vadodaraStore.getStoreName());
+                assertThat(order.getPickupStoreCity()).isEqualTo("Vadodara");
+
+                // Receipt HTML & PDF both contain pickup store details & instructions
+                String receiptHtml = mockMvc.perform(get(res.getResponse().getRedirectedUrl()).session(userSession))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(receiptHtml).contains("Physical Store Pickup", vadodaraStore.getStoreName(),
+                                "Vadodara", "390007", "Show your Order Number and Government ID at Counter #2.");
+
+                ArgumentCaptor<byte[]> pdfCaptor = ArgumentCaptor.forClass(byte[].class);
+                verify(emailService, times(1)).sendOrderReceiptEmail(eq(order), pdfCaptor.capture());
+                try (PDDocument pdfDoc = PDDocument.load(pdfCaptor.getValue())) {
+                        String pdfText = new PDFTextStripper().getText(pdfDoc);
+                        assertThat(pdfText).contains("Physical Store Pickup");
+                        assertThat(pdfText).contains(vadodaraStore.getStoreName());
+                        assertThat(pdfText).contains("Show your Order Number and Government ID at Counter #2.");
+                }
+        }
+
+        // =========================================================================
+        // TEST 17: Existing saved address default toggle & cross-user ownership isolation
+        // =========================================================================
+        @Test
+        void test17_savedAddressDefaultManagementAndCrossUserOwnershipIsolation() throws Exception {
+                UserAddress addr1 = createSavedAddress(customerUser, "Reader Home", "9876500001",
+                                "Gujarat", "Surat", "395007", "HOME", true);
+                UserAddress addr2 = createSavedAddress(customerUser, "Reader Office", "9876500002",
+                                "Gujarat", "Gandhinagar", "382010", "OFFICE", false);
+
+                MockHttpSession ownerSession = loginAs(customerUser.getUsername(), rawPassword);
+
+                mockMvc.perform(post("/addresses/" + addr2.getId() + "/default")
+                                .session(ownerSession)
+                                .param("returnTo", "/profile"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/profile#addresses-section"));
+
+                assertThat(userAddressRepo.findById(addr1.getId()).orElseThrow().isDefaultAddress()).isFalse();
+                assertThat(userAddressRepo.findById(addr2.getId()).orElseThrow().isDefaultAddress()).isTrue();
+
+                // Second user cannot access, edit, set-default, delete, or checkout with customerUser's address
+                User intruder = new User();
+                intruder.setUsername("intruder_" + uniqueSuffix);
+                intruder.setEmail("intruder_" + uniqueSuffix + "@example.com");
+                intruder.setPassword(passwordEncoder.encode(rawPassword));
+                intruder.setMobileno("9111122222");
+                intruder.setRole("USER");
+                intruder.setEnabled(true);
+                intruder.setIsregistered(true);
+                intruder = userRepo.save(intruder);
+
+                MockHttpSession intruderSession = loginAs(intruder.getUsername(), rawPassword);
+
+                mockMvc.perform(post("/addresses/" + addr1.getId() + "/delete").session(intruderSession))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/access-denied"));
+                assertThat(userAddressRepo.findById(addr1.getId())).isPresent();
+
+                mockMvc.perform(post("/addresses/save")
+                                .session(intruderSession)
+                                .param("addressId", String.valueOf(addr1.getId()))
+                                .param("fullName", "Hijacked")
+                                .param("mobileNumber", "9999988888")
+                                .param("houseNo", "1")
+                                .param("buildingName", "X")
+                                .param("streetArea", "Y")
+                                .param("country", "India")
+                                .param("state", "Delhi")
+                                .param("city", "New Delhi")
+                                .param("pinCode", "110001")
+                                .param("addressType", "HOME"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/access-denied"));
+
+                mockMvc.perform(post("/add/" + bookAlpha.getId()).session(intruderSession))
+                                .andExpect(status().is3xxRedirection());
+                mockMvc.perform(post("/checkout-all")
+                                .session(intruderSession)
+                                .param("deliveryMethod", "HOME_DELIVERY")
+                                .param("addressSelectionMode", "SAVED")
+                                .param("selectedAddressId", String.valueOf(addr1.getId())))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/cart"))
+                                .andExpect(flash().attributeExists("error"));
+                verify(stripeService, never()).createCheckoutSessionForMultipleBooks(any(), anyDouble(), any(), any(), any(), any());
+        }
+
+        // =========================================================================
+        // TEST 18: Add new address inline during checkout saves to user profile
+        // =========================================================================
+        @Test
+        void test18_addNewAddressInlineDuringCheckoutSavesToProfile() throws Exception {
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+                mockMvc.perform(post("/add/" + bookAlpha.getId()).session(userSession))
+                                .andExpect(status().is3xxRedirection());
+
+                ArgumentCaptor<PendingCheckout> pendingCaptor = ArgumentCaptor.forClass(PendingCheckout.class);
+                when(stripeService.createCheckoutSessionForMultipleBooks(
+                                anyList(), anyDouble(), eq(customerUser.getUserid()), anyString(), anyString(),
+                                pendingCaptor.capture()))
+                                .thenReturn("https://checkout.stripe.test/inline-addr-" + uniqueSuffix);
+
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "HOME_DELIVERY")
+                                .param("addressSelectionMode", "NEW")
+                                .param("selectedAddressId", "NEW")
+                                .param("fullName", "Meera Deshmukh")
+                                .param("mobileNumber", "9822011223")
+                                .param("houseNo", "Flat 14")
+                                .param("buildingName", "Koregaon Heights")
+                                .param("streetArea", "Lane 7, Koregaon Park")
+                                .param("landmark", "Near Osho Garden")
+                                .param("country", "India")
+                                .param("state", "Maharashtra")
+                                .param("city", "Pune")
+                                .param("pinCode", "411001")
+                                .param("addressType", "OFFICE")
+                                .param("saveAsDefault", "true"))
+                                .andExpect(status().is3xxRedirection());
+
+                List<UserAddress> profileAddresses = userAddressRepo.findByUserOrderByDefaultAddressDescUpdatedAtDesc(customerUser);
+                assertThat(profileAddresses).hasSize(1);
+                UserAddress saved = profileAddresses.get(0);
+                assertThat(saved.getFullName()).isEqualTo("Meera Deshmukh");
+                assertThat(saved.getState()).isEqualTo("Maharashtra");
+                assertThat(saved.getCity()).isEqualTo("Pune");
+                assertThat(saved.getPinCode()).isEqualTo("411001");
+                assertThat(saved.getAddressType()).isEqualTo("OFFICE");
+                assertThat(saved.isDefaultAddress()).isTrue();
+
+                PendingCheckout pc = pendingCaptor.getValue();
+                assertThat(pc.getDeliveryAddressId()).isEqualTo(saved.getId());
+                assertThat(pc.getShippingCity()).isEqualTo("Pune");
+        }
+
+        // =========================================================================
+        // TEST 19: Switch delivery method & Single-Book Express Checkout flow
+        // =========================================================================
+        @Test
+        void test19_singleBookCheckoutDeliveryMethodSwitchingAndFinalization() throws Exception {
+                storeLocationService.updateDeliveryConfig(75.0, 0.0, "Bring Order ID.");
+                StoreLocation pickupStore = createStore("Quickread Anand Desk " + uniqueSuffix,
+                                "Gujarat", "Anand", "388001", true);
+                UserAddress addr = createSavedAddress(customerUser, "Rohan Mehta", "9876512345",
+                                "Gujarat", "Rajkot", "360001", "HOME", true);
+
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+
+                String singleCheckoutHtml = mockMvc.perform(get("/checkout/" + bookAlpha.getId())
+                                .session(userSession)
+                                .param("quantity", "2"))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(singleCheckoutHtml).contains("Home Delivery", "Physical Store Pickup", pickupStore.getStoreName(), "Rohan Mehta");
+
+                ArgumentCaptor<PendingCheckout> pendingCaptor = ArgumentCaptor.forClass(PendingCheckout.class);
+                when(stripeService.createCheckoutSession(
+                                eq(bookAlpha.getId()), anyString(), anyDouble(), eq(2),
+                                eq(customerUser.getUserid()), anyString(), anyString(), pendingCaptor.capture()))
+                                .thenReturn("https://checkout.stripe.test/single-delivery-" + uniqueSuffix);
+
+                // First submit with HOME_DELIVERY (qty 2 * 200 = 400 + 75 delivery fee)
+                mockMvc.perform(post("/checkout/" + bookAlpha.getId())
+                                .session(userSession)
+                                .param("quantity", "2")
+                                .param("deliveryMethod", "HOME_DELIVERY")
+                                .param("addressSelectionMode", "SAVED")
+                                .param("selectedAddressId", String.valueOf(addr.getId())))
+                                .andExpect(status().is3xxRedirection());
+
+                PendingCheckout homePc = pendingCaptor.getValue();
+                assertThat(homePc.getDeliveryMethod()).isEqualTo("HOME_DELIVERY");
+                assertThat(homePc.getDeliveryCharge()).isEqualTo(75.0);
+                assertThat(homePc.getQuantity()).isEqualTo(2);
+
+                // User switches to STORE_PICKUP (free pickup -> 0 fee)
+                mockMvc.perform(post("/checkout/" + bookAlpha.getId())
+                                .session(userSession)
+                                .param("quantity", "2")
+                                .param("deliveryMethod", "STORE_PICKUP")
+                                .param("selectedStoreId", String.valueOf(pickupStore.getId())))
+                                .andExpect(status().is3xxRedirection());
+
+                List<PendingCheckout> allCaptures = pendingCaptor.getAllValues();
+                PendingCheckout pickupPc = allCaptures.get(allCaptures.size() - 1);
+                assertThat(pickupPc.getDeliveryMethod()).isEqualTo("STORE_PICKUP");
+                assertThat(pickupPc.getDeliveryCharge()).isEqualTo(0.0);
+
+                String stripeSessId = "cs_single_pu_" + uniqueSuffix;
+                when(stripeService.retrieveCheckoutSession(stripeSessId))
+                                .thenReturn(mockStripePaidSession(stripeSessId, "pi_spu_" + uniqueSuffix,
+                                                customerUser.getUserid(), "SINGLE",
+                                                Map.of("bookId", String.valueOf(bookAlpha.getId()),
+                                                       "quantity", "2",
+                                                       "checkoutToken", pickupPc.getCheckoutToken())));
+
+                mockMvc.perform(get("/success")
+                                .session(userSession)
+                                .param("session_id", stripeSessId)
+                                .param("bookId", String.valueOf(bookAlpha.getId())))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrlPattern("/orders/*/receipt"));
+
+                Order order = orderRepo.findAllByStripeSessionId(stripeSessId).get(0);
+                assertThat(order.getQuantity()).isEqualTo(2);
+                assertThat(order.getSubtotal()).isEqualTo(400.0);
+                assertThat(order.getDeliveryCharge()).isEqualTo(0.0);
+                assertThat(order.getAmount()).isEqualTo(400.0);
+                assertThat(order.getPickupStoreName()).isEqualTo(pickupStore.getStoreName());
+        }
+
+        // =========================================================================
+        // TEST 20: Select different active pickup stores + India Location API check
+        // =========================================================================
+        @Test
+        void test20_selectSecondActivePickupStoreAndIndiaLocationEndpointsWork() throws Exception {
+                String statesJson = mockMvc.perform(get("/api/locations/states"))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(statesJson).contains("Gujarat", "Maharashtra", "Rajasthan", "Madhya Pradesh", "Delhi", "Uttar Pradesh");
+
+                String gujaratCitiesJson = mockMvc.perform(get("/api/locations/cities").param("state", "Gujarat"))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(gujaratCitiesJson).contains("Ahmedabad", "Vadodara", "Surat", "Rajkot",
+                                "Gandhinagar", "Anand", "Bharuch", "Jamnagar");
+
+                StoreLocation storeOne = createStore("Store One Surat " + uniqueSuffix,
+                                "Gujarat", "Surat", "395007", true);
+                StoreLocation storeTwo = createStore("Store Two Jaipur " + uniqueSuffix,
+                                "Rajasthan", "Jaipur", "302001", true);
+
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+                mockMvc.perform(post("/add/" + bookAlpha.getId()).session(userSession))
+                                .andExpect(status().is3xxRedirection());
+
+                ArgumentCaptor<PendingCheckout> pendingCaptor = ArgumentCaptor.forClass(PendingCheckout.class);
+                when(stripeService.createCheckoutSessionForMultipleBooks(
+                                anyList(), anyDouble(), anyLong(), anyString(), anyString(), pendingCaptor.capture()))
+                                .thenReturn("https://checkout.stripe.test/store2");
+
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "STORE_PICKUP")
+                                .param("selectedStoreId", String.valueOf(storeTwo.getId())))
+                                .andExpect(status().is3xxRedirection());
+
+                PendingCheckout pc = pendingCaptor.getValue();
+                assertThat(pc.getPickupStoreId()).isEqualTo(storeTwo.getId());
+                assertThat(pc.getPickupStoreName()).isEqualTo(storeTwo.getStoreName());
+                assertThat(pc.getPickupStoreCity()).isEqualTo("Jaipur");
+                assertThat(pc.getPickupStoreName()).isNotEqualTo(storeOne.getStoreName());
+        }
+
+        // =========================================================================
+        // TEST 21: Invalid Indian mobile / PIN / state / missing address blocked
+        // =========================================================================
+        @Test
+        void test21_invalidIndianMobilePinAndIncompleteAddressAreRejected() throws Exception {
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+
+                // Invalid 10-digit Indian mobile starting with 1
+                mockMvc.perform(post("/addresses/save")
+                                .session(userSession)
+                                .param("fullName", "Invalid Mobile")
+                                .param("mobileNumber", "1234567890")
+                                .param("houseNo", "10")
+                                .param("buildingName", "Tower A")
+                                .param("streetArea", "MG Road")
+                                .param("country", "India")
+                                .param("state", "Gujarat")
+                                .param("city", "Ahmedabad")
+                                .param("pinCode", "380009")
+                                .param("addressType", "HOME"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(flash().attributeExists("error"));
+
+                // Invalid Indian PIN starting with 0
+                mockMvc.perform(post("/addresses/save")
+                                .session(userSession)
+                                .param("fullName", "Invalid Pin")
+                                .param("mobileNumber", "9876543210")
+                                .param("houseNo", "10")
+                                .param("buildingName", "Tower A")
+                                .param("streetArea", "MG Road")
+                                .param("country", "India")
+                                .param("state", "Gujarat")
+                                .param("city", "Ahmedabad")
+                                .param("pinCode", "080009")
+                                .param("addressType", "HOME"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(flash().attributeExists("error"));
+
+                assertThat(userAddressRepo.findByUserOrderByDefaultAddressDescUpdatedAtDesc(customerUser)).isEmpty();
+
+                // Checkout Home Delivery with no address / invalid state rejected without calling Stripe
+                mockMvc.perform(post("/add/" + bookAlpha.getId()).session(userSession))
+                                .andExpect(status().is3xxRedirection());
+
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "HOME_DELIVERY")
+                                .param("addressSelectionMode", "NEW")
+                                .param("fullName", "Reader")
+                                .param("mobileNumber", "9876543210")
+                                .param("houseNo", "12")
+                                .param("buildingName", "Plaza")
+                                .param("streetArea", "Ring Road")
+                                .param("country", "India")
+                                .param("state", "NonExistentState")
+                                .param("city", "Bharuch")
+                                .param("pinCode", "392001"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/cart"))
+                                .andExpect(flash().attributeExists("error"));
+
+                verify(stripeService, never()).createCheckoutSessionForMultipleBooks(any(), anyDouble(), any(), any(), any(), any());
+        }
+
+        // =========================================================================
+        // TEST 22: No active pickup store & inactive store hidden and rejected
+        // =========================================================================
+        @Test
+        void test22_noActivePickupStoreAndInactiveStoreHiddenAndRejected() throws Exception {
+                // Deactivate all pre-existing active stores in test TX so active store list is empty
+                storeLocationRepo.findByActiveTrueOrderByStateAscCityAscStoreNameAsc().forEach(s -> {
+                        s.setActive(false);
+                        storeLocationRepo.save(s);
+                });
+                StoreLocation inactiveStore = createStore("Closed Maintenance Store " + uniqueSuffix,
+                                "Gujarat", "Jamnagar", "361001", false);
+
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+                mockMvc.perform(post("/add/" + bookAlpha.getId()).session(userSession))
+                                .andExpect(status().is3xxRedirection());
+
+                String cartHtml = mockMvc.perform(get("/cart").session(userSession))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(cartHtml).contains("No Active Pickup Stores Currently Available");
+                assertThat(cartHtml).doesNotContain(inactiveStore.getStoreName());
+
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "STORE_PICKUP")
+                                .param("selectedStoreId", String.valueOf(inactiveStore.getId())))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/cart"))
+                                .andExpect(flash().attributeExists("error"));
+
+                // Even when another active store exists, submitting the inactive store ID must be rejected
+                createStore("Open Flagship Store " + uniqueSuffix, "Gujarat", "Bharuch", "392001", true);
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "STORE_PICKUP")
+                                .param("selectedStoreId", String.valueOf(inactiveStore.getId())))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/cart"))
+                                .andExpect(flash().attributeExists("error"));
+
+                verify(stripeService, never()).createCheckoutSessionForMultipleBooks(any(), anyDouble(), any(), any(), any(), any());
+        }
+
+        // =========================================================================
+        // TEST 23: Cancelled / failed Stripe payment does NOT issue paid order or clear cart
+        // =========================================================================
+        @Test
+        void test23_cancelledOrFailedStripePaymentWithDeliveryCreatesNoOrderOrReceipt() throws Exception {
+                StoreLocation activeStore = createStore("Quickread Delhi Store " + uniqueSuffix,
+                                "Delhi", "New Delhi", "110001", true);
+
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+                mockMvc.perform(post("/add/" + bookAlpha.getId()).session(userSession))
+                                .andExpect(status().is3xxRedirection());
+
+                ArgumentCaptor<PendingCheckout> pendingCaptor = ArgumentCaptor.forClass(PendingCheckout.class);
+                when(stripeService.createCheckoutSessionForMultipleBooks(
+                                anyList(), anyDouble(), anyLong(), anyString(), anyString(), pendingCaptor.capture()))
+                                .thenReturn("https://checkout.stripe.test/cancel-case");
+
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "STORE_PICKUP")
+                                .param("selectedStoreId", String.valueOf(activeStore.getId())))
+                                .andExpect(status().is3xxRedirection());
+
+                PendingCheckout pending = pendingCaptor.getValue();
+                long ordersBefore = orderRepo.count();
+
+                // User hits /cancel
+                mockMvc.perform(get("/cancel").session(userSession))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/cart"))
+                                .andExpect(flash().attributeExists("error"));
+
+                // Unpaid Stripe callback returns status=unpaid
+                String unpaidSessionId = "cs_unpaid_deliv_" + uniqueSuffix;
+                Session unpaid = new Session();
+                unpaid.setId(unpaidSessionId);
+                unpaid.setPaymentStatus("unpaid");
+                unpaid.setMetadata(Map.of(
+                                "userId", String.valueOf(customerUser.getUserid()),
+                                "checkoutToken", pending.getCheckoutToken()));
+                when(stripeService.retrieveCheckoutSession(unpaidSessionId)).thenReturn(unpaid);
+
+                mockMvc.perform(get("/payment-success")
+                                .session(userSession)
+                                .param("session_id", unpaidSessionId))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/cart"))
+                                .andExpect(flash().attributeExists("error"));
+
+                assertThat(orderRepo.count()).isEqualTo(ordersBefore);
+                assertThat(cartRepo.findByUser(customerUser)).hasSize(1);
+                assertThat(pendingCheckoutRepo.findByCheckoutToken(pending.getCheckoutToken()).orElseThrow().isCompleted())
+                                .isFalse();
+                verify(emailService, never()).sendOrderReceiptEmail(any(), any());
+        }
+
+        // =========================================================================
+        // TEST 24: Admin Store Locations CRUD, security enforcement & delivery-specific order status
+        // =========================================================================
+        @Test
+        void test24_adminStoreCrudSecurityAndOrderDeliveryStatusPipelines() throws Exception {
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+                // Customer cannot access Admin Store Locations endpoints
+                mockMvc.perform(get("/admin/stores").session(userSession))
+                                .andExpect(status().isForbidden());
+                mockMvc.perform(post("/admin/stores/save").session(userSession))
+                                .andExpect(status().isForbidden());
+
+                MockHttpSession adminSession = loginAs(adminUser.getUsername(), rawPassword);
+                String adminDashHtml = mockMvc.perform(get("/admin/dashboard").session(adminSession))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(adminDashHtml).contains("Store Locations");
+
+                // Add store via AdminStoreController
+                String branchName = "Quickread Heritage Branch " + uniqueSuffix;
+                mockMvc.perform(post("/admin/stores/save")
+                                .session(adminSession)
+                                .param("storeName", branchName)
+                                .param("contactNumber", "9898765432")
+                                .param("country", "India")
+                                .param("state", "Uttar Pradesh")
+                                .param("city", "Lucknow")
+                                .param("address", "Hazratganj Plaza, Floor 1")
+                                .param("pinCode", "226001")
+                                .param("openingHours", "10:00 AM - 9:00 PM")
+                                .param("active", "true"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/admin/stores"));
+
+                StoreLocation createdStore = storeLocationRepo.findAll().stream()
+                                .filter(s -> branchName.equals(s.getStoreName()))
+                                .findFirst().orElseThrow();
+
+                String storesHtml = mockMvc.perform(get("/admin/stores").param("editId", String.valueOf(createdStore.getId()))
+                                .session(adminSession))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(storesHtml).contains(branchName, "Lucknow", "226001");
+
+                // Toggle availability active -> inactive -> active
+                mockMvc.perform(post("/admin/stores/" + createdStore.getId() + "/toggle").session(adminSession))
+                                .andExpect(status().is3xxRedirection());
+                assertThat(storeLocationRepo.findById(createdStore.getId()).orElseThrow().isActive()).isFalse();
+
+                // Verify delivery-method-specific order status transitions
+                Order homeOrder = new Order();
+                homeOrder.setUser(customerUser);
+                homeOrder.setBook(bookAlpha);
+                homeOrder.setAmount(260);
+                homeOrder.setDeliveryMethod(DeliveryMethod.HOME_DELIVERY.name());
+                homeOrder.setDeliveryCharge(60.0);
+                homeOrder.setShippingFullName("Aarav Patel");
+                homeOrder.setShippingCity("Ahmedabad");
+                homeOrder.setShippingState("Gujarat");
+                homeOrder.setShippingPinCode("380015");
+                homeOrder.setShippingAddressSnapshot("B-204, Ahmedabad, Gujarat - 380015, India");
+                homeOrder.setPaymentStatus("PAID");
+                homeOrder.setOrderStatus("ORDER_PLACED");
+                homeOrder.setOrderDate(LocalDateTime.now());
+                homeOrder.addItem(new OrderItem(bookAlpha, 1, 200));
+                homeOrder = orderRepo.save(homeOrder);
+
+                // Valid HOME_DELIVERY progression
+                mockMvc.perform(post("/admin/orders/" + homeOrder.getId() + "/status")
+                                .session(adminSession)
+                                .param("orderStatus", "OUT_FOR_DELIVERY"))
+                                .andExpect(status().is3xxRedirection());
+                assertThat(orderRepo.findById(homeOrder.getId()).orElseThrow().getOrderStatus())
+                                .isEqualTo("OUT_FOR_DELIVERY");
+
+                // Invalid STORE_PICKUP status rejected on HOME_DELIVERY order
+                mockMvc.perform(post("/admin/orders/" + homeOrder.getId() + "/status")
+                                .session(adminSession)
+                                .param("orderStatus", "READY_FOR_PICKUP"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(flash().attributeExists("error"));
+                assertThat(orderRepo.findById(homeOrder.getId()).orElseThrow().getOrderStatus())
+                                .isEqualTo("OUT_FOR_DELIVERY");
+
+                Order pickupOrder = new Order();
+                pickupOrder.setUser(customerUser);
+                pickupOrder.setBook(bookBeta);
+                pickupOrder.setAmount(350);
+                pickupOrder.setDeliveryMethod(DeliveryMethod.STORE_PICKUP.name());
+                pickupOrder.setPickupStoreName(branchName);
+                pickupOrder.setPickupStoreCity("Lucknow");
+                pickupOrder.setPickupStoreState("Uttar Pradesh");
+                pickupOrder.setPickupStoreAddress("Hazratganj Plaza");
+                pickupOrder.setPickupStorePinCode("226001");
+                pickupOrder.setPaymentStatus("PAID");
+                pickupOrder.setOrderStatus("ORDER_PLACED");
+                pickupOrder.setOrderDate(LocalDateTime.now());
+                pickupOrder.addItem(new OrderItem(bookBeta, 1, 350));
+                pickupOrder = orderRepo.save(pickupOrder);
+
+                mockMvc.perform(post("/admin/orders/" + pickupOrder.getId() + "/status")
+                                .session(adminSession)
+                                .param("orderStatus", "READY_FOR_PICKUP"))
+                                .andExpect(status().is3xxRedirection());
+                assertThat(orderRepo.findById(pickupOrder.getId()).orElseThrow().getOrderStatus())
+                                .isEqualTo("READY_FOR_PICKUP");
+
+                // Invalid HOME_DELIVERY status rejected on STORE_PICKUP order
+                mockMvc.perform(post("/admin/orders/" + pickupOrder.getId() + "/status")
+                                .session(adminSession)
+                                .param("orderStatus", "SHIPPED"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(flash().attributeExists("error"));
+
+                // Admin order detail page renders store pickup & status label
+                String detailHtml = mockMvc.perform(get("/admin/orders/" + pickupOrder.getId()).session(adminSession))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(detailHtml).contains(branchName, "Ready for Pickup");
+
+                // Delete store works cleanly
+                mockMvc.perform(post("/admin/stores/" + createdStore.getId() + "/delete").session(adminSession))
+                                .andExpect(status().is3xxRedirection());
+                assertThat(storeLocationRepo.findById(createdStore.getId())).isEmpty();
+        }
+
+        // =========================================================================
+        // TEST 25: Multiple books in ONE order with Delivery produces ONE combined receipt & PDF
+        // =========================================================================
+        @Test
+        void test25_multiBookCombinedOrderWithDeliveryProducesSingleOrderReceiptAndPdf() throws Exception {
+                storeLocationService.updateDeliveryConfig(50.0, 0.0, "Pickup instructions.");
+                UserAddress savedAddr = createSavedAddress(customerUser, "Kavya Nair", "9845012345",
+                                "Madhya Pradesh", "Indore", "452001", "HOME", true);
+
+                MockHttpSession userSession = loginAs(customerUser.getUsername(), rawPassword);
+                mockMvc.perform(post("/add/" + bookAlpha.getId()).session(userSession).param("quantity", "2"))
+                                .andExpect(status().is3xxRedirection());
+                mockMvc.perform(post("/add/" + bookBeta.getId()).session(userSession).param("quantity", "1"))
+                                .andExpect(status().is3xxRedirection());
+                mockMvc.perform(post("/add/" + bookGamma.getId()).session(userSession).param("quantity", "1"))
+                                .andExpect(status().is3xxRedirection());
+
+                // Subtotal = 2*200 + 350 + 100 = 850; Delivery = 50; Total = 900
+                ArgumentCaptor<PendingCheckout> pendingCaptor = ArgumentCaptor.forClass(PendingCheckout.class);
+                when(stripeService.createCheckoutSessionForMultipleBooks(
+                                anyList(), eq(900.0), eq(customerUser.getUserid()), anyString(), anyString(),
+                                pendingCaptor.capture()))
+                                .thenReturn("https://checkout.stripe.test/multi-deliv");
+
+                mockMvc.perform(post("/checkout-all")
+                                .session(userSession)
+                                .param("deliveryMethod", "HOME_DELIVERY")
+                                .param("addressSelectionMode", "SAVED")
+                                .param("selectedAddressId", String.valueOf(savedAddr.getId())))
+                                .andExpect(status().is3xxRedirection());
+
+                PendingCheckout pc = pendingCaptor.getValue();
+                String sessId = "cs_multi_deliv_" + uniqueSuffix;
+                String encoded = bookAlpha.getId() + ":2," + bookBeta.getId() + ":1," + bookGamma.getId() + ":1";
+                when(stripeService.retrieveCheckoutSession(sessId))
+                                .thenReturn(mockStripePaidSession(sessId, "pi_md_" + uniqueSuffix,
+                                                customerUser.getUserid(), "CART",
+                                                Map.of("cartItems", encoded,
+                                                       "checkoutToken", pc.getCheckoutToken())));
+
+                MvcResult res = mockMvc.perform(get("/payment-success").session(userSession).param("session_id", sessId))
+                                .andExpect(status().is3xxRedirection())
+                                .andReturn();
+                // Simulate accidental page refresh
+                mockMvc.perform(get("/payment-success").session(userSession).param("session_id", sessId))
+                                .andExpect(status().is3xxRedirection());
+
+                List<Order> created = orderRepo.findAllByStripeSessionId(sessId);
+                assertThat(created).hasSize(1);
+                Order combined = created.get(0);
+                assertThat(combined.getItems()).hasSize(3);
+                assertThat(combined.getSubtotal()).isEqualTo(850.0);
+                assertThat(combined.getDeliveryCharge()).isEqualTo(50.0);
+                assertThat(combined.getAmount()).isEqualTo(900.0);
+                assertThat(combined.getShippingCity()).isEqualTo("Indore");
+
+                ArgumentCaptor<byte[]> pdfCaptor = ArgumentCaptor.forClass(byte[].class);
+                verify(emailService, times(1)).sendOrderReceiptEmail(eq(combined), pdfCaptor.capture());
+                try (PDDocument pdfDoc = PDDocument.load(pdfCaptor.getValue())) {
+                        String pdfText = new PDFTextStripper().getText(pdfDoc);
+                        assertThat(pdfText).contains(bookAlpha.getTitle(), bookBeta.getTitle(), bookGamma.getTitle());
+                        assertThat(pdfText).contains("Home Delivery", "Kavya Nair", "Indore", "452001", "900.00");
+                }
+
+                String receiptHtml = mockMvc.perform(get(res.getResponse().getRedirectedUrl()).session(userSession))
+                                .andExpect(status().isOk())
+                                .andReturn().getResponse().getContentAsString();
+                assertThat(receiptHtml).contains(bookAlpha.getTitle(), bookBeta.getTitle(), bookGamma.getTitle(),
+                                "Home Delivery", "Kavya Nair", "Indore", "900.00");
         }
 }

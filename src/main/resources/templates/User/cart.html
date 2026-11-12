@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping Cart – Quickread Luxury Bookstore</title>
+    <title>Shopping Cart &amp; Checkout – Quickread Luxury Bookstore</title>
 
     <!-- Bootstrap 5 & Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
@@ -24,7 +24,7 @@
             <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
                 <div>
                     <span class="section-subtitle-tag mb-1">Personal Selection</span>
-                    <h1 class="font-heading fs-2 mb-0">Your Reading Cart</h1>
+                    <h1 class="font-heading fs-2 mb-0">Your Reading Cart &amp; Checkout</h1>
                 </div>
                 <a href="/" class="btn-luxury-outline py-2 px-3">
                     <i class="fas fa-arrow-left me-2"></i> Continue Exploring
@@ -44,8 +44,8 @@
             </div>
 
             <!-- Cart Content (When items exist) -->
-            <div th:if="${cartItems != null and not cartItems.empty}" class="row g-5">
-                <!-- Cart Items List (Left Column) -->
+            <div th:if="${cartItems != null and not cartItems.empty}" class="row g-4 g-lg-5">
+                <!-- Left Column: Cart Items + Delivery Selection -->
                 <div class="col-lg-8">
                     <div class="cart-table-card">
                         <div class="cart-item-row" th:each="cartItem : ${cartItems}">
@@ -119,19 +119,24 @@
                         </div>
                     </div>
 
+                    <!-- Delivery Method & Address / Pickup Store Selection -->
+                    <th:block th:if="${cartTotal != null and cartTotal > 0}">
+                        <div th:replace="~{common/delivery-checkout-fragment :: deliverySelection('cartCheckoutForm')}"></div>
+                    </th:block>
+
                     <!-- Security & Combined Order Note -->
-                    <div class="p-4 rounded-3 d-flex align-items-center gap-3 mt-3" style="background: #FAF7F2; border: 1px solid var(--border-color);">
+                    <div class="p-4 rounded-3 d-flex align-items-center gap-3 mt-4" style="background: #FAF7F2; border: 1px solid var(--border-color);">
                         <i class="fas fa-shield-alt fa-2x" style="color: var(--gold-accent);"></i>
                         <div>
                             <strong class="d-block text-dark">Single Combined Stripe Checkout &amp; One Official Receipt</strong>
-                            <span class="small text-secondary">All books in your cart are processed under one combined order ID with a single itemized tax receipt and downloadable PDF for every edition.</span>
+                            <span class="small text-secondary">All books in your cart are processed under one combined order ID with a single itemized tax receipt, delivery tracking details, and downloadable PDF for every edition.</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Order Summary Card (Right Column) -->
                 <div class="col-lg-4">
-                    <div class="order-summary-card">
+                    <div class="order-summary-card position-sticky" style="top: 96px;">
                         <h2 class="summary-heading">Order Summary</h2>
 
                         <div class="summary-row">
@@ -139,8 +144,18 @@
                             <span class="fw-bold" th:text="${cartItems.size()}">1</span>
                         </div>
                         <div class="summary-row">
-                            <span>Digital Delivery</span>
-                            <span class="text-success fw-bold">FREE (Instant)</span>
+                            <span>Books Subtotal</span>
+                            <span class="fw-bold font-monospace" id="summaryItemsSubtotal">
+                                ₹<span th:text="${cartTotal != null ? #numbers.formatDecimal(cartTotal, 1, 2) : '0.00'}">0.00</span>
+                            </span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Fulfillment Option</span>
+                            <span class="fw-semibold text-dark" id="summaryDeliveryMethod">Home Delivery</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Delivery Charges</span>
+                            <span id="summaryDeliveryFee" class="text-success fw-bold">FREE</span>
                         </div>
                         <div class="summary-row">
                             <span>Applicable Taxes</span>
@@ -148,16 +163,15 @@
                         </div>
 
                         <div class="summary-row total-row">
-                            <span>Combined Total</span>
-                            <span class="total-amount">
+                            <span>Final Payable Amount</span>
+                            <span class="total-amount" id="summaryGrandTotal">
                                 ₹<span th:text="${cartTotal != null ? #numbers.formatDecimal(cartTotal, 1, 2) : '0.00'}">0.00</span>
                             </span>
                         </div>
 
-                        <!-- Checkout Button -->
-                        <div class="d-grid gap-2">
-                            <!-- Multi-Book Single-Order Stripe Checkout Form -->
-                            <form th:action="@{/checkout-all}" method="post">
+                        <!-- Checkout Button Form (All delivery controls attach via form="cartCheckoutForm") -->
+                        <div class="d-grid gap-2 mt-3">
+                            <form id="cartCheckoutForm" th:action="@{/checkout-all}" method="post">
                                 <button type="submit" class="btn-luxury-primary w-100 py-3" th:disabled="${cartTotal == null or cartTotal == 0}">
                                     <i class="fas fa-lock me-2"></i> Checkout All Books Together
                                 </button>
@@ -187,11 +201,83 @@
         </div>
     </main>
 
+    <!-- Edit / Delete Address Standalone Modals -->
+    <div th:replace="~{common/delivery-checkout-fragment :: checkoutAddressModals('/cart')}"></div>
+
     <!-- Footer -->
     <div th:replace="~{common/footer :: footer}"></div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+    <script th:src="@{/js/india-delivery.js}" src="/js/india-delivery.js"></script>
+    <script th:inline="javascript">
+        var stateCitiesMap = /*[[${stateCitiesMap}]]*/ {};
+        var hasSavedAddresses = /*[[${savedAddresses != null and !#lists.isEmpty(savedAddresses)}]]*/ false;
+        var itemsSubtotalVal = /*[[${cartTotal != null ? cartTotal : 0}]]*/ 0;
+        var homeDeliveryChargeVal = /*[[${deliveryConfig != null ? deliveryConfig.homeDeliveryCharge : 0}]]*/ 0;
+        var storePickupChargeVal = /*[[${deliveryConfig != null ? deliveryConfig.storePickupCharge : 0}]]*/ 0;
+
+        var checkoutLocController = null;
+        var modalEditLocController = null;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            checkoutLocController = initIndiaLocationSelector({
+                stateSelectId: "checkoutStateSelect",
+                citySelectId: "checkoutCitySelect",
+                customCityWrapId: "checkoutCustomCityWrap",
+                customCityInputId: "checkoutCustomCityInput",
+                hiddenCityInputId: "checkoutCityHidden",
+                stateCitiesMap: stateCitiesMap
+            });
+
+            modalEditLocController = initIndiaLocationSelector({
+                stateSelectId: "modalEditStateSelect",
+                citySelectId: "modalEditCitySelect",
+                customCityWrapId: "modalEditCustomCityWrap",
+                customCityInputId: "modalEditCustomCityInput",
+                hiddenCityInputId: "modalEditCityHidden",
+                stateCitiesMap: stateCitiesMap
+            });
+
+            initCheckoutDeliveryUI({
+                itemsSubtotal: itemsSubtotalVal,
+                homeDeliveryCharge: homeDeliveryChargeVal,
+                storePickupCharge: storePickupChargeVal,
+                hasSavedAddresses: hasSavedAddresses
+            });
+        });
+
+        function openCheckoutEditAddressModal(btn) {
+            document.getElementById("modalEditAddressId").value = btn.getAttribute("data-id") || "";
+            document.getElementById("modalEditFullName").value = btn.getAttribute("data-fullname") || "";
+            document.getElementById("modalEditMobile").value = btn.getAttribute("data-mobile") || "";
+            document.getElementById("modalEditHouseNo").value = btn.getAttribute("data-houseno") || "";
+            document.getElementById("modalEditBuilding").value = btn.getAttribute("data-building") || "";
+            document.getElementById("modalEditStreet").value = btn.getAttribute("data-street") || "";
+            document.getElementById("modalEditLandmark").value = btn.getAttribute("data-landmark") || "";
+            document.getElementById("modalEditPinCode").value = btn.getAttribute("data-pincode") || "";
+            document.getElementById("modalEditAddressType").value = btn.getAttribute("data-type") || "HOME";
+            document.getElementById("modalEditDefault").checked = btn.getAttribute("data-default") === "true";
+
+            if (modalEditLocController) {
+                modalEditLocController.setLocation(
+                    btn.getAttribute("data-state") || "",
+                    btn.getAttribute("data-city") || ""
+                );
+            }
+            var modal = new bootstrap.Modal(document.getElementById("checkoutEditAddressModal"));
+            modal.show();
+        }
+
+        function submitCheckoutDeleteAddress(addressId) {
+            if (!addressId || !confirm("Delete this saved delivery address?")) {
+                return;
+            }
+            var form = document.getElementById("checkoutDeleteAddressForm");
+            form.action = "/addresses/" + addressId + "/delete";
+            form.submit();
+        }
+    </script>
 </body>
 </html>

@@ -17,10 +17,12 @@ import com.example.demo.Entity.Cart;
 import com.example.demo.Entity.Download;
 import com.example.demo.Entity.Order;
 import com.example.demo.Entity.OrderItem;
+import com.example.demo.Entity.PendingCheckout;
 import com.example.demo.Entity.User;
 import com.example.demo.Repository.BookRepo;
 import com.example.demo.Repository.DownloadRepo;
 import com.example.demo.Repository.OrderRepo;
+import com.example.demo.Repository.PendingCheckoutRepo;
 
 @Service
 public class OrderReceiptService {
@@ -62,6 +64,9 @@ public class OrderReceiptService {
     private CartService cartService;
 
     @Autowired
+    private PendingCheckoutRepo pendingCheckoutRepo;
+
+    @Autowired
     private TransactionTemplate transactionTemplate;
 
     private final ConcurrentHashMap<String, Object> sessionLocks = new ConcurrentHashMap<>();
@@ -74,6 +79,17 @@ public class OrderReceiptService {
         return "paid".equals(normalized) || "no_payment_required".equals(normalized) || "success".equals(normalized);
     }
 
+    public Order finalizeSingleBookCheckout(
+            User user,
+            Book book,
+            int quantity,
+            String stripeSessionId,
+            String stripePaymentIntentId,
+            String stripePaymentStatus) {
+        return finalizeSingleBookCheckout(
+                user, book, quantity, stripeSessionId, stripePaymentIntentId, stripePaymentStatus, null);
+    }
+
     /**
      * Idempotent single-book order finalization locked outside the DB transaction boundary
      * to prevent duplicate orders/receipts across concurrent callbacks and refreshes.
@@ -84,7 +100,8 @@ public class OrderReceiptService {
             int quantity,
             String stripeSessionId,
             String stripePaymentIntentId,
-            String stripePaymentStatus) {
+            String stripePaymentStatus,
+            String checkoutToken) {
 
         if (!isStripePaid(stripePaymentStatus)) {
             throw new IllegalStateException("Payment has not been completed (status: " + stripePaymentStatus + ").");
@@ -108,8 +125,13 @@ public class OrderReceiptService {
                     }
                 }
 
+                PendingCheckout pending = resolveOwnedPendingCheckout(checkoutToken, user);
+
                 Book managedBook = bookRepo.findById(book.getId()).orElse(book);
                 int qty = Math.max(1, quantity);
+                if (pending != null && pending.getQuantity() > qty) {
+                    qty = pending.getQuantity();
+                }
                 double unitPrice = managedBook.getPrice();
                 double subtotal = unitPrice * qty;
 
@@ -122,12 +144,19 @@ public class OrderReceiptService {
                 order.setTax(0.0);
                 order.setDiscount(0.0);
                 order.setDeliveryCharge(0.0);
-                order.setAmount(subtotal);
                 order.setPaymentStatus("PAID");
                 order.setOrderStatus("CONFIRMED");
                 order.setCheckedout(true);
                 order.setOrderDate(LocalDateTime.now());
                 order.addItem(new OrderItem(managedBook, qty, unitPrice));
+
+                if (pending != null) {
+                    order.applyPendingCheckout(pending);
+                    pending.setCompleted(true);
+                    pendingCheckoutRepo.save(pending);
+                }
+
+                order.setAmount(Math.max(0.0, subtotal + order.getTax() + order.getDeliveryCharge() - order.getDiscount()));
 
                 Order saved = processAndSendReceipt(order, stripeSessionId, stripePaymentIntentId);
 
@@ -145,6 +174,17 @@ public class OrderReceiptService {
         }
     }
 
+    public Order finalizeMultiBookCheckout(
+            User user,
+            List<Cart> cartItems,
+            String metadataCartItems,
+            String stripeSessionId,
+            String stripePaymentIntentId,
+            String stripePaymentStatus) {
+        return finalizeMultiBookCheckout(
+                user, cartItems, metadataCartItems, stripeSessionId, stripePaymentIntentId, stripePaymentStatus, null);
+    }
+
     /**
      * Idempotent multi-book cart checkout creating ONE Order containing all books in OrderItem rows,
      * ONE combined receipt, ONE PDF invoice, ONE confirmation email, and clearing the user's cart.
@@ -155,7 +195,8 @@ public class OrderReceiptService {
             String metadataCartItems,
             String stripeSessionId,
             String stripePaymentIntentId,
-            String stripePaymentStatus) {
+            String stripePaymentStatus,
+            String checkoutToken) {
 
         if (!isStripePaid(stripePaymentStatus)) {
             throw new IllegalStateException("Payment has not been completed (status: " + stripePaymentStatus + ").");
@@ -179,6 +220,8 @@ public class OrderReceiptService {
                     }
                 }
 
+                PendingCheckout pending = resolveOwnedPendingCheckout(checkoutToken, user);
+
                 List<CheckoutItemInput> resolvedItems = resolveCheckoutItems(user, cartItems, metadataCartItems);
                 if (resolvedItems.isEmpty()) {
                     throw new IllegalStateException("No purchasable items found for order completion.");
@@ -193,6 +236,12 @@ public class OrderReceiptService {
                 order.setTax(0.0);
                 order.setDiscount(0.0);
                 order.setDeliveryCharge(0.0);
+
+                if (pending != null) {
+                    order.applyPendingCheckout(pending);
+                    pending.setCompleted(true);
+                    pendingCheckoutRepo.save(pending);
+                }
 
                 int totalQty = 0;
                 double subtotalSum = 0.0;
@@ -244,6 +293,15 @@ public class OrderReceiptService {
                 return savedOrder;
             });
         }
+    }
+
+    private PendingCheckout resolveOwnedPendingCheckout(String checkoutToken, User user) {
+        if (checkoutToken == null || checkoutToken.isBlank() || user == null) {
+            return null;
+        }
+        return pendingCheckoutRepo.findByCheckoutToken(checkoutToken.trim())
+                .filter(pc -> pc.getUser() != null && pc.getUser().getUserid().equals(user.getUserid()))
+                .orElse(null);
     }
 
     private List<CheckoutItemInput> resolveCheckoutItems(User user, List<Cart> providedCart, String metadataCartItems) {

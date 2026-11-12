@@ -60,6 +60,7 @@
                                 <th>Order &amp; Receipt #</th>
                                 <th>Customer</th>
                                 <th>Ordered Books</th>
+                                <th>Delivery Option</th>
                                 <th>Amount</th>
                                 <th>Payment Status</th>
                                 <th>Order Status</th>
@@ -83,6 +84,17 @@
                                         <span class="text-muted" th:text="' (' + ${item.quantity} + '×₹' + ${item.unitPrice} + ')'">(1×₹499)</span>
                                     </div>
                                 </td>
+                                <td>
+                                    <div th:if="${order.isHomeDelivery()}" class="small">
+                                        <span class="badge bg-light text-dark border mb-1">Home Delivery</span>
+                                        <div class="text-muted" th:text="${order.shippingCity} + ', ' + ${order.shippingState}">City</div>
+                                    </div>
+                                    <div th:if="${order.isStorePickup()}" class="small">
+                                        <span class="badge bg-light text-dark border mb-1">Store Pickup</span>
+                                        <div class="fw-semibold" th:text="${order.pickupStoreName}">Store</div>
+                                    </div>
+                                    <span th:if="${!order.hasDeliveryDetails()}" class="small text-muted">Standard / Digital</span>
+                                </td>
                                 <td class="fw-bold font-monospace">₹<span th:text="${#numbers.formatDecimal(order.amount, 1, 2)}">0.00</span></td>
                                 <td>
                                     <span th:if="${order.paid}" class="status-badge-paid" th:text="${order.paymentStatus}">PAID</span>
@@ -90,7 +102,7 @@
                                           th:text="${order.paymentStatus != null ? order.paymentStatus : 'FAILED'}">FAILED</span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border" th:text="${order.orderStatus != null ? order.orderStatus : 'CONFIRMED'}">CONFIRMED</span>
+                                    <span class="badge bg-light text-dark border" th:text="${order.displayOrderStatus}">Order Placed</span>
                                 </td>
                                 <td class="small text-muted" th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMM yyyy, HH:mm') : '-'}">-</td>
                                 <td class="text-end">
@@ -101,7 +113,7 @@
                                 </td>
                             </tr>
                             <tr th:if="${orders == null or #lists.isEmpty(orders)}">
-                                <td colspan="8" class="text-center py-4 text-muted">No orders match this filter.</td>
+                                <td colspan="9" class="text-center py-4 text-muted">No orders match this filter.</td>
                             </tr>
                         </tbody>
                     </table>

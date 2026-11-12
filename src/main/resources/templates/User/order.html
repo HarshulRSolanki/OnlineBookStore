@@ -55,6 +55,7 @@
                             <tr>
                                 <th>Order &amp; Receipt Ref</th>
                                 <th>Ordered Books</th>
+                                <th>Delivery / Pickup</th>
                                 <th>Amount Paid</th>
                                 <th>Status</th>
                                 <th>Order Date</th>
@@ -90,10 +91,33 @@
                                     </div>
                                 </td>
                                 <td>
+                                    <div th:if="${order.isHomeDelivery()}">
+                                        <span class="badge bg-light text-dark border mb-1">
+                                            <i class="fas fa-truck-fast me-1" style="color: var(--primary-accent);"></i> Home Delivery
+                                        </span>
+                                        <div class="small fw-semibold text-dark" th:text="${order.shippingFullName}">Recipient</div>
+                                        <div class="small text-muted" th:text="${order.shippingCity} + ', ' + ${order.shippingState} + ' - ' + ${order.shippingPinCode}">City, State</div>
+                                    </div>
+                                    <div th:if="${order.isStorePickup()}">
+                                        <span class="badge bg-light text-dark border mb-1">
+                                            <i class="fas fa-store me-1" style="color: var(--primary-accent);"></i> Store Pickup
+                                        </span>
+                                        <div class="small fw-semibold text-dark" th:text="${order.pickupStoreName}">Store Name</div>
+                                        <div class="small text-muted" th:text="${order.pickupStoreCity} + ', ' + ${order.pickupStoreState}">City, State</div>
+                                        <div class="small text-muted" th:text="${order.pickupStoreOpeningHours}">Hours</div>
+                                    </div>
+                                    <div th:if="${!order.hasDeliveryDetails()}">
+                                        <span class="badge bg-light text-secondary border">Digital / Standard</span>
+                                    </div>
+                                </td>
+                                <td>
                                     <span class="fw-bold" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.1rem;">
                                         ₹<span th:text="${#numbers.formatDecimal(order.amount, 1, 2)}">499.00</span>
                                     </span>
                                     <div class="small text-muted" th:text="${order.totalItemQuantity} + ' copy(s)'">1 copy(s)</div>
+                                    <div class="small text-muted" th:if="${order.deliveryCharge > 0}">
+                                        Incl. ₹<span th:text="${#numbers.formatDecimal(order.deliveryCharge, 1, 2)}">0.00</span> delivery
+                                    </div>
                                 </td>
                                 <td>
                                     <div th:if="${order.paid}">
@@ -101,7 +125,7 @@
                                             <i class="fas fa-check-circle me-1"></i>
                                             <span th:text="${order.paymentStatus != null ? order.paymentStatus : 'PAID'}">PAID</span>
                                         </span>
-                                        <div class="small text-muted mt-1" th:if="${order.orderStatus != null}" th:text="${order.orderStatus}">CONFIRMED</div>
+                                        <div class="small fw-semibold text-dark mt-1" th:if="${order.orderStatus != null}" th:text="${order.displayOrderStatus}">Order Placed</div>
                                     </div>
                                     <div th:if="${!order.paid}">
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle">

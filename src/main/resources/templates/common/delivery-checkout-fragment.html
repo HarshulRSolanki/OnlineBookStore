@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<th:block th:fragment="deliverySelection(targetFormId)">
+    <div class="delivery-section-card mt-4" id="deliverySelectionSection">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-3 border-bottom">
+            <div>
+                <span class="section-subtitle-tag mb-0">Step 1 of 2 &bull; Fulfillment</span>
+                <h2 class="font-heading fs-4 mb-0">Choose Delivery Method</h2>
+            </div>
+            <span class="badge bg-light text-dark border px-3 py-2">
+                <i class="fas fa-map-marker-alt me-1" style="color: var(--primary-accent);"></i> India Delivery &amp; Pickup
+            </span>
+        </div>
+
+        <!-- Two Attractive Delivery Option Cards -->
+        <div class="delivery-option-grid mb-4">
+            <!-- Option A: Home Delivery -->
+            <label class="delivery-option-card is-selected" id="cardHomeDelivery" for="radioDeliveryHome">
+                <input type="radio" class="visually-hidden" name="deliveryMethod" id="radioDeliveryHome"
+                       value="HOME_DELIVERY" th:attr="form=${targetFormId}" checked="checked" />
+                <i class="fas fa-check-circle delivery-option-check"></i>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="delivery-option-icon">
+                        <i class="fas fa-truck-fast"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark fs-6">Home Delivery</div>
+                        <small class="text-secondary">Shipped safely to your doorstep</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between pt-2 mt-1 border-top border-light">
+                    <span class="small text-muted">Delivery Fee</span>
+                    <span class="badge bg-success-subtle text-success border"
+                          th:if="${deliveryConfig == null or deliveryConfig.homeDeliveryCharge == 0}">FREE</span>
+                    <span class="fw-bold text-dark font-monospace"
+                          th:if="${deliveryConfig != null and deliveryConfig.homeDeliveryCharge > 0}">
+                        ₹<span th:text="${#numbers.formatDecimal(deliveryConfig.homeDeliveryCharge, 1, 2)}">0.00</span>
+                    </span>
+                </div>
+            </label>
+
+            <!-- Option B: Physical Store Pickup -->
+            <label class="delivery-option-card" id="cardStorePickup" for="radioDeliveryPickup">
+                <input type="radio" class="visually-hidden" name="deliveryMethod" id="radioDeliveryPickup"
+                       value="STORE_PICKUP" th:attr="form=${targetFormId}" />
+                <i class="fas fa-check-circle delivery-option-check"></i>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="delivery-option-icon">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark fs-6">Physical Store Pickup</div>
+                        <small class="text-secondary">Collect in person from a Quickread bookstore</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between pt-2 mt-1 border-top border-light">
+                    <span class="small text-muted"
+                          th:text="${activeStores != null ? activeStores.size() + ' active store(s)' : '0 stores'}">0 stores</span>
+                    <span class="badge bg-success-subtle text-success border"
+                          th:if="${deliveryConfig == null or deliveryConfig.storePickupCharge == 0}">FREE Pickup</span>
+                    <span class="fw-bold text-dark font-monospace"
+                          th:if="${deliveryConfig != null and deliveryConfig.storePickupCharge > 0}">
+                        ₹<span th:text="${#numbers.formatDecimal(deliveryConfig.storePickupCharge, 1, 2)}">0.00</span>
+                    </span>
+                </div>
+            </label>
+        </div>
+
+        <!-- ================================================================
+             OPTION A PANEL: HOME DELIVERY ADDRESS SELECTION & NEW ADDRESS FORM
+             ================================================================ -->
+        <div id="homeDeliveryPanel">
+            <input type="hidden" id="addressSelectionModeInput" name="addressSelectionMode"
+                   value="SAVED" th:attr="form=${targetFormId}" />
+
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h3 class="font-heading fs-5 mb-0">
+                    <i class="fas fa-location-dot me-2" style="color: var(--primary-accent);"></i>
+                    Delivery Address (India)
+                </h3>
+                <a href="/profile#addresses-section" class="small fw-semibold text-decoration-none" style="color: var(--primary-accent);">
+                    <i class="fas fa-address-book me-1"></i> Manage Address Book
+                </a>
+            </div>
+
+            <!-- Saved Addresses Selector (Shown when user has at least 1 saved address) -->
+            <div th:if="${savedAddresses != null and not #lists.isEmpty(savedAddresses)}" class="mb-3">
+                <div class="row g-3">
+                    <div class="col-md-6" th:each="addr : ${savedAddresses}">
+                        <label class="selection-radio-card h-100"
+                               th:for="'savedAddrRadio-' + ${addr.id}">
+                            <div class="d-flex align-items-start gap-2">
+                                <input type="radio" class="form-check-input mt-1 flex-shrink-0"
+                                       name="selectedAddressId"
+                                       th:id="'savedAddrRadio-' + ${addr.id}"
+                                       th:value="${addr.id}"
+                                       th:checked="${defaultAddressId != null and defaultAddressId == addr.id}"
+                                       th:attr="form=${targetFormId}" />
+                                <div class="flex-grow-1">
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                        <span class="fw-bold text-dark" th:text="${addr.fullName}">Full Name</span>
+                                        <span class="address-type-pill" th:text="${addr.addressType}">HOME</span>
+                                        <span th:if="${addr.defaultAddress}" class="badge bg-success">Default</span>
+                                    </div>
+                                    <div class="small text-secondary mb-1" th:text="${addr.formattedAddress}">Full formatted address</div>
+                                    <div class="small text-dark fw-semibold">
+                                        <i class="fas fa-phone me-1 text-muted"></i>
+                                        +91 <span th:text="${addr.mobileNumber}">9876543210</span>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-2 pt-2 border-top border-light">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                                onclick="event.preventDefault(); openCheckoutEditAddressModal(this)"
+                                                th:data-id="${addr.id}"
+                                                th:data-fullname="${addr.fullName}"
+                                                th:data-mobile="${addr.mobileNumber}"
+                                                th:data-houseno="${addr.houseNo}"
+                                                th:data-building="${addr.buildingName}"
+                                                th:data-street="${addr.streetArea}"
+                                                th:data-landmark="${addr.landmark}"
+                                                th:data-state="${addr.state}"
+                                                th:data-city="${addr.city}"
+                                                th:data-pincode="${addr.pinCode}"
+                                                th:data-type="${addr.addressType}"
+                                                th:data-default="${addr.defaultAddress}">
+                                            <i class="fas fa-pen me-1"></i> Edit
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2"
+                                                onclick="event.preventDefault(); submitCheckoutDeleteAddress(this.getAttribute('data-id'))"
+                                                th:data-id="${addr.id}">
+                                            <i class="fas fa-trash-can me-1"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Option to Add New Address inline during Checkout -->
+                    <div class="col-md-6">
+                        <label class="selection-radio-card h-100 d-flex align-items-center gap-3"
+                               for="savedAddrRadio-NEW" style="border-style: dashed; background: #FAF7F2;">
+                            <input type="radio" class="form-check-input mt-0 flex-shrink-0"
+                                   name="selectedAddressId"
+                                   id="savedAddrRadio-NEW"
+                                   value="NEW"
+                                   th:attr="form=${targetFormId}" />
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    <i class="fas fa-plus-circle me-1" style="color: var(--primary-accent);"></i>
+                                    Add a New Delivery Address
+                                </div>
+                                <small class="text-secondary">Saves automatically to your profile for future orders.</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inline New Address Form (Mandatory when adding new address / no saved addresses) -->
+            <div id="newAddressFieldsContainer" class="p-3 p-md-4 rounded-3 mt-3"
+                 style="background: #FAF7F2; border: 1px solid var(--border-color);">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <h4 class="font-heading fs-6 mb-0">
+                        <i class="fas fa-home me-2" style="color: var(--primary-accent);"></i>
+                        Enter Delivery Address Details
+                    </h4>
+                    <small class="text-muted">Fields marked * are mandatory</small>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="checkoutFullName" class="form-label small fw-semibold">Full Name *</label>
+                        <input type="text" id="checkoutFullName" name="fullName" class="form-control"
+                               th:attr="form=${targetFormId}"
+                               placeholder="e.g. Aarav Patel" required minlength="2" maxlength="120" />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="checkoutMobileNumber" class="form-label small fw-semibold">Mobile Number (10-digit Indian) *</label>
+                        <input type="tel" id="checkoutMobileNumber" name="mobileNumber" class="form-control"
+                               th:attr="form=${targetFormId}"
+                               placeholder="e.g. 9876543210" pattern="[6-9][0-9]{9}" maxlength="10" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="checkoutHouseNo" class="form-label small fw-semibold">House / Flat Number *</label>
+                        <input type="text" id="checkoutHouseNo" name="houseNo" class="form-control"
+                               th:attr="form=${targetFormId}"
+                               placeholder="e.g. B-402" required maxlength="100" />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="checkoutBuildingName" class="form-label small fw-semibold">Building / Apartment Name *</label>
+                        <input type="text" id="checkoutBuildingName" name="buildingName" class="form-control"
+                               th:attr="form=${targetFormId}"
+                               placeholder="e.g. Heritage Residency" required maxlength="140" />
+                    </div>
+
+                    <div class="col-md-7">
+                        <label for="checkoutStreetArea" class="form-label small fw-semibold">Street / Area *</label>
+                        <input type="text" id="checkoutStreetArea" name="streetArea" class="form-control"
+                               th:attr="form=${targetFormId}"
+                               placeholder="e.g. C.G. Road, Navrangpura" required maxlength="180" />
+                    </div>
+                    <div class="col-md-5">
+                        <label for="checkoutLandmark" class="form-label small fw-semibold">Landmark (Optional)</label>
+                        <input type="text" id="checkoutLandmark" name="landmark" class="form-control"
+                               th:attr="form=${targetFormId}"
+                               placeholder="e.g. Near Municipal Market" maxlength="180" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="checkoutCountry" class="form-label small fw-semibold">Country *</label>
+                        <input type="text" id="checkoutCountry" name="country" class="form-control bg-light fw-semibold"
+                               th:attr="form=${targetFormId}"
+                               value="India" readonly />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="checkoutStateSelect" class="form-label small fw-semibold">State / UT *</label>
+                        <select id="checkoutStateSelect" name="state" class="form-select"
+                                th:attr="form=${targetFormId}" required>
+                            <option value="">-- Select State --</option>
+                            <option th:each="st : ${indianStates}" th:value="${st}" th:text="${st}">Gujarat</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="checkoutCitySelect" class="form-label small fw-semibold">City *</label>
+                        <select id="checkoutCitySelect" class="form-select" th:attr="form=${targetFormId}" required>
+                            <option value="">-- Select State First --</option>
+                        </select>
+                        <input type="hidden" id="checkoutCityHidden" name="city" th:attr="form=${targetFormId}" />
+                        <div id="checkoutCustomCityWrap" class="mt-2" style="display: none;">
+                            <input type="text" id="checkoutCustomCityInput" class="form-control form-control-sm"
+                                   placeholder="Enter Indian city name" maxlength="80" th:attr="form=${targetFormId}" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="checkoutPinCode" class="form-label small fw-semibold">PIN Code (6-digit) *</label>
+                        <input type="text" id="checkoutPinCode" name="pinCode" class="form-control"
+                               th:attr="form=${targetFormId}"
+                               placeholder="e.g. 380009" pattern="[1-9][0-9]{5}" maxlength="6" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="checkoutAddressType" class="form-label small fw-semibold">Address Type *</label>
+                        <select id="checkoutAddressType" name="addressType" class="form-select" th:attr="form=${targetFormId}">
+                            <option value="HOME">Home</option>
+                            <option value="OFFICE">Office</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="checkoutSaveAsDefault"
+                                   name="saveAsDefault" value="true" th:attr="form=${targetFormId}" />
+                            <label class="form-check-label small" for="checkoutSaveAsDefault">
+                                Set as default address
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================
+             OPTION B PANEL: PHYSICAL STORE PICKUP (DB-MANAGED ACTIVE STORES)
+             ================================================================ -->
+        <div id="storePickupPanel" style="display: none;">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <h3 class="font-heading fs-5 mb-0">
+                    <i class="fas fa-shop me-2" style="color: var(--primary-accent);"></i>
+                    Select Physical Bookstore Branch
+                </h3>
+                <span class="small text-muted">No home delivery address required</span>
+            </div>
+
+            <!-- No Active Pickup Stores Fallback -->
+            <div th:if="${activeStores == null or #lists.isEmpty(activeStores)}"
+                 class="p-4 rounded-3 text-center" style="background: #FDF2F2; border: 1px solid #E5B4B4;">
+                <i class="fas fa-store-slash fa-2x text-danger mb-2"></i>
+                <h5 class="font-heading text-danger mb-1">No Active Pickup Stores Currently Available</h5>
+                <p class="small text-secondary mb-0">
+                    All bookstore pickup counters are currently inactive. Please switch to <strong>Home Delivery</strong> to complete your order.
+                </p>
+            </div>
+
+            <!-- Active Bookstore Branches from Admin Database -->
+            <div th:if="${activeStores != null and not #lists.isEmpty(activeStores)}" class="row g-3">
+                <div class="col-md-6" th:each="store, stStat : ${activeStores}">
+                    <label class="selection-radio-card h-100" th:for="'pickupStoreRadio-' + ${store.id}">
+                        <div class="d-flex align-items-start gap-2">
+                            <input type="radio" class="form-check-input mt-1 flex-shrink-0"
+                                   name="selectedStoreId"
+                                   th:id="'pickupStoreRadio-' + ${store.id}"
+                                   th:value="${store.id}"
+                                   th:checked="${stStat.index == 0}"
+                                   th:attr="form=${targetFormId}" />
+                            <div class="flex-grow-1">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-1 mb-1">
+                                    <span class="fw-bold text-dark fs-6" th:text="${store.storeName}">Quickread Ahmedabad</span>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Active Pickup</span>
+                                </div>
+                                <div class="small text-secondary mb-2">
+                                    <i class="fas fa-location-dot me-1" style="color: var(--primary-accent);"></i>
+                                    <span th:text="${store.fullLocationLine}">Complete Store Address</span>
+                                </div>
+                                <div class="small text-dark mb-1">
+                                    <i class="fas fa-phone me-1 text-muted"></i>
+                                    <strong th:text="${store.contactNumber}">9876543210</strong>
+                                </div>
+                                <div class="small text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    <span th:text="${store.openingHours}">10:00 AM - 8:00 PM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="pickup-instructions-banner mt-3 small">
+                <strong class="text-dark d-block mb-1">
+                    <i class="fas fa-circle-info me-1" style="color: var(--primary-accent);"></i> Store Pickup Guidance
+                </strong>
+                <span th:text="${deliveryConfig != null ? deliveryConfig.pickupInstructions : 'Bring your Order Number and a valid photo ID at collection.'}">
+                    Bring your Order Number and photo ID to collect from your selected branch.
+                </span>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+<!-- Standalone Modals & Helper Forms (NEVER nested inside checkout form!) -->
+<th:block th:fragment="checkoutAddressModals(returnPath)">
+    <!-- Hidden Delete Address Form -->
+    <form id="checkoutDeleteAddressForm" method="post" style="display: none;">
+        <input type="hidden" name="returnTo" th:value="${returnPath}" />
+    </form>
+
+    <!-- Edit Saved Address Modal -->
+    <div class="modal fade" id="checkoutEditAddressModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                <div class="modal-header" style="background: var(--dark-section); color: #FAF7F2;">
+                    <h5 class="modal-title font-heading text-white mb-0">
+                        <i class="fas fa-pen-to-square me-2" style="color: var(--gold-accent);"></i> Edit Saved Delivery Address
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/addresses/save}" method="post">
+                    <input type="hidden" id="modalEditAddressId" name="addressId" />
+                    <input type="hidden" name="returnTo" th:value="${returnPath}" />
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Full Name *</label>
+                                <input type="text" id="modalEditFullName" name="fullName" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Mobile Number (10-digit) *</label>
+                                <input type="tel" id="modalEditMobile" name="mobileNumber" class="form-control"
+                                       pattern="[6-9][0-9]{9}" maxlength="10" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">House / Flat No *</label>
+                                <input type="text" id="modalEditHouseNo" name="houseNo" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Building / Apartment *</label>
+                                <input type="text" id="modalEditBuilding" name="buildingName" class="form-control" required />
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label small fw-semibold">Street / Area *</label>
+                                <input type="text" id="modalEditStreet" name="streetArea" class="form-control" required />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small fw-semibold">Landmark (Optional)</label>
+                                <input type="text" id="modalEditLandmark" name="landmark" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Country *</label>
+                                <input type="text" name="country" class="form-control bg-light" value="India" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">State / UT *</label>
+                                <select id="modalEditStateSelect" name="state" class="form-select" required>
+                                    <option value="">-- Select State --</option>
+                                    <option th:each="st : ${indianStates}" th:value="${st}" th:text="${st}">Gujarat</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">City *</label>
+                                <select id="modalEditCitySelect" class="form-select" required>
+                                    <option value="">-- Select City --</option>
+                                </select>
+                                <input type="hidden" id="modalEditCityHidden" name="city" />
+                                <div id="modalEditCustomCityWrap" class="mt-2" style="display: none;">
+                                    <input type="text" id="modalEditCustomCityInput" class="form-control form-control-sm"
+                                           placeholder="Enter custom Indian city" maxlength="80" />
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">PIN Code (6-digit) *</label>
+                                <input type="text" id="modalEditPinCode" name="pinCode" class="form-control"
+                                       pattern="[1-9][0-9]{5}" maxlength="6" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Address Type *</label>
+                                <select id="modalEditAddressType" name="addressType" class="form-select">
+                                    <option value="HOME">Home</option>
+                                    <option value="OFFICE">Office</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="modalEditDefault" name="defaultAddress" value="true" />
+                                    <label class="form-check-label small" for="modalEditDefault">Default Address</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-luxury-outline py-2 px-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn-luxury-primary py-2 px-4">
+                            <i class="fas fa-save me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+</body>
+</html>
+

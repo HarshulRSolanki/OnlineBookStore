@@ -157,8 +157,49 @@
                             <div class="small text-muted mb-1" th:if="${order.stripePaymentIntentId != null}">
                                 Payment Intent: <code th:text="${order.stripePaymentIntentId}">pi_test_...</code>
                             </div>
+                            <div class="small text-muted mb-1">
+                                Delivery Method: <strong class="text-dark" th:text="${order.deliveryMethodDisplayName}">Home Delivery</strong>
+                            </div>
                             <div class="small text-muted">
-                                Order Status: <span class="badge bg-success" th:text="${order.orderStatus != null ? order.orderStatus : 'CONFIRMED'}">CONFIRMED</span>
+                                Order Status: <span class="badge bg-success" th:text="${order.displayOrderStatus}">Order Placed</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivery / Physical Store Pickup Dossier (Immutable Order Snapshot) -->
+                    <div th:if="${order.hasDeliveryDetails()}" class="receipt-meta-box mb-4">
+                        <div th:if="${order.isHomeDelivery()}">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                <span class="text-muted small text-uppercase fw-semibold">
+                                    <i class="fas fa-truck-fast me-1" style="color: var(--primary-accent);"></i> Home Delivery Address
+                                </span>
+                                <span class="address-type-pill" th:text="${order.shippingAddressType != null ? order.shippingAddressType : 'HOME'}">HOME</span>
+                            </div>
+                            <div class="fw-bold text-dark">
+                                <span th:text="${order.shippingFullName}">Recipient</span>
+                                <span class="text-muted fw-normal small ms-2" th:if="${order.shippingMobile != null}">
+                                    (+91 <span th:text="${order.shippingMobile}">9876543210</span>)
+                                </span>
+                            </div>
+                            <div class="small text-secondary mt-1" th:text="${order.shippingAddressSnapshot}">Full Snapshot Address</div>
+                        </div>
+
+                        <div th:if="${order.isStorePickup()}">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                <span class="text-muted small text-uppercase fw-semibold">
+                                    <i class="fas fa-store me-1" style="color: var(--primary-accent);"></i> Physical Store Pickup Branch
+                                </span>
+                                <span class="badge bg-success-subtle text-success border">Collect from Store</span>
+                            </div>
+                            <div class="fw-bold text-dark fs-6" th:text="${order.pickupStoreName}">Quickread Store</div>
+                            <div class="small text-secondary mt-1" th:text="${order.formattedStoreLocation}">Complete Store Location</div>
+                            <div class="small text-dark mt-1">
+                                <i class="fas fa-phone me-1 text-muted"></i> <span th:text="${order.pickupStoreContact}">Phone</span>
+                                &bull; <i class="fas fa-clock me-1 text-muted"></i> <span th:text="${order.pickupStoreOpeningHours}">Hours</span>
+                            </div>
+                            <div class="pickup-instructions-banner mt-3 small">
+                                <strong class="text-dark d-block mb-1">Pickup Instructions:</strong>
+                                <span th:text="${order.pickupInstructions}">Bring your Order Number and a valid photo ID.</span>
                             </div>
                         </div>
                     </div>

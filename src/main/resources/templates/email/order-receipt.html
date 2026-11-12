@@ -249,7 +249,29 @@
                         <td class="invoice-label">Stripe Reference</td>
                         <td class="invoice-val" style="font-family: monospace; font-size: 11px;" th:text="${stripePaymentReference}">pi_stripe_ref</td>
                     </tr>
+                    <tr th:if="${deliveryMethodLabel != null}">
+                        <td class="invoice-label">Delivery Option</td>
+                        <td class="invoice-val" th:text="${deliveryMethodLabel}">Home Delivery</td>
+                    </tr>
+                    <tr th:if="${orderStatusLabel != null}">
+                        <td class="invoice-label">Fulfillment Status</td>
+                        <td class="invoice-val" th:text="${orderStatusLabel}">Order Placed</td>
+                    </tr>
                 </table>
+            </div>
+
+            <!-- Delivery or Pickup Snapshot Box -->
+            <div th:if="${isHomeDelivery}" class="notice-box" style="margin-bottom: 20px;">
+                <strong style="display:block; margin-bottom:4px; color:#2C211B;">Home Delivery Address:</strong>
+                <div style="font-weight:600; color:#2C211B;" th:text="${shippingFullName} + (${shippingMobile != null} ? ' (' + ${shippingMobile} + ')' : '')">Customer</div>
+                <div th:text="${shippingAddressSnapshot}">Full Delivery Address</div>
+            </div>
+            <div th:if="${isStorePickup}" class="notice-box" style="margin-bottom: 20px;">
+                <strong style="display:block; margin-bottom:4px; color:#2C211B;">Physical Store Pickup Branch:</strong>
+                <div style="font-weight:600; color:#2C211B;" th:text="${pickupStoreName}">Store Name</div>
+                <div th:text="${pickupStoreLocation}">Store Address</div>
+                <div>Contact: <span th:text="${pickupStoreContact}">Phone</span> &bull; Hours: <span th:text="${pickupStoreHours}">Hours</span></div>
+                <div style="margin-top:6px; color:#2C211B;"><strong>Pickup Instructions:</strong> <span th:text="${pickupInstructions}">Bring your Order Number.</span></div>
             </div>
 
             <!-- Itemized Multi-Book Table -->

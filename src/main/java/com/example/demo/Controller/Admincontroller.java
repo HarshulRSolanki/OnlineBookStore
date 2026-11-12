@@ -33,8 +33,11 @@ import com.example.demo.Repository.DownloadRepo;
 import com.example.demo.Repository.InquiryRepo;
 import com.example.demo.Repository.OrderItemRepo;
 import com.example.demo.Repository.OrderRepo;
+import com.example.demo.Repository.PendingCheckoutRepo;
+import com.example.demo.Repository.UserAddressRepo;
 import com.example.demo.Repository.UserRepo;
 import com.example.demo.service.SalesReportService;
+import com.example.demo.service.StoreLocationService;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
@@ -77,6 +80,15 @@ public class Admincontroller {
 
     @Autowired
     private InquiryRepo inquiryRepo;
+
+    @Autowired
+    private UserAddressRepo userAddressRepo;
+
+    @Autowired
+    private PendingCheckoutRepo pendingCheckoutRepo;
+
+    @Autowired
+    private StoreLocationService storeLocationService;
 
     @Autowired
     private SalesReportService salesReportService;
@@ -139,6 +151,8 @@ public class Admincontroller {
         model.addAttribute("books", allBooks);
         model.addAttribute("users", customerUsers);
         model.addAttribute("inquiries", inquiryRepo.findAllByOrderBySubmittedAtDesc());
+        model.addAttribute("activeStoreCount", storeLocationService.countActiveStores());
+        model.addAttribute("totalStoreCount", storeLocationService.getAllStoresForAdmin().size());
         return "Admin/admindash";
     }
 
@@ -580,6 +594,8 @@ public class Admincontroller {
             cartRepo.clearOrderReferenceForUser(user);
             cartRepo.deleteAll(cartRepo.findByUser(user));
             downloadRepo.deleteAll(downloadRepo.findByUser(user));
+            pendingCheckoutRepo.deleteAllByUser(user);
+            userAddressRepo.deleteAllByUser(user);
             orderRepo.deleteAll(orderRepo.findByUser(user));
             userRepo.delete(user);
             redirectAttributes.addFlashAttribute("message",
@@ -619,9 +635,15 @@ public class Admincontroller {
             return "redirect:/admin/orders";
         }
         Order order = orderOpt.get();
+        List<String> allowed = Order.getAllowedStatusesForMethod(order.getDeliveryMethod());
+        Map<String, String> statusLabels = new LinkedHashMap<>();
+        for (String st : allowed) {
+            statusLabels.put(st, Order.formatStatusLabel(st));
+        }
         model.addAttribute("order", order);
         model.addAttribute("items", order.getEffectiveItems());
-        model.addAttribute("allowedStatuses", List.of("CONFIRMED", "PROCESSING", "COMPLETED", "CANCELLED"));
+        model.addAttribute("allowedStatuses", allowed);
+        model.addAttribute("statusLabels", statusLabels);
         return "Admin/order-detail";
     }
 
@@ -635,16 +657,21 @@ public class Admincontroller {
             redirectAttributes.addFlashAttribute("error", "Order not found.");
             return "redirect:/admin/orders";
         }
-        String normalized = orderStatus != null ? orderStatus.trim().toUpperCase() : "";
-        if (!ALLOWED_ORDER_STATUSES.contains(normalized)) {
-            redirectAttributes.addFlashAttribute("error", "Unsupported order status: " + orderStatus);
+        Order order = orderOpt.get();
+        String normalized = orderStatus != null ? orderStatus.trim().toUpperCase().replace(' ', '_') : "";
+        List<String> allowedForOrder = Order.getAllowedStatusesForMethod(order.getDeliveryMethod());
+        boolean allowed = allowedForOrder.contains(normalized)
+                || (order.getDeliveryMethod() == null && ALLOWED_ORDER_STATUSES.contains(normalized));
+        if (!allowed) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Unsupported status '" + orderStatus + "' for " + order.getDeliveryMethodDisplayName() + ".");
             return "redirect:/admin/orders/" + orderId;
         }
-        Order order = orderOpt.get();
         order.setOrderStatus(normalized);
         orderRepo.save(order);
         redirectAttributes.addFlashAttribute("message",
-                "Order " + order.getOrderNumber() + " fulfillment status updated to " + normalized + ".");
+                "Order " + order.getOrderNumber() + " fulfillment status updated to "
+                        + Order.formatStatusLabel(normalized) + ".");
         return "redirect:/admin/orders/" + orderId;
     }
 

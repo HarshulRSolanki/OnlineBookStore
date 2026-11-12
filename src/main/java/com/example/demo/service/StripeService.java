@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.Entity.Book;
 import com.example.demo.Entity.Cart;
+import com.example.demo.Entity.DeliveryMethod;
+import com.example.demo.Entity.PendingCheckout;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
@@ -36,29 +38,42 @@ public class StripeService {
     }
 
     public String createCheckoutSession(Long bookId, String bookTitle, double price) throws StripeException {
-        return createCheckoutSession(bookId, bookTitle, price, null, null, null);
+        return createCheckoutSession(bookId, bookTitle, price, 1, null, null, null, null);
     }
 
     public String createCheckoutSession(Long bookId, String bookTitle, double price, Long userId, String userEmail) throws StripeException {
-        return createCheckoutSession(bookId, bookTitle, price, userId, userEmail, null);
+        return createCheckoutSession(bookId, bookTitle, price, 1, userId, userEmail, null, null);
     }
 
     public String createCheckoutSession(Long bookId, String bookTitle, double price, Long userId, String userEmail, String baseUrl) throws StripeException {
+        return createCheckoutSession(bookId, bookTitle, price, 1, userId, userEmail, baseUrl, null);
+    }
+
+    public String createCheckoutSession(
+            Long bookId,
+            String bookTitle,
+            double price,
+            int quantity,
+            Long userId,
+            String userEmail,
+            String baseUrl,
+            PendingCheckout pendingCheckout) throws StripeException {
         Stripe.apiKey = stripeSecretKey;
 
         String resolvedBase = resolveBaseUrl(baseUrl);
+        int qty = Math.max(1, quantity);
 
         SessionCreateParams.Builder builder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setSuccessUrl(resolvedBase + "/success?session_id={CHECKOUT_SESSION_ID}&bookId=" + bookId)
-                .setCancelUrl(resolvedBase + "/cancel")
+                .setCancelUrl(resolvedBase + "/checkout/" + bookId + "?paymentCancelled=true")
                 .putMetadata("source", "ebookstore")
                 .putMetadata("checkoutType", "SINGLE")
                 .putMetadata("bookId", String.valueOf(bookId))
-                .putMetadata("quantity", "1")
+                .putMetadata("quantity", String.valueOf(qty))
                 .addLineItem(
                         SessionCreateParams.LineItem.builder()
-                                .setQuantity(1L)
+                                .setQuantity((long) qty)
                                 .setPriceData(
                                         SessionCreateParams.LineItem.PriceData.builder()
                                                 .setCurrency("INR")
@@ -73,6 +88,8 @@ public class StripeService {
                                 .build()
                 );
 
+        applyDeliveryMetadataAndLineItem(builder, pendingCheckout);
+
         if (userId != null) {
             builder.putMetadata("userId", String.valueOf(userId));
         }
@@ -86,14 +103,24 @@ public class StripeService {
     }
 
     public String createCheckoutSessionForMultipleBooks(List<Cart> cartItems, double totalAmount) throws StripeException {
-        return createCheckoutSessionForMultipleBooks(cartItems, totalAmount, null, null, null);
+        return createCheckoutSessionForMultipleBooks(cartItems, totalAmount, null, null, null, null);
     }
 
     public String createCheckoutSessionForMultipleBooks(List<Cart> cartItems, double totalAmount, Long userId, String userEmail) throws StripeException {
-        return createCheckoutSessionForMultipleBooks(cartItems, totalAmount, userId, userEmail, null);
+        return createCheckoutSessionForMultipleBooks(cartItems, totalAmount, userId, userEmail, null, null);
     }
 
     public String createCheckoutSessionForMultipleBooks(List<Cart> cartItems, double totalAmount, Long userId, String userEmail, String baseUrl) throws StripeException {
+        return createCheckoutSessionForMultipleBooks(cartItems, totalAmount, userId, userEmail, baseUrl, null);
+    }
+
+    public String createCheckoutSessionForMultipleBooks(
+            List<Cart> cartItems,
+            double totalAmount,
+            Long userId,
+            String userEmail,
+            String baseUrl,
+            PendingCheckout pendingCheckout) throws StripeException {
         Stripe.apiKey = stripeSecretKey;
 
         String resolvedBase = resolveBaseUrl(baseUrl);
@@ -144,6 +171,8 @@ public class StripeService {
                 .putMetadata("checkoutType", "CART")
                 .putMetadata("cartItems", cartItemsMeta);
 
+        applyDeliveryMetadataAndLineItem(builder, pendingCheckout);
+
         if (userId != null) {
             builder.putMetadata("userId", String.valueOf(userId));
         }
@@ -154,5 +183,41 @@ public class StripeService {
 
         Session session = Session.create(builder.build());
         return session.getUrl();
+    }
+
+    private void applyDeliveryMetadataAndLineItem(SessionCreateParams.Builder builder, PendingCheckout pendingCheckout) {
+        if (pendingCheckout == null) {
+            return;
+        }
+        if (pendingCheckout.getCheckoutToken() != null && !pendingCheckout.getCheckoutToken().isBlank()) {
+            builder.putMetadata("checkoutToken", pendingCheckout.getCheckoutToken().trim());
+        }
+        if (pendingCheckout.getDeliveryMethod() != null && !pendingCheckout.getDeliveryMethod().isBlank()) {
+            builder.putMetadata("deliveryMethod", pendingCheckout.getDeliveryMethod().trim());
+        }
+        double deliveryCharge = pendingCheckout.getDeliveryCharge() != null ? pendingCheckout.getDeliveryCharge() : 0.0;
+        builder.putMetadata("deliveryCharge", String.format("%.2f", deliveryCharge));
+
+        if (deliveryCharge > 0.0) {
+            String feeLabel = DeliveryMethod.STORE_PICKUP.name().equalsIgnoreCase(pendingCheckout.getDeliveryMethod())
+                    ? "Store Pickup Handling Fee"
+                    : "Home Delivery Charge";
+            builder.addLineItem(
+                    SessionCreateParams.LineItem.builder()
+                            .setQuantity(1L)
+                            .setPriceData(
+                                    SessionCreateParams.LineItem.PriceData.builder()
+                                            .setCurrency("INR")
+                                            .setUnitAmount(Math.max(100L, Math.round(deliveryCharge * 100.0)))
+                                            .setProductData(
+                                                    SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                                            .setName(feeLabel)
+                                                            .build()
+                                            )
+                                            .build()
+                            )
+                            .build()
+            );
+        }
     }
 }

@@ -91,6 +91,19 @@ public class EmailService {
             context.setVariable("discount", String.format("%.2f", order.getDiscount()));
             context.setVariable("deliveryCharge", String.format("%.2f", order.getDeliveryCharge()));
             context.setVariable("amount", String.format("%.2f", order.getAmount()));
+            context.setVariable("deliveryMethod", order.getDeliveryMethod());
+            context.setVariable("deliveryMethodLabel", order.getDeliveryMethodDisplayName());
+            context.setVariable("orderStatusLabel", order.getDisplayOrderStatus());
+            context.setVariable("isHomeDelivery", order.isHomeDelivery());
+            context.setVariable("isStorePickup", order.isStorePickup());
+            context.setVariable("shippingFullName", order.getShippingFullName());
+            context.setVariable("shippingMobile", order.getShippingMobile());
+            context.setVariable("shippingAddressSnapshot", order.getShippingAddressSnapshot());
+            context.setVariable("pickupStoreName", order.getPickupStoreName());
+            context.setVariable("pickupStoreLocation", order.getFormattedStoreLocation());
+            context.setVariable("pickupStoreContact", order.getPickupStoreContact());
+            context.setVariable("pickupStoreHours", order.getPickupStoreOpeningHours());
+            context.setVariable("pickupInstructions", order.getPickupInstructions());
             context.setVariable("libraryUrl", "/order");
             context.setVariable("currentYear", Year.now().getValue());
 

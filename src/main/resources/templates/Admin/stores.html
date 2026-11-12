@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Locations &amp; Delivery Settings – Quickread Admin</title>
+
+    <!-- Bootstrap 5 & Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Luxury Editorial Stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/luxury-bookstore.css}" href="/css/luxury-bookstore.css">
+
+    <style>
+        .store-kpi-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.15rem 1.35rem;
+            box-shadow: 0 2px 10px rgba(44, 33, 27, 0.04);
+            height: 100%;
+        }
+        .store-kpi-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+        }
+        .store-kpi-value {
+            font-family: var(--font-heading);
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 0.35rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Dedicated Admin Header -->
+    <div th:replace="~{common/header :: navbar}"></div>
+
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-3 border-bottom gap-3">
+                <div>
+                    <span class="section-subtitle-tag mb-1">Fulfillment &amp; Physical Branches</span>
+                    <h1 class="font-heading fs-2 mb-0">Store Locations &amp; Delivery Charges</h1>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a th:href="@{/admin/orders}" class="btn-luxury-outline py-2 px-3">
+                        <i class="fas fa-boxes-packing me-1"></i> Manage Orders
+                    </a>
+                    <a th:href="@{/admin/dashboard}" class="btn-luxury-primary py-2 px-3">
+                        <i class="fas fa-arrow-left me-1"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${error != null or message != null}" class="mb-4">
+                <div class="editorial-alert editorial-alert-danger" th:if="${error}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+                <div class="editorial-alert editorial-alert-success" th:if="${message}">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${message}">Success</span>
+                </div>
+            </div>
+
+            <!-- Summary Metrics -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="store-kpi-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="store-kpi-label">Registered Stores</span>
+                            <i class="fas fa-store text-primary"></i>
+                        </div>
+                        <div class="store-kpi-value" th:text="${totalStoreCount != null ? totalStoreCount : 0}">0</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="store-kpi-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="store-kpi-label">Active for Pickup</span>
+                            <i class="fas fa-circle-check text-success"></i>
+                        </div>
+                        <div class="store-kpi-value text-success" th:text="${activeStoreCount != null ? activeStoreCount : 0}">0</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="store-kpi-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="store-kpi-label">Home Delivery Fee</span>
+                            <i class="fas fa-truck-fast" style="color: var(--primary-accent);"></i>
+                        </div>
+                        <div class="store-kpi-value">
+                            <span th:if="${deliveryConfig != null and deliveryConfig.homeDeliveryCharge > 0}">
+                                ₹<span th:text="${#numbers.formatDecimal(deliveryConfig.homeDeliveryCharge, 1, 2)}">0.00</span>
+                            </span>
+                            <span th:if="${deliveryConfig == null or deliveryConfig.homeDeliveryCharge == 0}" class="text-success">FREE</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="store-kpi-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="store-kpi-label">Store Pickup Fee</span>
+                            <i class="fas fa-hand-holding-heart" style="color: var(--primary-accent);"></i>
+                        </div>
+                        <div class="store-kpi-value">
+                            <span th:if="${deliveryConfig != null and deliveryConfig.storePickupCharge > 0}">
+                                ₹<span th:text="${#numbers.formatDecimal(deliveryConfig.storePickupCharge, 1, 2)}">0.00</span>
+                            </span>
+                            <span th:if="${deliveryConfig == null or deliveryConfig.storePickupCharge == 0}" class="text-success">FREE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-5">
+                <!-- Left Column: Add / Edit Physical Bookstore Form -->
+                <div class="col-lg-7">
+                    <div class="card p-4 border-0 shadow-sm h-100"
+                         style="background: var(--card-bg); border: 1px solid var(--border-color) !important; border-radius: var(--radius-md);">
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                            <h3 class="font-heading fs-5 mb-0">
+                                <i class="fas fa-shop me-2" style="color: var(--primary-accent);"></i>
+                                <span th:text="${editStore != null ? ('Edit Store: ' + editStore.storeName) : 'Add New Physical Bookstore Location'}">
+                                    Add New Physical Bookstore Location
+                                </span>
+                            </h3>
+                            <a th:if="${editStore != null}" th:href="@{/admin/stores}" class="btn btn-outline-secondary btn-sm">
+                                Cancel Edit
+                            </a>
+                        </div>
+
+                        <form th:action="@{/admin/stores/save}" method="post" id="adminStoreForm">
+                            <input type="hidden" name="storeId" th:value="${editStore != null ? editStore.id : ''}" />
+
+                            <div class="row g-3">
+                                <div class="col-md-7">
+                                    <label for="storeName" class="form-label small fw-semibold">Store Name *</label>
+                                    <input type="text" id="storeName" name="storeName" class="form-control"
+                                           th:value="${editStore != null ? editStore.storeName : ''}"
+                                           placeholder="e.g. Quickread Heritage Flagship" required minlength="2" maxlength="150" />
+                                </div>
+                                <div class="col-md-5">
+                                    <label for="contactNumber" class="form-label small fw-semibold">Store Contact Number (10-digit) *</label>
+                                    <input type="tel" id="contactNumber" name="contactNumber" class="form-control"
+                                           th:value="${editStore != null ? editStore.contactNumber : ''}"
+                                           placeholder="e.g. 9876543210" pattern="[6-9][0-9]{9}" maxlength="10" required />
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="storeCountry" class="form-label small fw-semibold">Country *</label>
+                                    <input type="text" id="storeCountry" name="country" class="form-control bg-light fw-semibold"
+                                           th:value="${defaultCountry != null ? defaultCountry : 'India'}" readonly />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="storeStateSelect" class="form-label small fw-semibold">State / UT *</label>
+                                    <select id="storeStateSelect" name="state" class="form-select" required>
+                                        <option value="">-- Select State --</option>
+                                        <option th:each="st : ${indianStates}"
+                                                th:value="${st}"
+                                                th:text="${st}"
+                                                th:selected="${editStore != null and editStore.state == st}">Gujarat</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="storeCitySelect" class="form-label small fw-semibold">City *</label>
+                                    <select id="storeCitySelect" class="form-select" required>
+                                        <option value="">-- Select State First --</option>
+                                    </select>
+                                    <input type="hidden" id="storeCityHidden" name="city"
+                                           th:value="${editStore != null ? editStore.city : ''}" />
+                                    <div id="storeCustomCityWrap" class="mt-2" style="display: none;">
+                                        <input type="text" id="storeCustomCityInput" class="form-control form-control-sm"
+                                               placeholder="Specify Indian city" maxlength="80" />
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="storeAddress" class="form-label small fw-semibold">Complete Store Address *</label>
+                                    <textarea id="storeAddress" name="address" rows="2" class="form-control"
+                                              placeholder="e.g. Ground Floor, Ellisbridge Book Arcade, Ashram Road"
+                                              required minlength="5" maxlength="500"
+                                              th:text="${editStore != null ? editStore.address : ''}"></textarea>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="storePinCode" class="form-label small fw-semibold">PIN Code (6-digit) *</label>
+                                    <input type="text" id="storePinCode" name="pinCode" class="form-control"
+                                           th:value="${editStore != null ? editStore.pinCode : ''}"
+                                           placeholder="e.g. 380006" pattern="[1-9][0-9]{5}" maxlength="6" required />
+                                </div>
+                                <div class="col-md-8">
+                                    <label for="storeOpeningHours" class="form-label small fw-semibold">Opening Hours *</label>
+                                    <input type="text" id="storeOpeningHours" name="openingHours" class="form-control"
+                                           th:value="${editStore != null ? editStore.openingHours : ''}"
+                                           placeholder="e.g. 10:00 AM - 8:30 PM (Mon - Sun)" required maxlength="140" />
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="storeActiveSwitch"
+                                               name="active" value="true"
+                                               th:checked="${editStore == null or editStore.active}" />
+                                        <label class="form-check-label small fw-semibold" for="storeActiveSwitch">
+                                            Active for Physical Store Pickup during Customer Checkout
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <a th:if="${editStore != null}" th:href="@{/admin/stores}" class="btn-luxury-outline py-2 px-3">Cancel</a>
+                                <button type="submit" class="btn-luxury-primary py-2 px-4">
+                                    <i class="fas fa-save me-1"></i>
+                                    <span th:text="${editStore != null ? 'Update Store Location' : 'Save Store Location'}">Save Store Location</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Column: Delivery Fees & Pickup Instructions Config -->
+                <div class="col-lg-5">
+                    <div class="card p-4 border-0 shadow-sm h-100"
+                         style="background: #FAF7F2; border: 1px solid var(--border-color) !important; border-radius: var(--radius-md);">
+                        <div class="mb-3 pb-2 border-bottom">
+                            <h3 class="font-heading fs-5 mb-1">
+                                <i class="fas fa-sliders me-2" style="color: var(--primary-accent);"></i>
+                                Delivery Charges &amp; Pickup Guidance
+                            </h3>
+                            <p class="small text-secondary mb-0">
+                                Configure India-wide Home Delivery fees and Pickup instructions shown on receipts &amp; emails. Set to <strong>0.00</strong> for free shipping or pickup.
+                            </p>
+                        </div>
+
+                        <form th:action="@{/admin/stores/delivery-config}" method="post" class="d-flex flex-column gap-3">
+                            <div>
+                                <label for="homeDeliveryCharge" class="form-label small fw-semibold">Home Delivery Charge (INR ₹)</label>
+                                <input type="number" step="0.01" min="0" id="homeDeliveryCharge" name="homeDeliveryCharge"
+                                       class="form-control"
+                                       th:value="${deliveryConfig != null ? deliveryConfig.homeDeliveryCharge : 0.00}" required />
+                            </div>
+                            <div>
+                                <label for="storePickupCharge" class="form-label small fw-semibold">Store Pickup Charge (INR ₹)</label>
+                                <input type="number" step="0.01" min="0" id="storePickupCharge" name="storePickupCharge"
+                                       class="form-control"
+                                       th:value="${deliveryConfig != null ? deliveryConfig.storePickupCharge : 0.00}" required />
+                            </div>
+                            <div>
+                                <label for="pickupInstructions" class="form-label small fw-semibold">Customer Store Pickup Instructions</label>
+                                <textarea id="pickupInstructions" name="pickupInstructions" rows="4" maxlength="600"
+                                          class="form-control"
+                                          th:text="${deliveryConfig != null ? deliveryConfig.pickupInstructions : ''}"></textarea>
+                            </div>
+                            <button type="submit" class="btn-luxury-primary py-2 mt-1">
+                                <i class="fas fa-check me-1"></i> Save Delivery Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registered Physical Stores Directory Table -->
+            <div class="orders-table-wrapper">
+                <div class="p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="background: #FAF7F2;">
+                    <h3 class="font-heading fs-5 mb-0">Registered Bookstore Locations</h3>
+                    <span class="small text-muted">Only stores marked <strong>Active</strong> appear to customers on checkout.</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>Store Branch</th>
+                                <th>Contact</th>
+                                <th>Location &amp; Complete Address</th>
+                                <th>Opening Hours</th>
+                                <th>Pickup Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="store : ${stores}">
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${store.storeName}">Store Name</div>
+                                    <small class="text-muted" th:text="'ID #' + ${store.id}">ID #1</small>
+                                </td>
+                                <td class="font-monospace small" th:text="'+91 ' + ${store.contactNumber}">+91 9876543210</td>
+                                <td class="small" style="max-width: 320px;">
+                                    <div class="fw-semibold text-dark" th:text="${store.city} + ', ' + ${store.state} + ' - ' + ${store.pinCode}">City, State</div>
+                                    <div class="text-secondary" th:text="${store.address}">Address</div>
+                                </td>
+                                <td class="small" th:text="${store.openingHours}">10:00 AM - 8:00 PM</td>
+                                <td>
+                                    <span th:if="${store.active}" class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="fas fa-circle-check me-1"></i> Active
+                                    </span>
+                                    <span th:unless="${store.active}" class="badge bg-secondary-subtle text-secondary border">
+                                        <i class="fas fa-pause-circle me-1"></i> Inactive
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                                        <form th:action="@{/admin/stores/{id}/toggle(id=${store.id})}" method="post" class="m-0">
+                                            <button type="submit"
+                                                    th:class="${store.active ? 'btn btn-outline-warning btn-sm' : 'btn btn-outline-success btn-sm'}"
+                                                    th:text="${store.active ? 'Deactivate' : 'Activate'}">
+                                                Toggle
+                                            </button>
+                                        </form>
+                                        <a th:href="@{/admin/stores(editId=${store.id})}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-pen me-1"></i> Edit
+                                        </a>
+                                        <form th:action="@{/admin/stores/{id}/delete(id=${store.id})}" method="post" class="m-0"
+                                              onsubmit="return confirm('Permanently delete this bookstore location? Existing customer order snapshots will remain preserved.');">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-trash-can"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${stores == null or #lists.isEmpty(stores)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="fas fa-store-slash fa-2x mb-2 d-block"></i>
+                                    No physical store locations registered yet. Use the form above to add your first India bookstore branch.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{common/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/luxury-bookstore.js}" src="/js/luxury-bookstore.js"></script>
+    <script th:src="@{/js/india-delivery.js}" src="/js/india-delivery.js"></script>
+    <script th:inline="javascript">
+        var stateCitiesMap = /*[[${stateCitiesMap}]]*/ {};
+        var initialStoreCity = /*[[${editStore != null ? editStore.city : ''}]]*/ '';
+
+        document.addEventListener("DOMContentLoaded", function () {
+            initIndiaLocationSelector({
+                stateSelectId: "storeStateSelect",
+                citySelectId: "storeCitySelect",
+                customCityWrapId: "storeCustomCityWrap",
+                customCityInputId: "storeCustomCityInput",
+                hiddenCityInputId: "storeCityHidden",
+                stateCitiesMap: stateCitiesMap,
+                initialCity: initialStoreCity
+            });
+        });
+    </script>
+</body>
+</html>
+

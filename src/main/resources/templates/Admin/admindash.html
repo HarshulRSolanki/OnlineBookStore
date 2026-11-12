@@ -191,6 +191,15 @@
                     </a>
                 </div>
                 <div class="col-6 col-md-4 col-lg-3">
+                    <a href="/admin/stores" class="admin-quick-link">
+                        <i class="fas fa-store fa-lg" style="color: var(--primary-accent);"></i>
+                        <div>
+                            <div class="fw-bold">Store Locations</div>
+                            <small class="text-muted" th:text="${activeStoreCount != null ? activeStoreCount + ' active stores' : 'Pickup branches'}">Pickup branches</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
                     <a href="/admin/reports" class="admin-quick-link">
                         <i class="fas fa-chart-pie fa-lg" style="color: var(--primary-accent);"></i>
                         <div>

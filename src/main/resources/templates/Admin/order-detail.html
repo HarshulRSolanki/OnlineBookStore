@@ -74,6 +74,36 @@
                                 <span class="text-muted d-block">Stripe Session ID</span>
                                 <code th:text="${order.stripeSessionId}">cs_...</code>
                             </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Delivery Method</span>
+                                <strong th:text="${order.deliveryMethodDisplayName}">Home Delivery</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block">Delivery Charge</span>
+                                <strong th:text="${order.deliveryCharge > 0 ? ('₹' + #numbers.formatDecimal(order.deliveryCharge, 1, 2)) : 'FREE (₹0.00)'}">FREE</strong>
+                            </div>
+                        </div>
+
+                        <!-- Delivery / Store Pickup Snapshot Details -->
+                        <div th:if="${order.hasDeliveryDetails()}" class="mt-3 pt-3 border-top small">
+                            <div th:if="${order.isHomeDelivery()}">
+                                <span class="text-muted text-uppercase fw-semibold d-block mb-1">Delivery Address Snapshot</span>
+                                <div class="fw-bold text-dark">
+                                    <span th:text="${order.shippingFullName}">Recipient</span>
+                                    <span class="address-type-pill ms-1" th:text="${order.shippingAddressType}">HOME</span>
+                                    <span class="text-muted fw-normal ms-2" th:if="${order.shippingMobile != null}" th:text="'Mobile: ' + ${order.shippingMobile}">Mobile</span>
+                                </div>
+                                <div class="text-secondary mt-1" th:text="${order.shippingAddressSnapshot}">Address</div>
+                            </div>
+                            <div th:if="${order.isStorePickup()}">
+                                <span class="text-muted text-uppercase fw-semibold d-block mb-1">Selected Store Pickup Branch</span>
+                                <div class="fw-bold text-dark" th:text="${order.pickupStoreName}">Store Name</div>
+                                <div class="text-secondary" th:text="${order.formattedStoreLocation}">Store Address</div>
+                                <div class="text-muted mt-1">
+                                    Contact: <strong th:text="${order.pickupStoreContact}">Phone</strong> &bull;
+                                    Hours: <strong th:text="${order.pickupStoreOpeningHours}">Hours</strong>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -83,13 +113,13 @@
                     <div class="card p-4 border-0 shadow-sm h-100" style="background: #FAF7F2; border: 1px solid var(--border-color) !important;">
                         <h4 class="font-heading fs-5 mb-3">Update Fulfillment Status</h4>
                         <p class="small text-secondary mb-3">
-                            Current Status: <span class="badge bg-dark" th:text="${order.orderStatus != null ? order.orderStatus : 'CONFIRMED'}">CONFIRMED</span>
+                            Current Status: <span class="badge bg-dark" th:text="${order.displayOrderStatus}">Order Placed</span>
                         </p>
                         <form th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post" class="d-grid gap-3">
                             <select name="orderStatus" class="form-select">
                                 <option th:each="st : ${allowedStatuses}"
                                         th:value="${st}"
-                                        th:text="${st}"
+                                        th:text="${statusLabels != null and statusLabels.containsKey(st) ? statusLabels.get(st) : st}"
                                         th:selected="${st == order.orderStatus}"></option>
                             </select>
                             <button type="submit" class="btn-luxury-primary py-2">

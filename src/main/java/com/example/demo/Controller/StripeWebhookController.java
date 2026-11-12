@@ -103,6 +103,7 @@ public class StripeWebhookController {
 
                 String checkoutType = session.getMetadata() != null ? session.getMetadata().get("checkoutType") : null;
                 String cartItemsMeta = session.getMetadata() != null ? session.getMetadata().get("cartItems") : null;
+                String checkoutToken = session.getMetadata() != null ? session.getMetadata().get("checkoutToken") : null;
 
                 if ("CART".equalsIgnoreCase(checkoutType) || (cartItemsMeta != null && !cartItemsMeta.isBlank())) {
                     orderReceiptService.finalizeMultiBookCheckout(
@@ -111,20 +112,28 @@ public class StripeWebhookController {
                             cartItemsMeta,
                             sessionId,
                             paymentIntentId,
-                            session.getPaymentStatus());
+                            session.getPaymentStatus(),
+                            checkoutToken);
                     return ResponseEntity.ok("Processed multi-book cart order");
                 } else if (session.getMetadata() != null && session.getMetadata().containsKey("bookId")) {
                     try {
                         Long bid = Long.parseLong(session.getMetadata().get("bookId"));
+                        int qty = 1;
+                        if (session.getMetadata().containsKey("quantity")) {
+                            try {
+                                qty = Math.max(1, Integer.parseInt(session.getMetadata().get("quantity")));
+                            } catch (NumberFormatException ignored) {}
+                        }
                         Optional<Book> bookOpt = bookRepo.findById(bid);
                         if (bookOpt.isPresent()) {
                             orderReceiptService.finalizeSingleBookCheckout(
                                     user,
                                     bookOpt.get(),
-                                    1,
+                                    qty,
                                     sessionId,
                                     paymentIntentId,
-                                    session.getPaymentStatus());
+                                    session.getPaymentStatus(),
+                                    checkoutToken);
                             return ResponseEntity.ok("Processed single-book order");
                         }
                     } catch (Exception ignored) {}
